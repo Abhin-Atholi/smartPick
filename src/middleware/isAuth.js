@@ -21,18 +21,17 @@ const redirectIfAuth = (req, res, next) => {
 
 const redirectIfVerified = async (req, res, next) => {
   const email = req.query.email || req.body.email;
-
-  // if no email, just continue (or redirect)
   if (!email) return next();
 
-  const user = await User.findOne({ email });
-  if (user && user.isVerified) {
-    // if already verified, don't show verify page
-    // if logged in -> go home, else -> go login
-    return req.session.userId ? res.redirect("/home") : res.redirect("/login");
+  const user = await User.findOne({ email }).select("isVerified");
+  if (user?.isVerified) {
+    return req.session.userId
+      ? res.redirect("/home")
+      : res.redirect("/login");
   }
 
   next();
 };
+
 
 module.exports = { setAuthLocals, protectRoute, redirectIfAuth, redirectIfVerified };

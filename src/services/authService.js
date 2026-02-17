@@ -17,9 +17,16 @@ const register = async ({ name, email, password, confirmPassword }) => {
   }
 
   const existing = await User.findOne({ email });
-  if (existing) {
+  
+  if (existing && existing.isVerified) {
     return { ok: false, msg: "User already exists", payload: { name, email } };
   }
+
+  // ✅ exists but not verified → resend/verify flow
+  if (existing && !existing.isVerified) {
+    return { ok: false, needsVerify: true, email: existing.email, msg: "Please verify your account", payload: { name, email } };
+  }
+
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -53,12 +60,23 @@ const login = async ({ email, password }) => {
   if (!isMatch) {
   return { ok: false, msg: "Email or password is wrong", payload: { email } };
   }
+  // ✅ ADD THIS BLOCK HERE
+if (!user.isVerified) {
+  return {
+    ok: false,
+    needsVerify: true,
+    email: user.email,
+    msg: "Please verify your account",
+    payload: { email }
+  };
+}
 
-  if (!user.isVerified) {
-  return { ok: false, msg: "Please verify your account with OTP first.", payload: { email } };
-  }
-
-  return { ok: true, user: { _id: user._id, name: user.fullName, email: user.email } };
+// ✅ THEN SUCCESS
+return {
+  ok: true,
+  user: { _id: user._id, name: user.fullName, email: user.email },
 };
+}
+  
 
 module.exports = { register, login };

@@ -20,5 +20,9 @@ router.get("/logout", protectRoute, userController.logout);
 router.get("/verify",redirectIfVerified,authController.loadVerify);
 router.post("/verify",redirectIfVerified, authController.verifyOtp);
 
+router.get("/verify", redirectIfVerified, authController.loadVerify);
+router.post("/verify", redirectIfVerified, authController.verifyOtp);
+router.post("/resend-otp", redirectIfVerified, authController.resendOtp);
+
 
 module.exports=router

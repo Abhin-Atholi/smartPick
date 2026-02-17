@@ -1,50 +1,24 @@
-// src/controller/authController.js
 const authService = require("../services/authService");
-const { sendOtpEmail } = require("../services/emailService");
+const otpService = require("../services/otpService");
+const User = require("../model/userModel");
 
-
-const loadLogin = (req, res) => {
-  res.render("user/login", { title: "Login" });
-};
-
-const loadRegister = (req, res) => {
-  res.render("user/register", { title: "Register" });
-};
-
-// src/controller/authController.js
-const User = require("../model/userModel"); // ✅ add this import at top
+const loadLogin = (req, res) => res.render("user/login", { title: "Login" });
+const loadRegister = (req, res) => res.render("user/register", { title: "Register" });
 
 const registerUser = async (req, res) => {
   try {
     const result = await authService.register(req.body);
 
-    if (!result.ok) {
-      return res.render("user/register", {
-        title: "Register",
-        msg: result.msg,
-        ...(result.payload || {}),
-      });
+    if (!result.ok && result.needsVerify) {
+      return res.redirect(`/verify?email=${encodeURIComponent(result.email || req.body.email)}`);
     }
 
-    // ✅ generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!result.ok) {
+      return res.render("user/register", { title: "Register", msg: result.msg, ...(result.payload || {}) });
+    }
 
-    // ✅ store OTP in DB
-    await User.updateOne(
-      { _id: result.user._id },
-      {
-        $set: {
-          otp,
-          otpExpires: new Date(Date.now() + 10 * 60 * 1000),
-          isVerified: false,
-        },
-      }
-    );
+    await otpService.sendVerifyOtpByUserId(result.user._id);
 
-    // ✅ send email
-    await sendOtpEmail(result.user.email, otp);
-
-    // ✅ go to verify page
     return res.redirect(`/verify?email=${encodeURIComponent(result.user.email)}`);
   } catch (err) {
     console.log(err);
@@ -52,37 +26,45 @@ const registerUser = async (req, res) => {
   }
 };
 
-
 const loginUser = async (req, res) => {
   try {
     const result = await authService.login(req.body);
 
-    if (!result.ok) {
-      return res.render("user/login", {
-        title: "Login",
-        msg: result.msg,
-        ...(result.payload || {}),
-      });
+    if (!result.ok && result.needsVerify) {
+      return res.redirect(`/verify?email=${encodeURIComponent(result.email || req.body.email)}`);
     }
 
-    // ✅ set session (minimal + safe)
+    if (!result.ok) {
+      return res.render("user/login", { title: "Login", msg: result.msg, ...(result.payload || {}) });
+    }
+
     req.session.userId = result.user._id;
     req.session.user = result.user;
 
-    return res.redirect("/home"); // recommended protected route
+    return res.redirect("/home");
   } catch (err) {
     console.log(err);
     return res.status(500).send("Server Error");
   }
 };
 
+const loadVerify = async (req, res) => {
+  try {
+    const email = req.query.email;
 
-const loadVerify = (req, res) => {
-  res.render("user/verify", {
-    title: "Verify Account",
-    email: req.query.email,
-    msg: null,
-  });
+    const user = email
+      ? await User.findOne({ email }).select("isVerified otpLastSentAt")
+      : null;
+
+    if (user?.isVerified) return res.redirect("/login");
+
+    const waitSeconds = otpService.getWaitSeconds(user?.otpLastSentAt);
+
+    return res.render("user/verify", { title: "Verify Account", email, msg: null, waitSeconds });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Server Error");
+  }
 };
 
 const verifyOtp = async (req, res) => {
@@ -93,20 +75,22 @@ const verifyOtp = async (req, res) => {
     if (!user) return res.redirect("/register");
 
     if (!user.otp || !user.otpExpires) {
-      return res.render("user/verify", { title: "Verify Account", email, msg: "OTP not found. Please register again." });
+      return res.render("user/verify", { title: "Verify Account", email, msg: "OTP not found. Please register again.", waitSeconds: 0 });
     }
 
     if (user.otpExpires < new Date()) {
-      return res.render("user/verify", { title: "Verify Account", email, msg: "OTP expired. Please register again." });
+      return res.render("user/verify", { title: "Verify Account", email, msg: "OTP expired. Please resend OTP.", waitSeconds: 0 });
     }
 
     if (user.otp !== otp) {
-      return res.render("user/verify", { title: "Verify Account", email, msg: "Invalid OTP" });
+      const waitSeconds = otpService.getWaitSeconds(user.otpLastSentAt);
+      return res.render("user/verify", { title: "Verify Account", email, msg: "Invalid OTP", waitSeconds });
     }
 
     user.isVerified = true;
     user.otp = null;
     user.otpExpires = null;
+    user.otpLastSentAt = null;
     await user.save();
 
     return res.redirect("/login");
@@ -116,5 +100,31 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+const resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-module.exports = { loadLogin, loadRegister, registerUser, loginUser,loadVerify,verifyOtp };
+    const result = await otpService.resendVerifyOtpByEmail(email);
+
+    if (!result.ok) {
+      return res.render("user/verify", {
+        title: "Verify Account",
+        email,
+        msg: result.msg,
+        waitSeconds: result.waitSeconds || 0,
+      });
+    }
+
+    return res.render("user/verify", {
+      title: "Verify Account",
+      email: result.email,
+      msg: result.msg,
+      waitSeconds: result.waitSeconds,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Server Error");
+  }
+};
+
+module.exports = { loadLogin, loadRegister, registerUser, loginUser, loadVerify, verifyOtp, resendOtp };
