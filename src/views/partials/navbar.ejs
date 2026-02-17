@@ -1,0 +1,52 @@
+
+
+<header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center gap-3">
+
+    <button data-drawer-open class="w-10 h-10 rounded-xl hover:bg-gray-100 grid place-items-center">☰</button>
+
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black grid place-items-center text-sm">S</div>
+      <span class="font-black text-indigo-600">SmartPick</span>
+    </div>
+
+    <nav class="hidden lg:flex items-center gap-6 text-sm font-bold text-gray-500 ml-6">
+      <a class="text-indigo-600" href="#">All Products</a>
+      <a class="hover:text-gray-900" href="#">Men</a>
+      <a class="hover:text-gray-900" href="#">Women</a>
+      <a class="hover:text-gray-900" href="#">Children</a>
+    </nav>
+
+    <div class="ml-auto hidden md:flex flex-1 max-w-xl items-center gap-2 px-4 py-2 border border-gray-200 rounded-full">
+      <span class="opacity-60">🔍</span>
+      <input class="w-full outline-none text-sm" placeholder="Search for products..." />
+    </div>
+
+    <div class="flex items-center">
+      <% if (typeof isAuth !== "undefined" && isAuth) { %>
+
+        <button class="w-10 h-10 rounded-xl hover:bg-gray-100 grid place-items-center" title="Wallet">👛</button>
+        <button class="w-10 h-10 rounded-xl hover:bg-gray-100 grid place-items-center" title="Wishlist">♡</button>
+        <button class="w-10 h-10 rounded-xl hover:bg-gray-100 grid place-items-center relative" title="Cart">
+          🛒 <span class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full">2</span>
+        </button>
+        <a href="/logout" class="hidden sm:inline-flex px-4 py-2 rounded-full border border-red-200 text-red-500 font-black text-sm hover:bg-red-50">
+          Log Out
+        </a>
+      <% } else { %>
+        <a href="/login" class="px-5 py-2 rounded-full border border-gray-200 font-black text-sm hover:bg-gray-50">
+        Login
+        </a>
+
+    <% } %>
+
+    </div>
+  </div>
+
+  <div class="md:hidden px-4 pb-4 max-w-6xl mx-auto">
+    <div class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full bg-white">
+      <span class="opacity-60">🔍</span>
+      <input class="w-full outline-none text-sm" placeholder="Search for products..." />
+    </div>
+  </div>
+</header>

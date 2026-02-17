@@ -1,0 +1,41 @@
+
+
+
+<div data-drawer-overlay class="hidden fixed inset-0 bg-black/30 z-30"></div>
+
+<aside data-drawer class="-translate-x-full fixed left-0 top-0 bottom-0 w-72 bg-white z-40 shadow-2xl transition">
+  <div class="p-4">
+    <button data-drawer-close class="w-10 h-10 rounded-xl bg-gray-100 grid place-items-center">✕</button>
+
+    <% if (typeof isAuth !== "undefined" && isAuth) { %>
+
+      <div class="text-center mt-4 pb-4 border-b border-gray-200">
+        <img class="w-20 h-20 rounded-full mx-auto" src="https://picsum.photos/seed/user/120/120" alt="user">
+        <div class="font-black mt-3"><%= user?.name || "User" %></div>
+        <div class="text-sm text-gray-500"><%= user?.email || "user@example.com" %></div>
+      </div>
+
+      <nav class="mt-4 space-y-2 text-sm font-black text-gray-700">
+        <a class="block px-4 py-3 rounded-xl bg-indigo-600 text-white" href="#">All Products</a>
+        <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">Orders</a>
+        <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">Wishlist</a>
+        <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">Wallet</a>
+        <div class="h-px bg-gray-200 my-2"></div>
+        <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">My Account</a>
+        <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">My Cart</a>
+        <a href="/logout" class="mt-3 block text-center px-4 py-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50">
+          Log Out
+        </a>
+      </nav>
+    <% } else { %>
+      <div class="mt-6">
+        <h3 class="font-black text-lg">Welcome 👋</h3>
+        <p class="text-sm text-gray-500 mt-1">Login to see orders, wishlist and wallet.</p>
+
+        <div class="mt-5 space-y-2">
+          <a href="/login" class="block text-center px-4 py-3 rounded-xl border border-gray-200 font-black hover:bg-gray-50">Login</a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</aside>

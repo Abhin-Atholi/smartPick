@@ -1,0 +1,32 @@
+
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title || "SmartPick" %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <%- body %>
+
+  <script>
+    const openBtn = document.querySelector("[data-drawer-open]");
+    const closeBtn = document.querySelector("[data-drawer-close]");
+    const overlay = document.querySelector("[data-drawer-overlay]");
+    const drawer = document.querySelector("[data-drawer]");
+
+    const openDrawer = () => { if(!drawer) return; drawer.classList.remove("-translate-x-full"); overlay && overlay.classList.remove("hidden"); };
+    const closeDrawer = () => { if(!drawer) return; drawer.classList.add("-translate-x-full"); overlay && overlay.classList.add("hidden"); };
+
+    openBtn && openBtn.addEventListener("click", openDrawer);
+    closeBtn && closeBtn.addEventListener("click", closeDrawer);
+    overlay && overlay.addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", (e) => e.key === "Escape" && closeDrawer());
+  </script>
+</body>
+</html>
+

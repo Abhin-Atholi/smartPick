@@ -1,0 +1,60 @@
+<div class="min-h-screen bg-gray-100 flex items-center justify-center p-5">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 p-8 text-center">
+    <div class="w-12 h-12 mx-auto rounded-xl bg-gray-200 grid place-items-center mb-4">👤</div>
+
+    <h1 class="text-2xl font-black">Welcome Back</h1>
+    <p class="text-sm text-gray-500 mt-1 mb-6">Enter your credentials to access your account</p>
+
+<% if (locals.msg) { %>
+  <div id="error-message" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <span class="text-red-500">⚠️</span>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-red-700 font-medium">
+          <%= msg %>
+        </p>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+    <form method="POST" action="/login" class="space-y-4 text-left">
+      <div>
+        <label class="block text-sm font-bold mb-2">Email Address</label>
+        <input name="email" type="email" placeholder="name@example.com" required
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"/>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <label class="text-sm font-bold">Password</label>
+          <a href="/forgot-password" class="text-sm font-bold hover:underline">Forgot Password?</a>
+        </div>
+
+        <input name="password" type="password" placeholder="••••••••" required
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"/>
+      </div>
+
+      <button class="w-full rounded-lg bg-indigo-600 text-white font-black py-3 hover:bg-indigo-700 transition">
+        Log In
+      </button>
+    </form>
+
+    <div class="flex items-center gap-3 my-6">
+      <div class="h-px bg-gray-200 flex-1"></div>
+      <span class="text-xs text-gray-400">Or continue with</span>
+      <div class="h-px bg-gray-200 flex-1"></div>
+    </div>
+
+    <button type="button" onclick="location.href='/auth/google'"
+      class="w-full rounded-lg border border-gray-200 bg-white py-3 font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2">
+      <span class="w-5 h-5 rounded-full bg-gray-100 grid place-items-center font-black">G</span> Google
+    </button>
+
+    <p class="text-sm text-gray-600 mt-6">
+      Don’t have an account? <a href="/register" class="font-black hover:underline">Create new account</a>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,99 @@
+<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 px-6 py-8">
+
+    <!-- Icon -->
+    <div class="w-10 h-10 mx-auto rounded-xl bg-gray-200 grid place-items-center mb-4">
+      <span>👤</span>
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-xl font-black text-center">Create Account</h1>
+    <p class="text-sm text-gray-500 text-center mt-1 mb-6">
+      Join thousands of users shopping with us today
+    </p>
+
+<% if (locals.msg) { %>
+  <div id="error-message" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <span class="text-red-500">⚠️</span>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-red-700 font-medium">
+          <%= msg %>
+        </p>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+    <form action="/register" id="registrationForm" method="POST" class="space-y-4">
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Full Name</label>
+        <input type="text" name="name" placeholder="John Doe" 
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none
+                 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" value="<%=locals.name?name:'' %>">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Email Address</label>
+        <input type="email" name="email" placeholder="name@example.com" 
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none
+                 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" value="<%=locals.email?email:''%>">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Password</label>
+        <input type="password" name="password" placeholder="••••••••" 
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none
+                 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+        <p class="text-xs text-gray-500 mt-1">
+          At least 8 characters.
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Confirm Password</label>
+        <input type="password" name="confirmPassword" placeholder="••••••••" 
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none
+                 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+      </div>
+
+      <button type="submit"
+        class="w-full rounded-lg bg-indigo-600 text-white font-black py-2.5 text-sm
+               shadow-md hover:bg-indigo-700 transition">
+        Create Account
+      </button>
+
+      <p class="text-sm text-gray-600 text-center">
+        Already have an account?
+        <a href="/login" class="font-bold text-gray-900 hover:underline">Login</a>
+      </p>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div class="fixed bottom-6 left-0 right-0 text-center text-xs text-gray-400">
+    © 2024 E-commerce Inc. All rights reserved.
+  </div>
+</div>
+
+<script>
+document.getElementById('registrationForm').addEventListener('submit', function(e) {
+    const password = document.getElementsByName('password')[0].value;
+    const confirmPassword = document.getElementsByName('confirmPassword')[0].value;
+    const name = document.getElementsByName('name')[0].value.trim();
+
+    // if (name.length < 3) {
+    //     e.preventDefault();
+    //     alert("Name must be at least 3 characters long.");
+    // } else if (password.length < 8) {
+    //     e.preventDefault();
+    //     alert("Password must be at least 8 characters.");
+    // } else if (password !== confirmPassword) {
+    //     e.preventDefault();
+    //     alert("Passwords do not match!");
+    // }
+});
+</script>

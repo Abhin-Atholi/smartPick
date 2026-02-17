@@ -1,0 +1,25 @@
+
+
+<%- include("../partials/navbar") %>
+<%- include("../partials/heroBanner") %>
+
+<section class="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-[260px_1fr] gap-6">
+  <%- include("../partials/filters") %>
+
+  <main>
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm text-gray-500">Showing 1-12 of 128 products</div>
+      <select class="border border-gray-200 rounded-full px-4 py-2 text-sm bg-white outline-none">
+        <option>Newest Arrivals</option>
+        <option>Price: Low to High</option>
+        <option>Price: High to Low</option>
+      </select>
+    </div>
+
+    <%- include("../partials/productsGrid") %>
+    <%- include("../partials/pagination") %>
+  </main>
+</section>
+
+<%- include("../partials/footer") %>
+<%- include("../partials/drawer") %>

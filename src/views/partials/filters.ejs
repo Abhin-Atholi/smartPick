@@ -1,0 +1,43 @@
+<!-- PARTIAL: filters -->
+
+<aside class="space-y-4">
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+    <div class="flex justify-between items-center mb-3">
+      <b class="text-sm">Categories</b><span class="text-gray-400">⌄</span>
+    </div>
+    <label class="flex items-center gap-2 text-sm text-gray-600 mb-2"><input type="checkbox" checked> All Products</label>
+    <label class="flex items-center gap-2 text-sm text-gray-600 mb-2"><input type="checkbox"> Men</label>
+    <label class="flex items-center gap-2 text-sm text-gray-600 mb-2"><input type="checkbox"> Women</label>
+    <label class="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox"> Children</label>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+    <div class="flex justify-between items-center mb-3">
+      <b class="text-sm">Price Range</b><span class="text-gray-400">⌄</span>
+    </div>
+    <div class="h-2 bg-indigo-100 rounded-full relative">
+      <div class="h-2 bg-indigo-600 rounded-full w-[40%]"></div>
+      <div class="w-4 h-4 bg-white border-4 border-indigo-600 rounded-full absolute top-1/2 -translate-y-1/2 left-[38%]"></div>
+    </div>
+    <div class="flex justify-between text-xs text-gray-400 mt-2">
+      <span>₹0</span><span>₹20,000+</span>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <input class="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" placeholder="Min">
+      <input class="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" placeholder="Max">
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+    <div class="flex justify-between items-center mb-3">
+      <b class="text-sm">Size</b><span class="text-gray-400">⌄</span>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <% ["XS","S","M","L","XL","XXL"].forEach(s=>{ %>
+        <button class="border border-gray-200 rounded-xl py-2 text-sm font-black text-gray-500 hover:bg-gray-50 <%= s==="S" ? "bg-indigo-50 border-indigo-600 text-indigo-600" : "" %>">
+          <%= s %>
+        </button>
+      <% }) %>
+    </div>
+  </div>
+</aside>
