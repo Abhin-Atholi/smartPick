@@ -1,6 +1,7 @@
 const authService = require("../services/authService");
 const otpService = require("../services/otpService");
 const User = require("../model/userModel");
+ const bcrypt = require("bcrypt");
 
 const loadLogin = (req, res) => res.render("user/login", { title: "Login" });
 const loadRegister = (req, res) => res.render("user/register", { title: "Register" });
@@ -71,27 +72,20 @@ const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) return res.redirect("/register");
+    const result = await otpService.verifyOtp({ email, otp, purpose: "verify" });
 
-    if (!user.otp || !user.otpExpires) {
-      return res.render("user/verify", { title: "Verify Account", email, msg: "OTP not found. Please register again.", waitSeconds: 0 });
+    if (!result.ok) {
+      return res.render("user/verify", {
+        title: "Verify Account",
+        email,
+        msg: result.msg,
+        waitSeconds: result.waitSeconds || 0,
+      });
     }
 
-    if (user.otpExpires < new Date()) {
-      return res.render("user/verify", { title: "Verify Account", email, msg: "OTP expired. Please resend OTP.", waitSeconds: 0 });
-    }
-
-    if (user.otp !== otp) {
-      const waitSeconds = otpService.getWaitSeconds(user.otpLastSentAt);
-      return res.render("user/verify", { title: "Verify Account", email, msg: "Invalid OTP", waitSeconds });
-    }
-
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpires = null;
-    user.otpLastSentAt = null;
-    await user.save();
+    // Mark verified only AFTER otp success
+    result.user.isVerified = true;
+    await result.user.save();
 
     return res.redirect("/login");
   } catch (err) {
@@ -100,11 +94,12 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+
 const resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const result = await otpService.resendVerifyOtpByEmail(email);
+    const result = await otpService.sendOtp({ email, purpose: "verify" });
 
     if (!result.ok) {
       return res.render("user/verify", {
@@ -118,8 +113,57 @@ const resendOtp = async (req, res) => {
     return res.render("user/verify", {
       title: "Verify Account",
       email: result.email,
-      msg: result.msg,
+      msg: "OTP sent again ✅",
       waitSeconds: result.waitSeconds,
+    });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Server Error");
+  }
+};
+
+
+const loadForgotPassword = (req, res) => {
+  res.render("user/forgot-password", { title: "Forgot Password", msg: null });
+};
+
+const sendResetOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const result = await otpService.sendOtp({ email, purpose: "reset_password" });
+
+    if (!result.ok) {
+      return res.render("user/forgot-password", { title: "Forgot Password", msg: result.msg });
+    }
+
+    return res.redirect(`/reset-password?email=${encodeURIComponent(result.email)}`);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Server Error");
+  }
+};
+
+const loadResetPassword = async (req, res) => {
+  try {
+    const email = req.query.email;
+
+    const user = email
+      ? await User.findOne({ email }).select("otpLastSentAt otpPurpose")
+      : null;
+
+    // only show timer if current otp is for reset_password
+    const waitSeconds =
+      user?.otpPurpose === "reset_password"
+        ? otpService.getWaitSeconds(user.otpLastSentAt)
+        : 0;
+
+    return res.render("user/reset-password", {
+      title: "Reset Password",
+      email,
+      msg: null,
+      waitSeconds,
     });
   } catch (err) {
     console.log(err);
@@ -127,4 +171,53 @@ const resendOtp = async (req, res) => {
   }
 };
 
-module.exports = { loadLogin, loadRegister, registerUser, loginUser, loadVerify, verifyOtp, resendOtp };
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, password, confirmPassword } = req.body;
+
+    if (!password || password.length < 8) {
+      return res.render("user/reset-password", { title: "Reset Password", email, msg: "Password must be at least 8 characters" });
+    }
+    if (password !== confirmPassword) {
+      return res.render("user/reset-password", { title: "Reset Password", email, msg: "Passwords do not match" });
+    }
+
+    const result = await otpService.verifyOtp({ email, otp, purpose: "reset_password" });
+
+    if (!result.ok) {
+      return res.render("user/reset-password", { title: "Reset Password", email, msg: result.msg });
+    }
+
+   
+    result.user.password = await bcrypt.hash(password, 12);
+    await result.user.save();
+
+    return res.redirect("/login");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Server Error");
+  }
+};
+
+const resendResetOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const result = await otpService.sendOtp({ email, purpose: "reset_password" });
+
+    return res.render("user/reset-password", {
+      title: "Reset Password",
+      email: result.email || email,
+      msg: result.ok ? "OTP sent again ✅" : result.msg,
+      waitSeconds: result.waitSeconds || 0,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Server Error");
+  }
+};
+
+
+
+module.exports = { loadLogin, loadRegister, registerUser, loginUser, loadVerify, verifyOtp, resendOtp,loadForgotPassword,loadResetPassword,resetPassword,sendResetOtp ,resendResetOtp};

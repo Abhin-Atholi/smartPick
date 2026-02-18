@@ -51,6 +51,8 @@ const userSchema= new mongoose.Schema({
             return this.authProvider === "local";
         }
     },
+    otpPurpose: { type: String, enum: ["verify", "reset_password"], default: null },
+
 
 
 
