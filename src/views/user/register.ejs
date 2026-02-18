@@ -66,11 +66,24 @@
         Create Account
       </button>
 
+      <div class="flex items-center gap-3 my-6">
+      <div class="h-px bg-gray-200 flex-1"></div>
+      <span class="text-xs text-gray-400">Or continue with</span>
+      <div class="h-px bg-gray-200 flex-1"></div>
+    </div>
+
+    <button type="button" onclick="location.href='/auth/google'"
+      class="w-full rounded-lg border border-gray-200 bg-white py-3 font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2">
+      <span class="w-5 h-5 rounded-full bg-gray-100 grid place-items-center font-black">G</span> Google
+    </button>
+
       <p class="text-sm text-gray-600 text-center">
         Already have an account?
         <a href="/login" class="font-bold text-gray-900 hover:underline">Login</a>
       </p>
     </form>
+    
+
   </div>
 
   <!-- Footer -->

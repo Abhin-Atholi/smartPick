@@ -25,14 +25,33 @@ const userSchema= new mongoose.Schema({
         default:"active",
         index:true
     },
-    password:{
-        type:String,
-        required:true
-    },
+    // password:{
+    //     type:String,
+    //     required:true
+    // },
     isVerified: { type: Boolean, default: false },
     otp: { type: String, default: null },
     otpExpires: { type: Date, default: null },
     otpLastSentAt: { type: Date, default: null },
+    googleId: { type: String, default: null },
+    authProvider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local"
+    },
+
+    googleId: {
+        type: String,
+        default: null
+    },
+
+    password: {
+        type: String,
+        required: function () {
+            return this.authProvider === "local";
+        }
+    },
+
 
 
 },{ timestamps: true })

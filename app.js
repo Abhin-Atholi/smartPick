@@ -8,6 +8,8 @@ const userRoutes=require("./src/routes/userRoutes")
 const layouts = require("express-ejs-layouts");
 const {setAuthLocals}=require("./src/middleware/isAuth")
 const nocache=require("nocache")
+require("./src/config/passport");   // just loading config
+const passport = require("passport");
 
 
 // 1. Database and Config
@@ -36,6 +38,8 @@ app.use(session({
     saveUninitialized:false,
     cookie:{ maxAge: 1000 * 60 * 60 * 24 } 
 }))
+
+app.use(passport.initialize());
 app.use(setAuthLocals)
 
 app.use("/", userRoutes);
