@@ -1,0 +1,136 @@
+<%- include("../partials/navbar") %>
+
+<section class="max-w-6xl mx-auto px-4 py-8">
+  <!-- Breadcrumb -->
+  <div class="text-sm text-gray-500 mb-2">
+    <a href="/" class="hover:text-gray-900">Home</a> <span class="mx-2">›</span> <span class="text-gray-900">My Account</span>
+  </div>
+
+  <h1 class="text-3xl font-black">My Account</h1>
+  <p class="text-gray-500 mt-1 mb-8">Manage your profile, settings, and preferences.</p>
+
+  <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+    <!-- Left menu -->
+    <aside class="bg-white border border-gray-100 rounded-2xl shadow-sm p-3 h-fit">
+      <a href="/account" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 font-black text-gray-900">
+        <span class="w-7 h-7 rounded-full bg-gray-900 text-white grid place-items-center text-sm">•</span>
+        Profile Information
+      </a>
+
+      <a href="/account/addresses" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">
+        <span class="w-7 h-7 rounded-full bg-gray-200 grid place-items-center">📍</span>
+        Saved Addresses
+      </a>
+
+      <a href="/account/notifications" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">
+        <span class="w-7 h-7 rounded-full bg-gray-200 grid place-items-center">🔔</span>
+        Notifications
+      </a>
+
+      <a href="/account/security" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">
+        <span class="w-7 h-7 rounded-full bg-gray-200 grid place-items-center">🛡️</span>
+        Security Settings
+      </a>
+
+      <a href="/wallet" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">
+        <span class="w-7 h-7 rounded-full bg-gray-200 grid place-items-center">👛</span>
+        My wallet
+      </a>
+    </aside>
+
+    <!-- Right content card -->
+    <main class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+      <div class="p-6 border-b border-gray-100">
+        <h2 class="text-xl font-black">Profile Details</h2>
+        <p class="text-sm text-gray-500 mt-1">Update your personal information and profile picture.</p>
+      </div>
+
+      <div class="p-6">
+        <% if (msg) { %>
+          <div class="mb-4 text-sm font-bold text-red-600"><%= msg %></div>
+        <% } %>
+
+        <form method="POST" action="/account/profile" class="space-y-6">
+          <!-- Profile picture row (UI only for now) -->
+          <div class="flex items-center gap-5">
+            <div class="relative">
+              <img
+                class="w-20 h-20 rounded-full object-cover border"
+                src="<%= (locals.user && user.profileImage) ? user.profileImage : 'https://picsum.photos/seed/profile/120/120' %>"
+                alt="profile"
+              />
+              <div class="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-indigo-600 text-white grid place-items-center shadow">📷</div>
+            </div>
+
+            <div class="flex-1">
+              <div class="font-black">Profile Picture</div>
+              <div class="text-sm text-gray-500 mt-1">Supports JPG, PNG or WEBP. Max file size 2MB.</div>
+
+              <div class="flex gap-3 mt-3">
+                <button type="button" class="px-4 py-2 rounded-lg border border-gray-200 font-black text-sm hover:bg-gray-50">
+                  Remove
+                </button>
+                <button type="button" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700">
+                  Upload New
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-6"></div>
+
+          <!-- Inputs -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-black mb-2">First Name</label>
+              <input
+                name="firstName"
+                value="<%= user?.firstName || '' %>"
+                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                placeholder="First name"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-black mb-2">Last Name</label>
+              <input
+                name="lastName"
+                value="<%= user?.lastName || '' %>"
+                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                placeholder="Last name"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-black mb-2">Email Address</label>
+              <input
+                value="<%= user?.email || '' %>"
+                disabled
+                class="w-full rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-black mb-2">Phone Number</label>
+              <input
+                name="phone"
+                value="<%= user?.phone || '' %>"
+                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                placeholder="Phone number"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-2">
+            <button class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700 shadow-sm">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</section>
+
+<%- include("../partials/footer") %>
+<%- include("../partials/drawer") %>

@@ -50,6 +50,8 @@ router.post("/reset-password", noCache, authController.resetPassword);
 
 router.post("/resend-reset-otp", noCache, authController.resendResetOtp);
 
+router.get("/account", protectRoute, userController.loadAccount);
+router.post("/account/profile", protectRoute, userController.updateProfile);
 
 
 
