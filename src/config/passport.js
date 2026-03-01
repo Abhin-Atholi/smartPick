@@ -1,6 +1,6 @@
-const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const User = require("../model/userModel");
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import User from "../model/userModel.js"; // Extension required
 
 passport.use(
   new GoogleStrategy(
@@ -15,30 +15,30 @@ passport.use(
         const googleId = profile.id;
         const name = profile.displayName;
 
-        if (!email) return done(null, false); // rare case
+        if (!email) return done(null, false);
 
-        // 1) find by email
+        // 1) Find user by email
         let user = await User.findOne({ email });
 
-        // 2) if not exists, create
+        // 2) If user doesn't exist, create a new one
         if (!user) {
-            user = await User.create({
-                fullName: name,
-                email,
-                googleId,
-                authProvider: "google",
-                isVerified: true
-            });
+          user = await User.create({
+            fullName: name,
+            email,
+            googleId,
+            authProvider: "google",
+            isVerified: true,
+          });
         }
 
-        // 3) if exists but googleId missing, link it
+        // 3) If user exists but googleId is missing (e.g., they registered via email first)
         if (!user.googleId) {
           user.googleId = googleId;
           user.isVerified = true;
           await user.save();
         }
 
-        // pass minimal user object to req.user
+        // Pass minimal user object to req.user (Passport handles the session)
         return done(null, { _id: user._id, name: user.fullName, email: user.email });
       } catch (err) {
         return done(err, null);
@@ -47,4 +47,15 @@ passport.use(
   )
 );
 
-module.exports = passport;
+// Optional: Serialize/Deserialize if using passport.session() in app.js
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
+});
+
+
+
+export default passport;

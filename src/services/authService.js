@@ -1,11 +1,19 @@
 // src/services/authService.js
-const bcrypt = require("bcrypt");
-const User = require("../model/userModel");
+
+import bcrypt from "bcrypt"
+
+import User from "../model/userModel.js"
 
 // returns { ok:false, msg, payload? } OR { ok:true, user }
-const register = async ({ name, email, password, confirmPassword }) => {
-  if (!name || !email || !password || !confirmPassword) {
+export const register = async ({ name, email, password, confirmPassword }) => {
+  if (!name && !email && !password && !confirmPassword) {
     return { ok: false, msg: "All fields are required", payload: { name, email } };
+  }
+  if (!name ) {
+    return { ok: false, msg: "name is required", payload: { name, email } };
+  }
+  if (!email ) {
+    return { ok: false, msg: "email is required", payload: { name, email } };
   }
 
   if (password.length < 8) {
@@ -42,7 +50,7 @@ const register = async ({ name, email, password, confirmPassword }) => {
   };
 };
 
-const login = async ({ email, password }) => {
+export const login = async ({ email, password }) => {
   if (!email || !password) {
     return { ok: false, msg: "All fields are required", payload: { email } };
   }
@@ -79,4 +87,4 @@ return {
 }
   
 
-module.exports = { register, login };
+

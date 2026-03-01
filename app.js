@@ -1,50 +1,55 @@
-const express= require("express")
-const app= express()
-const session=require("express-session")
-const path=require("path")
-const connectDB=require("./src/config/db")
-const env=require("dotenv").config()
-const userRoutes=require("./src/routes/userRoutes")
-const layouts = require("express-ejs-layouts");
-const {setAuthLocals}=require("./src/middleware/isAuth")
-const nocache=require("nocache")
-require("./src/config/passport");   // just loading config
-const passport = require("passport");
+import express from "express";
+import session from "express-session";
+import path from "path";
+import { fileURLToPath } from "url";
+import "dotenv/config";
+import connectDB from "./src/config/db.js";
+import userRoutes from "./src/routes/userRoutes.js";
+import layouts from "express-ejs-layouts";
+import { setAuthLocals } from "./src/middleware/isAuth.js";
+import nocache from "nocache";
+import passport from "passport";
+import "./src/config/passport.js"; 
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// 1. Database and Config
+const app = express();
 connectDB();
 
-// 2. View Engine and Static Files
+// View Engine
 app.set("views", path.join(__dirname, "src/views"));
 app.set("view engine", "ejs");
 app.use(layouts);
 app.set("layout", "layout");
 app.use(express.static(path.join(__dirname, "src/public")));
 
-// 3. BODY PARSING (Must come BEFORE routes)
+// Body Parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(nocache());
 
-app.use(nocache())
-// 4. Routes
-app.use((req,res,next)=>{
-    res.locals.title="SmartPick"
-    next()
-})
+// 🚨 SESSION MUST BE BEFORE PASSPORT & ROUTES
 app.use(session({
-    secret:"Smartpick-secret",
-    resave:false,
-    saveUninitialized:false,
-    cookie:{ maxAge: 1000 * 60 * 60 * 24 } 
-}))
+    secret: process.env.SESSION_SECRET || "Smartpick-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 } 
+}));
 
 app.use(passport.initialize());
-app.use(setAuthLocals)
+app.use(passport.session()); // Essential for Google OAuth persistence
 
+// Locals
+app.use((req, res, next) => {
+    res.locals.title = "SmartPick";
+    next();
+});
+
+app.use(setAuthLocals);
 app.use("/", userRoutes);
 
-// 5. Server Start
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server running on port ${process.env.PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });

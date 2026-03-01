@@ -1,6 +1,6 @@
-const mongoose= require("mongoose")
+import mongoose from "mongoose"
 
-const productSchema= new mongoose.model({
+export const productSchema= new mongoose.model({
     productName:{
         type:String,
         required:true,

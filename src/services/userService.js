@@ -1,6 +1,6 @@
-const User = require("../model/userModel");
+import User from "../model/userModel.js"
 
-const updateProfile = async (userId, { firstName, lastName, phone }) => {
+export const updateProfile = async (userId, { firstName, lastName, phone }) => {
   // minimal validation
   if (!firstName && !lastName && !phone) {
     return { ok: false, msg: "Nothing to update" };
@@ -15,4 +15,4 @@ const updateProfile = async (userId, { firstName, lastName, phone }) => {
   return { ok: true, user: updated };
 };
 
-module.exports = { updateProfile };
+

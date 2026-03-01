@@ -1,0 +1,30 @@
+<%- include("../partials/navbar") %>
+
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <h1 class="text-2xl font-black mb-6">Edit Address</h1>
+
+  <% if (typeof msg !== "undefined" && msg) { %>
+    <div class="mb-4 text-sm font-bold text-red-600"><%= msg %></div>
+  <% } %>
+
+  <form method="POST" action="/account/addresses/<%= address._id %>"
+        class="bg-white border rounded-2xl p-6 grid md:grid-cols-2 gap-4">
+
+    <input name="fullName" value="<%= address.fullName %>" class="border rounded-xl px-4 py-3" required>
+    <input name="phone" value="<%= address.phone %>" class="border rounded-xl px-4 py-3" required>
+
+    <input name="pincode" value="<%= address.pincode %>" class="border rounded-xl px-4 py-3" required>
+    <input name="state" value="<%= address.state %>" class="border rounded-xl px-4 py-3" required>
+
+    <input name="city" value="<%= address.city %>" class="border rounded-xl px-4 py-3" required>
+    <input name="locality" value="<%= address.locality %>" class="border rounded-xl px-4 py-3" required>
+
+    <input name="house" value="<%= address.house %>" class="border rounded-xl px-4 py-3 md:col-span-2" required>
+    <input name="area" value="<%= address.area %>" class="border rounded-xl px-4 py-3 md:col-span-2" required>
+
+    <div class="md:col-span-2 flex gap-3">
+      <button class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700">Update</button>
+      <a href="/account/addresses" class="px-6 py-3 rounded-xl border font-black hover:bg-gray-50">Cancel</a>
+    </div>
+  </form>
+</div>

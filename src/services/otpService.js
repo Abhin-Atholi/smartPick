@@ -1,17 +1,17 @@
 // src/services/otpService.js
-const User = require("../model/userModel");
-const { sendOtpEmail } = require("./emailService");
+import User from "../model/userModel.js"
+import { sendOtpEmail } from "./emailService.js"
 
 const genOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const getWaitSeconds = (lastSentAt) => {
+export const getWaitSeconds = (lastSentAt) => {
   if (!lastSentAt) return 0;
   const diffSec = Math.floor((Date.now() - new Date(lastSentAt).getTime()) / 1000);
   return diffSec < 60 ? 60 - diffSec : 0;
 };
 
 // Send OTP for a purpose (verify/reset_password)
-const sendOtp = async ({ email, userId, purpose }) => {
+export const sendOtp = async ({ email, userId, purpose }) => {
   if (!purpose) return { ok: false, msg: "OTP purpose is required" };
 
   const user = userId
@@ -51,7 +51,7 @@ const sendOtp = async ({ email, userId, purpose }) => {
 };
 
 // Verify OTP for a purpose
-const verifyOtp = async ({ email, otp, purpose }) => {
+export const verifyOtp = async ({ email, otp, purpose }) => {
   if (!email || !otp || !purpose) {
     return { ok: false, msg: "Missing fields" };
   }
@@ -85,4 +85,4 @@ const verifyOtp = async ({ email, otp, purpose }) => {
   return { ok: true, user };
 };
 
-module.exports = { sendOtp, verifyOtp, getWaitSeconds };
+

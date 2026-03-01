@@ -1,13 +1,14 @@
-const userService = require("../services/userService");
+import * as userService from "../services/userService.js"; // Ensure this filename is correct
 
-const loadHome = (req,res)=>{
-    console.log("Home rendered");
-    res.render("user/home", {  title: "SmartPick" });
+export const loadHome = (req, res) => {
+  console.log("Home rendered");
+  res.render("user/home", { title: "SmartPick" });
 };
-const logout = (req, res) => {
+
+export const logout = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-      console.log("Logout error:", err);
+      console.error("Logout error:", err);
       return res.redirect("/");
     }
 
@@ -16,14 +17,11 @@ const logout = (req, res) => {
   });
 };
 
-
-
-const loadAccount = (req, res) => {
+export const loadAccount = (req, res) => {
   return res.render("user/account", { title: "My Account", msg: null });
 };
 
-
-const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
   try {
     const { firstName, lastName, phone } = req.body;
 
@@ -38,12 +36,7 @@ const updateProfile = async (req, res) => {
 
     return res.redirect("/account");
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return res.status(500).send("Server Error");
   }
 };
-
-module.exports = { loadHome, logout, loadAccount, updateProfile };
-
-
-

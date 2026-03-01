@@ -1,10 +1,12 @@
-const express = require("express");
+import express from "express"
 const router = express.Router();
-const userController = require("../controller/userController");
-const authController = require("../controller/authController");
-const passport = require("passport");
+import * as userController from "../controller/userController.js";
+import * as authController from "../controller/authController.js";
+import passport from "passport";
+import * as accountController from "../controller/accountController.js";
 
-const { redirectIfVerified, protectRoute, redirectIfAuth, noCache } = require("../middleware/isAuth");
+
+import { redirectIfVerified, protectRoute, redirectIfAuth, noCache } from "../middleware/isAuth.js";
 
 // Auth pages (avoid showing on back button)
 router.get("/login", noCache, redirectIfAuth, authController.loadLogin);
@@ -32,13 +34,12 @@ router.get("/auth/google",
 
 router.get("/auth/google/callback",
   noCache,
-  passport.authenticate("google", { session: false, failureRedirect: "/login" }),
+  passport.authenticate("google", { failureRedirect: "/login" }), // Removed session:false
   (req, res) => {
+    // Passport automatically populates req.user
     req.session.userId = req.user._id;
-    req.session.user = req.user;
-
-    // ✅ replace history behavior (recommended)
-    return res.redirect("/home");
+    req.session.user = req.user; 
+    res.redirect("/home");
   }
 );
 
@@ -50,9 +51,18 @@ router.post("/reset-password", noCache, authController.resetPassword);
 
 router.post("/resend-reset-otp", noCache, authController.resendResetOtp);
 
-router.get("/account", protectRoute, userController.loadAccount);
-router.post("/account/profile", protectRoute, userController.updateProfile);
+router.get("/account", protectRoute, accountController.loadAccount);
+router.post("/account/profile", protectRoute, accountController.updateProfile);
 
 
 
-module.exports = router;
+
+router.get("/account/addresses", protectRoute, accountController.loadAddresses);
+router.post("/account/addresses", protectRoute, accountController.addAddress);
+
+router.get("/account/addresses/:id/edit", protectRoute, accountController.loadEditAddress);
+router.post("/account/addresses/:id", protectRoute, accountController.updateAddress);
+
+router.post("/account/addresses/:id/delete", protectRoute, accountController.deleteAddress);
+
+export default router;

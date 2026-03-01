@@ -1,6 +1,7 @@
-const nodemailer = require("nodemailer");
+//const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer"
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
@@ -8,19 +9,26 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const sendOtpEmail = async (to, otp) => {
-  await transporter.sendMail({
-    from: `"SmartPick" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: "SmartPick OTP Verification",
-    html: `
-      <div style="font-family:sans-serif">
+export const sendOtpEmail = async (to, otp) => {
+  try {
+    const info = await transporter.sendMail({
+      from: `"SmartPick" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: "SmartPick OTP Verification",
+      html: `<div style="font-family:sans-serif">
+
         <h2>Your OTP Code</h2>
+
         <h1 style="letter-spacing:4px">${otp}</h1>
+
         <p>This OTP is valid for 10 minutes.</p>
-      </div>
-    `
-  });
+
+      </div>`
+    });
+    return { ok: true, info };
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    return { ok: false, error };
+  }
 };
 
-module.exports = { sendOtpEmail };
