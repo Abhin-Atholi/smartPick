@@ -1,11 +1,11 @@
 // src/services/authService.js
 
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
+import User from "../model/userModel.js";
+import TempUser from "../model/tempUserModel.js"; // Ensure filename matches exactly
 
-import User from "../model/userModel.js"
-
-// returns { ok:false, msg, payload? } OR { ok:true, user }
 export const register = async ({ name, email, password, confirmPassword }) => {
+    // 1. Validation Logic
   if (!name && !email && !password && !confirmPassword) {
     return { ok: false, msg: "All fields are required", payload: { name, email } };
   }
@@ -24,30 +24,31 @@ export const register = async ({ name, email, password, confirmPassword }) => {
     return { ok: false, msg: "Passwords do not match", payload: { name, email } };
   }
 
-  const existing = await User.findOne({ email });
-  
-  if (existing && existing.isVerified) {
-    return { ok: false, msg: "User already exists", payload: { name, email } };
-  }
+    // 2. Check Permanent Collection
+    const existing = await User.findOne({ email });
+    if (existing) {
+        return { ok: false, msg: "User already exists", payload: { name, email } };
+    }
 
-  // ✅ exists but not verified → resend/verify flow
-  if (existing && !existing.isVerified) {
-    return { ok: false, needsVerify: true, email: existing.email, msg: "Please verify your account", payload: { name, email } };
-  }
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // 3. Save to Temporary Collection (Waiting Room)
+    await TempUser.findOneAndUpdate(
+        { email },
+        {
+            fullName: name,
+            email,
+            password: hashedPassword,
+            otp,
+            otpExpires: new Date(Date.now() + 3 * 60 * 1000)
+            // TTL index in model handles the deletion automatically
+        },
+        { upsert: true, new: true }
+    );
 
-  const hashedPassword = await bcrypt.hash(password, 12);
-
-  const user = await User.create({
-    email,
-    fullName: name,
-    password: hashedPassword,
-  });
-
-  return {
-    ok: true,
-    user: { _id: user._id, name: user.fullName, email: user.email },
-  };
+    // Return the data needed for the email
+    return { ok: true, email, otp }; 
 };
 
 export const login = async ({ email, password }) => {
