@@ -158,13 +158,24 @@ export const sendResetOtp = async (req, res) => {
 export const loadResetPassword = async (req, res) => {
   try {
     const email = req.query.email;
-    const user = email ? await User.findOne({ email }).select("otpLastSentAt otpPurpose") : null;
+    const user = await User.findOne({ email });
 
-    const waitSeconds = user?.otpPurpose === "reset_password" 
-      ? otpService.getWaitSeconds(user.otpLastSentAt) 
-      : 0;
+    if (!user || user.otpPurpose !== "reset_password") {
+        return res.redirect("/forgot-password?msg=Session expired.");
+    }
 
-    return res.render("user/reset-password", { title: "Reset Password", email, msg: null, waitSeconds });
+    // 🔥 Use the SAME math as loadVerify
+    const now = Date.now();
+    const expiry = new Date(user.otpExpires).getTime();
+    const diff = Math.floor((expiry - now) / 1000);
+    const remainingSeconds = diff > 0 ? diff : 0;
+
+    return res.render("user/reset-password", { 
+        title: "Reset Password", 
+        email, 
+        msg: remainingSeconds === 0 ? "OTP Expired. Please resend." : null, 
+        remainingSeconds: remainingSeconds // Use this for the 3-min countdown
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).send("Server Error");
@@ -201,13 +212,33 @@ export const resetPassword = async (req, res) => {
 export const resendResetOtp = async (req, res) => {
   try {
     const { email } = req.body;
+    
+    // 1. Trigger the service to generate new OTP and new otpExpires
     const result = await otpService.sendOtp({ email, purpose: "reset_password" });
 
+    if (!result.ok) {
+      return res.render("user/reset-password", {
+        title: "Reset Password",
+        email,
+        msg: result.msg,
+        remainingSeconds: 0 // Keep it at 0 if it failed
+      });
+    }
+
+    // 2. Fetch the updated user to get the NEW otpExpires timestamp
+    const user = await User.findOne({ email });
+    
+    // 3. Calculate the fresh 3-minute gap (or whatever your service sets)
+    const now = Date.now();
+    const expiry = new Date(user.otpExpires).getTime();
+    const remainingSeconds = Math.max(0, Math.floor((expiry - now) / 1000));
+
+    // 4. Render with the NEW time
     return res.render("user/reset-password", {
       title: "Reset Password",
-      email: result.email || email,
-      msg: result.ok ? "OTP sent again ✅" : result.msg,
-      waitSeconds: result.waitSeconds || 0,
+      email,
+      msg: "A new OTP has been sent to your email ✅",
+      remainingSeconds: remainingSeconds // 🔥 This resets the frontend timer
     });
   } catch (err) {
     console.error(err);

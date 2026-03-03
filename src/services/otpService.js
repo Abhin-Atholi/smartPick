@@ -71,7 +71,7 @@ export const sendOtp = async ({ email, userId, purpose }) => {
             $set: {
                 otp,
                 otpPurpose: purpose,
-                otpExpires: new Date(Date.now() + 10 * 60 * 1000),
+                otpExpires: new Date(Date.now() + 3 * 60 * 1000),
                 otpLastSentAt: new Date(),
             },
         }
