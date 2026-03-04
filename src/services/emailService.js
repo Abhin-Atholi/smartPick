@@ -21,7 +21,7 @@ export const sendOtpEmail = async (to, otp) => {
 
         <h1 style="letter-spacing:4px">${otp}</h1>
 
-        <p>This OTP is valid for 10 minutes.</p>
+        <p>This OTP is valid for 3 minutes.</p>
 
       </div>`
     });

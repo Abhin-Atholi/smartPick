@@ -10,13 +10,17 @@
     <% if (typeof isAuth !== "undefined" && isAuth) { %>
 
       <div class="text-center mt-4 pb-4 border-b border-gray-200">
-        <img class="w-20 h-20 rounded-full mx-auto" src="https://picsum.photos/seed/user/120/120" alt="user">
-        <div class="font-black mt-3"><%= user?.name || "User" %></div>
-        <div class="text-sm text-gray-500"><%= user?.email || "user@example.com" %></div>
-      </div>
+  <img class="w-20 h-20 rounded-full mx-auto object-cover border" 
+       src="<%= user?.profileImage || '/images/default-avatar.png' %>" 
+       alt="user">
+  
+  <div class="font-black mt-3"><%= user?.fullName || "User" %></div>
+  <div class="text-sm text-gray-500"><%= user?.email || "user@example.com" %></div>
+</div>
+
 
       <nav class="mt-4 space-y-2 text-sm font-black text-gray-700">
-        <a class="block px-4 py-3 rounded-xl bg-indigo-600 text-white" href="#">All Products</a>
+        <a class="block px-4 py-3 rounded-xl bg-indigo-600 text-white" href="#">Home</a>
         <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">Orders</a>
         <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">Wishlist</a>
         <a class="block px-4 py-3 rounded-xl hover:bg-gray-100" href="#">Wallet</a>

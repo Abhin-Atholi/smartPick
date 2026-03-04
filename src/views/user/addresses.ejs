@@ -1,83 +1,115 @@
 <%- include("../partials/navbar") %>
 
-<div class="max-w-6xl mx-auto px-4 py-10">
-  <div class="grid lg:grid-cols-[260px_1fr] gap-10">
+<section class="max-w-6xl mx-auto px-4 py-8">
+  <%- include("../partials/accountHeader", { breadcrumb: 'Saved Addresses' }) %>
 
-    <div>
-      <a href="/" class="hover:text-gray-900">Home</a> <span class="mx-2">›</span> <span class="text-gray-900">My Account</span>
-      <h1 class="text-3xl font-black mb-2">My Account</h1>
-      <p class="text-gray-500 mb-8">Manage your profile, settings, and preferences.</p>
-
+  <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+    <aside>
       <%- include("../partials/accountSidebar", { active: "addresses" }) %>
+    </aside>
 
-    </div>
-
-    <section class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <main class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
       <div class="p-6 border-b border-gray-100">
-        <h2 class="text-2xl font-black">Your Addresses</h2>
-        <p class="text-sm text-gray-500 mt-1">Add or edit Addresses</p>
+        <h2 class="text-xl font-black">Your Addresses</h2>
+        <p class="text-sm text-gray-500 mt-1">Add, edit or remove your shipping addresses.</p>
       </div>
 
       <div class="p-6">
         <% if (typeof msg !== "undefined" && msg) { %>
-          <div class="mb-4 text-sm font-bold text-red-600"><%= msg %></div>
+          <div class="mb-6 p-4 text-sm font-bold rounded-xl <%= msg.includes('successfully') || msg.includes('deleted') ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100' %>">
+            <%= msg %>
+          </div>
         <% } %>
 
         <div class="grid md:grid-cols-2 gap-6">
           <% (addresses || []).forEach(a => { %>
-            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-5">
-              <div class="flex items-start justify-between gap-4">
-                <div>
+            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-5 flex flex-col justify-between hover:border-indigo-200 transition-colors">
+              <div>
+                <div class="flex justify-between items-start">
                   <div class="font-black text-indigo-700 text-lg"><%= a.fullName %></div>
-                  <div class="text-indigo-700 text-sm mt-1"><%= a.phone %></div>
-
-                  <div class="text-indigo-700 text-sm mt-3 leading-6">
-                    <div><%= a.house %></div>
-                    <div><%= a.area %></div>
-                    <div><%= a.locality %>, <%= a.city %></div>
-                    <div><%= a.state %> - <%= a.pincode %></div>
+                  <div class="flex items-center gap-3">
+                    <a href="/account/addresses/<%= a._id %>/edit" class="text-indigo-600 text-sm font-black hover:underline">
+                      ✎ Edit
+                    </a>
+                    <form method="POST" action="/account/addresses/<%= a._id %>/delete" onsubmit="return confirm('Delete this address?')">
+                      <button class="text-gray-400 hover:text-red-500 transition-colors" type="submit">✕</button>
+                    </form>
                   </div>
                 </div>
+                
+                <div class="text-indigo-700 text-sm mt-1 font-semibold"><%= a.phone %></div>
 
-                <div class="flex items-center gap-3">
-                  <!-- ✅ EDIT WORKS -->
-                  <a href="/account/addresses/<%= a._id %>/edit" class="text-red-500 font-black hover:underline">
-                    ✎ Edit
-                  </a>
-
-                  <form method="POST" action="/account/addresses/<%= a._id %>/delete"
-                        onsubmit="return confirm('Delete this address?')">
-                    <button class="text-gray-400 font-black hover:text-red-500" type="submit">✕</button>
-                  </form>
+                <div class="text-gray-600 text-sm mt-4 leading-relaxed">
+                  <div class="font-medium text-gray-800"><%= a.house %></div>
+                  <div><%= a.area %></div>
+                  <div><%= a.locality %>, <%= a.city %></div>
+                  <div><%= a.state %> - <span class="font-bold text-gray-900"><%= a.pincode %></span></div>
                 </div>
               </div>
             </div>
           <% }) %>
+
+          <% if (addresses.length === 0) { %>
+            <div class="md:col-span-2 py-12 text-center border-2 border-dashed border-gray-100 rounded-2xl">
+              <p class="text-gray-400 font-medium">No addresses saved yet.</p>
+            </div>
+          <% } %>
         </div>
 
-        <div class="mt-10">
-          <h3 class="font-black text-lg mb-4">+ Add a new Address</h3>
+        <div class="mt-12 pt-8 border-t border-gray-100">
+          <h3 class="font-black text-lg mb-6">Add a New Address</h3>
 
           <form method="POST" action="/account/addresses" class="grid md:grid-cols-2 gap-4">
-            <input name="fullName" placeholder="Full Name" class="border rounded-xl px-4 py-3" required>
-            <input name="phone" placeholder="Phone Number" class="border rounded-xl px-4 py-3" required>
-            <input name="pincode" placeholder="Pincode" class="border rounded-xl px-4 py-3" required>
-            <input name="state" placeholder="State" class="border rounded-xl px-4 py-3" required>
-            <input name="city" placeholder="City / District" class="border rounded-xl px-4 py-3" required>
-            <input name="locality" placeholder="Locality / Town" class="border rounded-xl px-4 py-3" required>
-            <input name="house" placeholder="House No, Building, Company" class="border rounded-xl px-4 py-3 md:col-span-2" required>
-            <input name="area" placeholder="Area, Colony, Street, Sector, Village" class="border rounded-xl px-4 py-3 md:col-span-2" required>
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
+              <input name="fullName" placeholder="John Doe" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+            
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">Phone Number</label>
+              <input name="phone" placeholder="10-digit mobile number" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
 
-            <div class="md:col-span-2">
-              <button class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700">
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">Pincode</label>
+              <input name="pincode" placeholder="6-digit pincode" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">State</label>
+              <input name="state" placeholder="State" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">City</label>
+              <input name="city" placeholder="City / District" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">Locality</label>
+              <input name="locality" placeholder="Locality / Town" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+
+            <div class="md:col-span-2 space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">House / Building</label>
+              <input name="house" placeholder="House No, Building Name" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+
+            <div class="md:col-span-2 space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase ml-1">Area / Street</label>
+              <input name="area" placeholder="Area, Colony, Sector, Village" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+            </div>
+
+            <div class="md:col-span-2 pt-2">
+              <button class="w-full md:w-auto px-10 py-4 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95">
                 Save Address
               </button>
             </div>
           </form>
         </div>
-
       </div>
-    </section>
-
+    </main>
   </div>
-</div>
+</section>
+
+<%- include("../partials/footer") %>
