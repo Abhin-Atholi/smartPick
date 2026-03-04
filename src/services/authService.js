@@ -67,9 +67,33 @@ export const login = async ({ email, password }) => {
   }
 
   const user = await User.findOne({ email });
-  if (!user) {
-    return { ok: false, msg: "No users found, please register first", payload: { email } };
-  }
+if (!user) {
+  return { ok: false, msg: "No users found, please register first", payload: { email } };
+}
+
+// 🚨 CHECK IF USER IS A GOOGLE USER
+// If they have no password, they must use "Login with Google"
+if (user.authProvider === "google" && !user.password) {
+  return { 
+    ok: false, 
+    msg: "This account uses Google Login. Please click 'Continue with Google'.", 
+    payload: { email } 
+  };
+}
+
+if (user.status === "blocked") {
+  return { 
+      ok: false, 
+      isBlocked: true, 
+      msg: "Your account has been suspended. Please contact support.", 
+      payload: { email } 
+  };
+}
+
+// 🛡️ THE FIX: Ensure user.password exists before calling bcrypt
+if (!user.password) {
+    return { ok: false, msg: "Invalid login method.", payload: { email } };
+}
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {

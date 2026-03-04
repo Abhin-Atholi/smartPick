@@ -34,9 +34,20 @@ export const loginUser = async (req, res) => {
     const result = await authService.login(req.body);
 
     if (!result.ok) {
+      // Handle Verification Redirect
       if (result.needsVerify) {
         return res.redirect(`/verify?email=${encodeURIComponent(result.email || req.body.email)}`);
       }
+      
+      // Handle Blocked User (Stay on login page and show the block message)
+      if (result.isBlocked) {
+          return res.render("user/login", { 
+              title: "Login", 
+              msg: result.msg, 
+              email: req.body.email 
+          });
+      }
+
       return res.render("user/login", { title: "Login", msg: result.msg, ...(result.payload || {}) });
     }
 

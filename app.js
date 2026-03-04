@@ -6,10 +6,11 @@ import "dotenv/config";
 import connectDB from "./src/config/db.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import layouts from "express-ejs-layouts";
-import { setAuthLocals } from "./src/middleware/isAuth.js";
+import { setAuthLocals,checkBlocked } from "./src/middleware/isAuth.js";
 import nocache from "nocache";
 import passport from "passport";
 import "./src/config/passport.js"; 
+import adminRoutes from './src/routes/adminRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,7 +48,9 @@ app.use((req, res, next) => {
 });
 
 app.use(setAuthLocals);
+app.use(checkBlocked);
 app.use("/", userRoutes);
+app.use("/admin",adminRoutes)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
