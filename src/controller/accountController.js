@@ -1,4 +1,110 @@
-import User from "../model/userModel.js"; // Note the .js extension
+import User from "../model/userModel.js";
+import { sendOtpEmail } from "../services/emailService.js";
+import fs from "fs";
+import path from "path";
+import bcrypt from "bcrypt"
+
+
+export const loadAccount = async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  return res.render("user/account", {
+    title: "My Account",
+    user,
+    msg: null,
+  });
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { fullName, email, phone } = req.body;
+    const userId = req.session.userId;
+    const user = await User.findById(userId);
+
+    // 1. HANDLE IMAGE UPLOAD (Logic remains same...)
+    if (req.file) {
+      if (user.profileImage) {
+        const oldImagePath = path.join(process.cwd(), "src", "public", user.profileImage);
+        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+      }
+      user.profileImage = `/uploads/profiles/${req.file.filename}`;
+    }
+
+    // 2. EMAIL CHANGE LOGIC
+    if (email !== user.email) {
+      // 🔥 NEW GUARD: Check if Google User has set a password yet
+      if (!user.password) {
+        return res.redirect("/account/security?msg=Please set an account password before changing your email for security.");
+      }
+
+      const emailExists = await User.findOne({ email, _id: { $ne: userId } });
+      if (emailExists) {
+        return res.render("user/account", { title: "My Account", user, msg: "Email already taken" });
+      }
+
+      // Prepare OTP logic...
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.otp = otp;
+      user.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+      user.pendingEmail = email;
+      user.fullName = fullName;
+      user.phone = phone;
+
+      await user.save();
+      await sendOtpEmail(email, otp);
+
+      req.session.user.fullName = user.fullName;
+      req.session.user.profileImage = user.profileImage;
+
+      return res.redirect(`/verify?email=${encodeURIComponent(email)}&context=changeEmail`);
+    }
+
+    // 3. NORMAL UPDATE (No email change)
+    user.fullName = fullName;
+    user.phone = phone;
+    await user.save();
+
+    req.session.user.fullName = user.fullName;
+    req.session.user.phone = user.phone;
+    req.session.user.profileImage = user.profileImage;
+
+    req.session.save(() => res.redirect("/account?msg=Profile updated successfully ✅"));
+
+  } catch (err) {
+    console.error("Update Profile Error:", err);
+    return res.status(500).send("Server Error");
+  }
+};
+
+export const removeProfileImage = async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    
+    if (user.profileImage) {
+      // 1. Delete the physical file
+      const imagePath = path.join(process.cwd(), "src", "public", user.profileImage);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+      
+      // 2. Clear from Database
+      user.profileImage = null;
+      await user.save();
+      
+      // 3. Update Session
+      req.session.user.profileImage = null;
+      req.session.save(() => {
+        return res.status(200).json({ message: "Image removed" });
+      });
+    } else {
+      res.status(400).json({ message: "No image to remove" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 
 export const loadAddresses = async (req, res) => {
   const user = await User.findById(req.session.userId).select("addresses");
@@ -91,53 +197,45 @@ export const deleteAddress = async (req, res) => {
   return res.redirect("/account/addresses");
 };
 
-export const loadAccount = async (req, res) => {
-  const user = await User.findById(req.session.userId);
-  return res.render("user/account", {
-    title: "My Account",
-    user,
-    msg: null,
-  });
-};
-
-export const updateProfile = async (req, res) => {
+export const loadSecurity = async (req, res) => {
   try {
-    const { firstName, lastName, phone } = req.body;
-
-    if (!firstName || !lastName) {
-      const user = await User.findById(req.session.userId);
-      return res.render("user/account", {
-        title: "My Account",
-        user,
-        msg: "First name and last name are required",
-      });
-    }
-
-    await User.updateOne(
-      { _id: req.session.userId },
-      {
-        $set: {
-          firstName,
-          lastName,
-          phone,
-        },
-      }
-    );
-
-    // update session user also
-    req.session.user.firstName = firstName;
-    req.session.user.lastName = lastName;
-    req.session.user.phone = phone;
-
-    const updatedUser = await User.findById(req.session.userId);
-
-    return res.render("user/account", {
-      title: "My Account",
-      user: updatedUser,
-      msg: "Profile updated successfully ✅",
+    const user = await User.findById(req.session.userId);
+    res.render("user/security", { 
+      title: "Account Security", 
+      user, 
+      msg: req.query.msg || null 
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).send("Server Error");
+    res.status(500).send("Server Error");
   }
 };
+
+export const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const user = await User.findById(req.session.userId);
+
+    // If user has a password (Normal User), they must provide the current one
+    if (user.password) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.render("user/security", { title: "Security", user, msg: "Current password is incorrect" });
+      }
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.render("user/security", { title: "Security", user, msg: "Passwords do not match" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    res.redirect("/account/security?msg=Password updated successfully ✅");
+  } catch (err) {
+    res.status(500).send("Server Error");
+  }
+};
+
+
+
+

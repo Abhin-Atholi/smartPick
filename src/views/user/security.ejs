@@ -1,0 +1,60 @@
+<%- include("../partials/navbar") %>
+
+<section class="max-w-6xl mx-auto px-4 py-8">
+  <%- include("../partials/accountHeader", { breadcrumb: 'Account Security' }) %>
+
+  <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+    <aside>
+      <%- include("../partials/accountSidebar", { active: "security" }) %>
+    </aside>
+
+    <main class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
+      <div class="mb-8">
+        <h2 class="text-xl font-black">Security Settings</h2>
+        <p class="text-sm text-gray-500">Update your password and secure your account.</p>
+      </div>
+
+      <% if (typeof msg !== 'undefined' && msg) { %>
+        <div class="p-4 mb-6 text-sm rounded-xl font-bold <%= msg.includes('successfully') ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100' %>">
+          <%= msg %>
+        </div>
+      <% } %>
+
+      <form action="/account/update-password" method="POST" class="max-w-md space-y-5">
+        
+        <% if (user.password) { %>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">Current Password</label>
+            <input type="password" name="currentPassword" required 
+              class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+          </div>
+        <% } else { %>
+          <div class="p-4 bg-indigo-50 text-indigo-700 text-sm rounded-xl mb-4 border border-indigo-100">
+            <p class="font-bold mb-1">Using Google Login</p>
+            You haven't set a password yet. Set one below to enable manual login and email updates.
+          </div>
+        <% } %>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">New Password</label>
+          <input type="password" name="newPassword" required minlength="8" 
+            placeholder="Min. 8 characters"
+            class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">Confirm New Password</label>
+          <input type="password" name="confirmPassword" required minlength="8" 
+            placeholder="Repeat new password"
+            class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-4 bg-indigo-600 text-white rounded-xl font-black hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95">
+            <%= user.password ? 'Update Password' : 'Set Account Password' %>
+          </button>
+        </div>
+      </form>
+    </main>
+  </div>  
+</section>

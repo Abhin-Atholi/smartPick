@@ -14,32 +14,40 @@ passport.use(
         const email = profile.emails?.[0]?.value;
         const googleId = profile.id;
         const name = profile.displayName;
+        // NEW: Extract the profile image URL
+        const profileImage = profile.photos?.[0]?.value;
 
         if (!email) return done(null, false);
 
-        // 1) Find user by email
         let user = await User.findOne({ email });
 
-        // 2) If user doesn't exist, create a new one
         if (!user) {
           user = await User.create({
             fullName: name,
             email,
             googleId,
+            profileImage, // NEW: Save image to DB on first login
             authProvider: "google",
             isVerified: true,
           });
         }
 
-        // 3) If user exists but googleId is missing (e.g., they registered via email first)
         if (!user.googleId) {
           user.googleId = googleId;
           user.isVerified = true;
+          // NEW: Also update image if it was missing
+          if (!user.profileImage) user.profileImage = profileImage;
           await user.save();
         }
 
-        // Pass minimal user object to req.user (Passport handles the session)
-        return done(null, { _id: user._id, name: user.fullName, email: user.email });
+        // THE FIX: Change 'name' to 'fullName' and add 'profileImage'
+        // This object becomes 'req.user' or the session user
+        return done(null, { 
+          _id: user._id, 
+          fullName: user.fullName, // Changed from name to fullName
+          email: user.email,
+          profileImage: user.profileImage // Added so it shows in drawer
+        });
       } catch (err) {
         return done(err, null);
       }

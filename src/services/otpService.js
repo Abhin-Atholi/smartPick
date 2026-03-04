@@ -141,3 +141,37 @@ export const resendTempOtp = async (email) => {
     await sendOtpEmail(email, otp);
     return { ok: true, email };
 };
+
+
+export const verifyEmailChangeOtp = async ({ email, otp }) => {
+  try {
+    // 1. Find user where pendingEmail matches the email the OTP was sent to
+    const user = await User.findOne({ pendingEmail: email });
+
+    if (!user) {
+      return { ok: false, msg: "User not found or request expired." };
+    }
+
+    // 2. Validate OTP and Expiry
+    if (user.otp !== otp) {
+      return { ok: false, msg: "Invalid OTP. Please try again." };
+    }
+
+    if (new Date() > user.otpExpires) {
+      return { ok: false, msg: "OTP has expired. Please resend." };
+    }
+
+    // 3. 🔥 SUCCESS: Promote pendingEmail to actual email
+    user.email = user.pendingEmail;
+    user.pendingEmail = null; // Clear the buffer
+    user.otp = undefined;     // Clear security fields
+    user.otpExpires = undefined;
+
+    await user.save();
+
+    return { ok: true, user };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, msg: "Verification service error." };
+  }
+};

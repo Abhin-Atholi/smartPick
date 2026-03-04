@@ -33,104 +33,144 @@ export const loginUser = async (req, res) => {
   try {
     const result = await authService.login(req.body);
 
-    if (!result.ok && result.needsVerify) {
-      return res.redirect(`/verify?email=${encodeURIComponent(result.email || req.body.email)}`);
-    }
-
     if (!result.ok) {
+      if (result.needsVerify) {
+        return res.redirect(`/verify?email=${encodeURIComponent(result.email || req.body.email)}`);
+      }
       return res.render("user/login", { title: "Login", msg: result.msg, ...(result.payload || {}) });
     }
 
+    // --- THE ABSOLUTE FIX ---
+    // We ensure we are saving the EXACT fields the drawer needs
     req.session.userId = result.user._id;
-    req.session.user = result.user;
+    
+    req.session.user = {
+      _id: result.user._id,
+      fullName: result.user.fullName, // MUST match your Schema
+      email: result.user.email,
+      profileImage: result.user.profileImage || null // If this is null, drawer shows default
+    };
 
-    return res.redirect("/home");
+    req.session.save((err) => {
+      if (err) return res.status(500).send("Session Error");
+      return res.redirect("/home");
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("Login Error:", err);
     return res.status(500).send("Server Error");
   }
 };
 
 export const loadVerify = async (req, res) => {
   try {
-    const email = req.query.email;
+    const { email, context } = req.query;
     if (!email) return res.redirect("/register");
-    
-    const tempUser = await TempUser.findOne({ email });
-    
-    if (!tempUser) {
-        const verifiedUser = await User.findOne({ email });
-        if (verifiedUser) return res.redirect("/login?msg=Already verified");
-        return res.redirect("/register?msg=Session expired. Please register again.");
-    }
 
-    // 🔥 FIX: Precise millisecond calculation
-    const now = Date.now();
-    const expiry = new Date(tempUser.otpExpires).getTime();
-    const diff = Math.floor((expiry - now) / 1000);
-    
-    // If diff is 180, it shows 3:00. If negative, it shows 0.
-    const remainingSeconds = diff > 0 ? diff : 0;
+    // Check either TempUser (Register) or User (Email Change)
+    const target = context === "changeEmail" 
+      ? await User.findOne({ pendingEmail: email })
+      : await TempUser.findOne({ email });
+
+    if (!target) return res.redirect("/register?msg=Session expired");
+
+    const diff = Math.floor((new Date(target.otpExpires).getTime() - Date.now()) / 1000);
+    const remainingSeconds = Math.max(0, diff);
 
     return res.render("user/verify", { 
-        title: "Verify Account", 
-        email, 
-        msg: remainingSeconds === 0 ? "OTP Expired. Please resend." : null, 
-        remainingSeconds: remainingSeconds 
+      title: "Verify", 
+      email, 
+      remainingSeconds, 
+      msg: remainingSeconds === 0 ? "OTP Expired" : null 
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).send("Server Error");
+    res.status(500).send("Server Error");
   }
 };
 
 export const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
-    // Use the NEW promotion service you added to otpService
-    const result = await otpService.verifyRegisterOtp({ email, otp });
 
-    if (!result.ok) {
-      return res.render("user/verify", {
-        title: "Verify Account",
-        email,
-        msg: result.msg,
-        waitSeconds: 0, 
-      });
+    // Check for Email Change first
+    const user = await User.findOne({ pendingEmail: email });
+    if (user) {
+      if (user.otp !== otp || user.otpExpires < Date.now()) {
+        return res.render("user/verify", { email, msg: "Invalid/Expired OTP", remainingSeconds: 0 });
+      }
+
+      user.email = user.pendingEmail; // Move pending to official
+      user.pendingEmail = null;
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+
+      req.session.user = user.toObject();
+      return res.redirect("/account?msg=Email verified successfully! ✅");
     }
 
-    // No need to manually set isVerified or save here; 
-    // verifyRegisterOtp does it and moves the user to the permanent DB.
-    return res.redirect("/login?msg=Verified successfully. Please login.");
+    // Fallback to normal Registration logic
+    const result = await otpService.verifyRegisterOtp({ email, otp });
+    if (!result.ok) {
+      return res.render("user/verify", { email, msg: result.msg, remainingSeconds: 0 });
+    }
+    return res.redirect("/login?msg=Verified! Please login.");
   } catch (err) {
-    console.error(err);
-    return res.status(500).send("Server Error");
+    res.status(500).send("Server Error");
   }
 };
 
 export const resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+
+    // 1. Check if this is an Email Change (User already exists in permanent User collection)
+    const existingUser = await User.findOne({ pendingEmail: email });
+
+    if (existingUser) {
+      // Generate new OTP
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      existingUser.otp = newOtp;
+      existingUser.otpExpires = new Date(Date.now() + 3 * 60 * 1000); // 3 mins
+      await existingUser.save();
+
+      // Send the email (Make sure sendOtpEmail is imported in this file)
+      await sendOtpEmail(email, newOtp);
+
+      return res.render("user/verify", {
+        title: "Verify New Email",
+        email,
+        msg: "A fresh OTP has been sent to your new email ✅",
+        remainingSeconds: 180, // Reset UI timer
+        waitSeconds: 60,       // Lock button for 60s
+      });
+    }
+
+    // 2. Otherwise, handle normal Registration (TempUser)
     const result = await otpService.resendTempOtp(email);
 
     if (!result.ok) {
-        return res.render("user/verify", { title: "Verify Account", email, msg: result.msg, remainingSeconds: 0, waitSeconds: 0 });
+      return res.render("user/verify", {
+        title: "Verify Account",
+        email,
+        msg: result.msg,
+        remainingSeconds: 0,
+      });
     }
 
-    // 🔥 Re-fetch tempUser to get the new 'otpExpires' timestamp
+    // Get the fresh expiry for the TempUser to sync the timer
     const tempUser = await TempUser.findOne({ email });
-    const remainingSeconds = Math.max(0, Math.floor((new Date(tempUser.otpExpires).getTime() - Date.now()) / 1000));
+    const diff = Math.floor((new Date(tempUser.otpExpires).getTime() - Date.now()) / 1000);
 
     return res.render("user/verify", {
       title: "Verify Account",
       email,
       msg: "OTP sent again ✅",
-      remainingSeconds, // 🔥 Reset the 3-minute timer on UI
-      waitSeconds: 60,   // Lock the button for 60s
+      remainingSeconds: Math.max(0, diff),
+      waitSeconds: 60,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Resend OTP Error:", err);
     return res.status(500).send("Server Error");
   }
 };

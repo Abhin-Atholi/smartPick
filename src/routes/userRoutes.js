@@ -4,6 +4,7 @@ import * as userController from "../controller/userController.js";
 import * as authController from "../controller/authController.js";
 import passport from "passport";
 import * as accountController from "../controller/accountController.js";
+import upload from "../middleware/multer.js";
 
 
 import { redirectIfVerified, protectRoute, redirectIfAuth, noCache } from "../middleware/isAuth.js";
@@ -52,7 +53,8 @@ router.post("/reset-password", noCache, authController.resetPassword);
 router.post("/resend-reset-otp", noCache, authController.resendResetOtp);
 
 router.get("/account", protectRoute, accountController.loadAccount);
-router.post("/account/profile", protectRoute, accountController.updateProfile);
+router.post("/account/update-profile", protectRoute, upload.single("profileImage"), accountController.updateProfile);
+router.post("/account/remove-image", protectRoute, accountController.removeProfileImage);
 
 
 
@@ -64,5 +66,8 @@ router.get("/account/addresses/:id/edit", protectRoute, accountController.loadEd
 router.post("/account/addresses/:id", protectRoute, accountController.updateAddress);
 
 router.post("/account/addresses/:id/delete", protectRoute, accountController.deleteAddress);
+
+router.get("/account/security", protectRoute, accountController.loadSecurity);
+router.post("/account/update-password", protectRoute, accountController.updatePassword);
 
 export default router;

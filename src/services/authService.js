@@ -52,8 +52,14 @@ export const register = async ({ name, email, password, confirmPassword }) => {
 };
 
 export const login = async ({ email, password }) => {
-  if (!email || !password) {
-    return { ok: false, msg: "All fields are required", payload: { email } };
+  if (!email && !password) {
+    return { ok: false, msg: "please fill the fields first", payload: { email } };
+  }
+  if ( !password) {
+    return { ok: false, msg: "please enter the password", payload: { email } };
+  }
+  if ( !email) {
+    return { ok: false, msg: "please enter the email", payload: { email } };
   }
 
   if (password.length < 8) {
@@ -80,10 +86,16 @@ if (!user.isVerified) {
   };
 }
 
-// ✅ THEN SUCCESS
+
+// UPDATED SUCCESS RETURN
 return {
   ok: true,
-  user: { _id: user._id, name: user.fullName, email: user.email },
+  user: { 
+    _id: user._id, 
+    fullName: user.fullName,    // Use the same name as your Schema
+    email: user.email,
+    profileImage: user.profileImage || null // ADD THIS LINE
+  },
 };
 }
   
