@@ -1,0 +1,83 @@
+<% 
+  const activeClass = "bg-indigo-50 text-indigo-600 font-black shadow-sm";
+  const inactiveClass = "text-gray-500 font-bold hover:text-indigo-600 hover:bg-gray-50 transition group";
+  const currentTitle = typeof title !== 'undefined' ? title : '';
+%>
+
+<aside class="w-72 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 overflow-hidden">
+  
+  <div class="p-6 flex-1 flex flex-col">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-9 h-9 bg-indigo-600 rounded-xl grid place-items-center shadow-lg shadow-indigo-100">
+        <span class="text-white text-lg">🛍️</span>
+      </div>
+      <h2 class="text-lg font-black tracking-tight text-slate-800 italic leading-none">SmartPick</h2>
+    </div>
+
+    <nav class="flex-1 space-y-5">
+      <div>
+        <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2">Overview</p>
+        <a href="/admin/dashboard" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Dashboard') ? activeClass : inactiveClass %>">
+          <span class="text-base">📊</span> <span class="text-sm">Dashboard</span>
+        </a>
+      </div>
+
+      <div>
+        <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2">Management</p>
+        <div class="space-y-0.5">
+          <a href="/admin/products" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Products') ? activeClass : inactiveClass %>">
+            <span class="text-base">📦</span> <span class="text-sm">Products</span>
+          </a>
+          <a href="/admin/categories" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Categories') ? activeClass : inactiveClass %>">
+            <span class="text-base">📁</span> <span class="text-sm">Categories</span>
+          </a>
+          <a href="/admin/customers" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Customer') ? activeClass : inactiveClass %>">
+            <span class="text-base">👤</span> <span class="text-sm">Customers</span>
+          </a>
+          <a href="/admin/orders" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Orders') ? activeClass : inactiveClass %>">
+            <span class="text-base">📜</span> <span class="text-sm">Orders</span>
+          </a>
+          <a href="/admin/discounts" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Discounts') ? activeClass : inactiveClass %>">
+            <span class="text-base">🏷️</span> <span class="text-sm">Discounts</span>
+          </a>
+          <a href="/admin/coupons" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Coupons') ? activeClass : inactiveClass %>">
+            <span class="text-base">🎟️</span> <span class="text-sm">Coupons</span>
+          </a>
+          <a href="/admin/banners" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Banners') ? activeClass : inactiveClass %>">
+            <span class="text-base">🖼️</span> <span class="text-sm">Banners</span>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2">Settings</p>
+        <a href="/admin/settings" class="flex items-center gap-3 py-2 px-3 rounded-xl <%= currentTitle.includes('Settings') ? activeClass : inactiveClass %>">
+          <span class="text-base">⚙️</span> <span class="text-sm">General</span>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="p-6 pt-2 border-t border-gray-50 bg-gray-50/30">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="relative w-10 h-10 rounded-xl bg-indigo-50 overflow-hidden border border-indigo-100 shadow-sm flex-shrink-0">
+      <img src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? encodeURIComponent(user.fullName) : 'Admin') + '&background=6366f1&color=fff' %>" 
+           alt="Admin" 
+           class="w-full h-full object-cover"
+           referrerpolicy="no-referrer"
+           onerror="this.src='https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff'">
+      
+      <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+    </div>
+    
+    <div class="overflow-hidden">
+      <p class="text-xs font-black text-slate-800 truncate"><%= locals.user ? user.fullName : 'Admin User' %></p>
+      <p class="text-[9px] text-gray-400 truncate font-bold uppercase tracking-tighter">Super Admin</p>
+    </div>
+  </div>
+  
+  <a href="/admin/logout" class="flex items-center justify-center gap-2 w-full py-2 bg-white border border-red-100 rounded-xl text-red-500 font-black text-[10px] hover:bg-red-600 hover:text-white transition shadow-sm">
+    <span>🚪</span> LOGOUT
+  </a>
+</div>
+</aside>

@@ -10,58 +10,67 @@ passport.use(
       callbackURL: "/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile.emails?.[0]?.value;
-        const googleId = profile.id;
-        const name = profile.displayName;
-        // NEW: Extract the profile image URL
-        const profileImage = profile.photos?.[0]?.value;
+  try {
+    const email = profile.emails?.[0]?.value;
+    const googleId = profile.id;
+    const name = profile.displayName;
+    const profileImage = profile.photos?.[0]?.value.replace('=s96-c', '=s400-c'); 
+    console.log("CLEANED IMAGE URL:", profileImage);// Google URL
 
-        if (!email) return done(null, false);
+    if (!email) return done(null, false);
 
-        let user = await User.findOne({ email });
+    let user = await User.findOne({ email });
 
-        if (!user) {
-          user = await User.create({
-            fullName: name,
-            email,
-            googleId,
-            profileImage, // NEW: Save image to DB on first login
-            authProvider: "google",
-            isVerified: true,
-          });
-        }
-
-        if (!user.googleId) {
-          user.googleId = googleId;
-          user.isVerified = true;
-          // NEW: Also update image if it was missing
-          if (!user.profileImage) user.profileImage = profileImage;
-          await user.save();
-        }
-
-        // THE FIX: Change 'name' to 'fullName' and add 'profileImage'
-        // This object becomes 'req.user' or the session user
-        return done(null, { 
-          _id: user._id, 
-          fullName: user.fullName, // Changed from name to fullName
-          email: user.email,
-          profileImage: user.profileImage // Added so it shows in drawer
-        });
-      } catch (err) {
-        return done(err, null);
+    if (!user) {
+      // Create new user
+      user = await User.create({
+        fullName: name,
+        email,
+        googleId,
+        profileImage,
+        authProvider: "google",
+        isVerified: true,
+      });
+    } else {
+      // UPDATE: Always ensure these are up to date for existing users
+      let isChanged = false;
+      
+      if (!user.googleId) { user.googleId = googleId; isChanged = true; }
+      if (!user.isVerified) { user.isVerified = true; isChanged = true; }
+      
+      // Force update the image if Google provides a new one
+      if (profileImage && user.profileImage !== profileImage) {
+        user.profileImage = profileImage;
+        isChanged = true;
       }
+
+      if (isChanged) await user.save();
     }
+
+    // Pass the ENTIRE user object found/updated in the DB
+    // This ensures consistency between Strategy and Deserializer
+    return done(null, user); 
+  } catch (err) {
+    return done(err, null);
+  }
+}
   )
 );
 
-// Optional: Serialize/Deserialize if using passport.session() in app.js
+
 passport.serializeUser((user, done) => {
-  done(null, user);
+  // Ensure we only store the ID string in the session
+  done(null, user._id || user.id); 
 });
 
-passport.deserializeUser((user, done) => {
-  done(null, user);
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    // If user is found, req.user is populated. If not, req.user is null.
+    done(null, user); 
+  } catch (err) {
+    done(err, null);
+  }
 });
 
 

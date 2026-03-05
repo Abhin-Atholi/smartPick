@@ -74,11 +74,94 @@ export const getLogin = (req, res) => {
 };
 
 export const getDashboard = (req, res) => {
-    res.render("admin/dashboard", { title: "Admin Dashboard" });
+    res.render("admin/dashboard", { title: "Admin Dashboard",layout: "layouts/adminLayout" });
 };
 
 export const logout = (req, res) => {
     req.session.destroy(() => {
         res.redirect("/admin/login");
+    });
+};
+
+// src/controller/adminController.js
+
+export const getCustomers = async (req, res) => {
+    try {
+        const { search, status } = req.query;
+        const page = parseInt(req.query.page) || 1; // Current page number
+        const limit = 10; // Number of users per page
+        const skip = (page - 1) * limit;
+
+        let query = { role: "user" };
+
+        if (search) {
+            query.$or = [
+                { fullName: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } }
+            ];
+        }
+
+        if (status && status !== "All") {
+            query.status = status.toLowerCase();
+        }
+
+        // Get total count for pagination math
+        const totalUsers = await User.countDocuments(query);
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        const customers = await User.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.render("admin/customers", {
+            layout: "layouts/adminLayout",
+            customers,
+            title: "Customer Management",
+            currentSearch: search || "",
+            currentStatus: status || "All",
+            currentPage: page,
+            totalPages: totalPages
+        });
+    } catch (error) {
+        console.error("Fetch Customers Error:", error);
+        res.status(500).send("Server Error");
+    }
+};
+
+// Toggle Block/Unblock
+export const toggleCustomerStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id);
+        
+        user.status = user.status === "active" ? "blocked" : "active";
+        await user.save();
+        
+        res.json({ success: true, newStatus: user.status });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+};
+
+export const postLogout = (req, res, next) => {
+    // 1. Passport's async logout
+    req.logout((err) => {
+        if (err) {
+            console.error("Logout Error:", err);
+            return next(err);
+        }
+        
+        // 2. Destroy the physical session in the database/store
+        req.session.destroy((err) => {
+            if (err) {
+                console.error("Session Destruction Error:", err);
+                return next(err);
+            }
+            
+            // 3. Wipe the browser cookie and redirect
+            res.clearCookie("connect.sid"); 
+            res.redirect("/admin/login");
+        });
     });
 };

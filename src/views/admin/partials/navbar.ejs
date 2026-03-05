@@ -1,0 +1,30 @@
+<header class="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-4 flex justify-between items-center sticky top-0 z-20">
+  <div class="flex flex-col">
+    <h1 class="text-sm font-black text-slate-800 uppercase tracking-widest">
+      <%= locals.title ? title : 'Management' %>
+    </h1>
+    <p class="text-[10px] text-gray-400 font-bold">
+      <%= new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) %>
+    </p>
+  </div>
+  
+  <div class="flex items-center gap-6">
+    <button class="relative text-gray-400 hover:text-indigo-600 transition">
+      <span class="text-xl">🔔</span>
+      <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+    </button>
+
+    <div class="flex items-center gap-3 pl-6 border-l border-gray-100">
+      <div class="text-right hidden sm:block">
+        <p class="text-sm font-black text-slate-900"><%= user.fullName %></p>
+        <p class="text-[10px] text-indigo-500 font-black uppercase tracking-tighter">System Admin</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-indigo-50 overflow-hidden border border-indigo-100 shadow-sm">
+        <img src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? user.fullName : 'Admin') + '&background=6366f1&color=fff' %>" 
+     alt="Admin" 
+     class="w-full h-full object-cover"
+     onerror="this.src='https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff'">
+      </div>
+    </div>
+  </div>
+</header>

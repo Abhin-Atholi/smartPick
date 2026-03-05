@@ -1,9 +1,21 @@
 import User from "../model/userModel.js";
 
 // Sets user data for EJS templates (e.g., for navbar 'Login' vs 'Logout' buttons)
+// export const setAuthLocals = (req, res, next) => {
+//   // Passport populates req.user after successful deserialization
+//   res.locals.user = req.user || null;
+//   res.locals.isAuth = !!req.user;
+//   next();
+// };
+
 export const setAuthLocals = (req, res, next) => {
-  res.locals.isAuth = !!req.session?.userId;
-  res.locals.user = req.session?.user || null;
+  // Priority 1: Passport (req.user)
+  // Priority 2: Manual Session (req.session.user)
+  const currentUser = req.user || req.session?.user || null;
+
+  res.locals.user = currentUser;
+  res.locals.isAuth = !!currentUser;
+  
   next();
 };
 
