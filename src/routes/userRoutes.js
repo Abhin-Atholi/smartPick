@@ -5,28 +5,29 @@ import * as authController from "../controller/authController.js";
 import passport from "passport";
 import * as accountController from "../controller/accountController.js";
 import upload from "../middleware/multer.js";
+import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../middleware/isAuth.js";
 
+router.use(checkBlocked); 
 
-import { redirectIfVerified, protectRoute, redirectIfAuth, noCache } from "../middleware/isAuth.js";
 
 // Auth pages (avoid showing on back button)
-router.get("/login", noCache, redirectIfAuth, authController.loadLogin);
-router.get("/register", noCache, redirectIfAuth, authController.loadRegister);
+router.get("/login",  redirectIfAuth, authController.loadLogin);
+router.get("/register", redirectIfAuth, authController.loadRegister);
 
-router.post("/login", noCache, authController.loginUser);
-router.post("/register", noCache, authController.registerUser);
+router.post("/login",  authController.loginUser);
+router.post("/register",  authController.registerUser);
 
 // Verify
-router.get("/verify", noCache, redirectIfVerified, authController.loadVerify);
-router.post("/verify", noCache, redirectIfVerified, authController.verifyOtp);
-router.post("/resend-otp", noCache, redirectIfVerified, authController.resendOtp);
+router.get("/verify",  redirectIfVerified, authController.loadVerify);
+router.post("/verify",  redirectIfVerified, authController.verifyOtp);
+router.post("/resend-otp",  redirectIfVerified, authController.resendOtp);
 
 // Public landing
-router.get("/", userController.loadHome);
+router.get("/",protectRoute, userController.loadHome);
 
 // Protected
 router.get("/home", protectRoute, userController.loadHome);
-router.get("/logout", noCache, protectRoute, userController.logout);
+router.get("/logout",  protectRoute, userController.logout);
 
 // Google OAuth
 router.get("/auth/google",
@@ -34,7 +35,6 @@ router.get("/auth/google",
 );
 
 router.get("/auth/google/callback",
-  noCache,
   passport.authenticate("google", { failureRedirect: "/login" }), // Removed session:false
   (req, res) => {
     // Passport automatically populates req.user
@@ -44,13 +44,19 @@ router.get("/auth/google/callback",
   }
 );
 
-router.get("/forgot-password", noCache, redirectIfAuth, authController.loadForgotPassword);
-router.post("/forgot-password", noCache, authController.sendResetOtp);
 
-router.get("/reset-password", noCache, redirectIfAuth, authController.loadResetPassword);
-router.post("/reset-password", noCache, authController.resetPassword);
+// --- Forgot Password Flow ---
+router.get("/forgot-password",  redirectIfAuth, authController.loadForgotPassword);
+router.post("/forgot-password",  authController.sendResetOtp);
 
-router.post("/resend-reset-otp", noCache, authController.resendResetOtp);
+// --- Reset Password Flow ---
+router.get("/reset-password",  redirectIfAuth, authController.loadResetPassword);
+router.post("/reset-password",  authController.resetPassword);
+
+// --- Resend Logic (Now unified) ---
+router.post("/resend-reset-otp",  authController.resendOtp);
+
+
 
 router.get("/account", protectRoute, accountController.loadAccount);
 router.post("/account/update-profile", protectRoute, upload.single("profileImage"), accountController.updateProfile);

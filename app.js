@@ -6,7 +6,7 @@ import "dotenv/config";
 import connectDB from "./src/config/db.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import layouts from "express-ejs-layouts";
-import { setAuthLocals,checkBlocked } from "./src/middleware/isAuth.js";
+import { setAuthLocals } from "./src/middleware/isAuth.js";
 import nocache from "nocache";
 import passport from "passport";
 import "./src/config/passport.js"; 
@@ -38,6 +38,7 @@ app.use(session({
     cookie: { maxAge: 1000 * 60 * 60 * 24 } 
 }));
 
+
 app.use(passport.initialize());
 app.use(passport.session()); // Essential for Google OAuth persistence
 
@@ -48,9 +49,10 @@ app.use((req, res, next) => {
 });
 
 app.use(setAuthLocals);
-app.use(checkBlocked);
-app.use("/", userRoutes);
+
 app.use("/admin",adminRoutes)
+app.use("/", userRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

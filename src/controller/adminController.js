@@ -1,71 +1,25 @@
 import User from "../model/userModel.js";
-import bcrypt from "bcrypt";
+import * as adminService from "../services/adminService.js";
 
 export const postLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        // 1. Basic Input Validation
-        if (!email || !password) {
-            return res.render("admin/login", { 
-                msg: "All fields are required.",
-                title: "Admin Login" 
-            });
-        }
-
-        // 2. Find the user and verify they are an Admin
-        // We use .select("+password") if your schema hides password by default
-        const user = await User.findOne({ email: email.toLowerCase() });
-
-        if (!user) {
-            return res.render("admin/login", { 
-                msg: "Invalid admin credentials.", 
-                title: "Admin Login" 
-            });
-        }
-
-        // 3. Check Role (Safety check even though we found by email)
-        if (user.role !== "admin") {
-            return res.render("admin/login", { 
-                msg: "Access denied. Not an admin account.", 
-                title: "Admin Login" 
-            });
-        }
-
-        // 4. Verify Password
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.render("admin/login", { 
-                msg: "Invalid admin credentials.", 
-                title: "Admin Login" 
-            });
-        }
-
         
-        // 6. Establish Session (Matches your isAuth.js logic)
-        req.session.userId = user._id;
-        req.session.user = {
-            id: user._id,
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role
+        // Controller calls the service
+        const admin = await adminService.authenticateAdmin(email, password);
+
+        // Controller handles the session
+        req.session.adminId = admin._id;
+        req.session.admin = {
+            _id: admin._id,
+            email: admin.email,
+            role: admin.role,
+            fullName:admin.fullName
         };
 
-        // 7. Save session and redirect
-        req.session.save((err) => {
-            if (err) {
-                console.error("Session Save Error:", err);
-                return res.render("admin/login", { msg: "Session error, try again." });
-            }
-            res.redirect("/admin/dashboard");
-        });
-
+        req.session.save(() => res.redirect("/admin/dashboard"));
     } catch (error) {
-        console.error("Admin Login Error:", error);
-        res.render("admin/login", { 
-            msg: "An internal server error occurred.", 
-            title: "Admin Login" 
-        });
+        res.render("admin/login", { msg: error.message, title: "Admin Login" });
     }
 };
 
@@ -77,19 +31,27 @@ export const getDashboard = (req, res) => {
     res.render("admin/dashboard", { title: "Admin Dashboard",layout: "layouts/adminLayout" });
 };
 
-export const logout = (req, res) => {
-    req.session.destroy(() => {
+/**
+ * Unified Logout: Handles Passport and Manual Session destruction
+ */
+export const adminLogout = (req, res) => {
+    req.session.admin = null;
+    req.session.adminId = null;
+    // Force save to ensure the change is written to the database/store
+    req.session.save((err) => {
+        if (err) console.error(err);
         res.redirect("/admin/login");
     });
 };
 
-// src/controller/adminController.js
-
+/**
+ * Customer Management with Pagination & Search
+ */
 export const getCustomers = async (req, res) => {
     try {
         const { search, status } = req.query;
-        const page = parseInt(req.query.page) || 1; // Current page number
-        const limit = 10; // Number of users per page
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
         const skip = (page - 1) * limit;
 
         let query = { role: "user" };
@@ -105,7 +67,6 @@ export const getCustomers = async (req, res) => {
             query.status = status.toLowerCase();
         }
 
-        // Get total count for pagination math
         const totalUsers = await User.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
 
@@ -124,17 +85,21 @@ export const getCustomers = async (req, res) => {
             totalPages: totalPages
         });
     } catch (error) {
-        console.error("Fetch Customers Error:", error);
         res.status(500).send("Server Error");
     }
 };
 
-// Toggle Block/Unblock
+/**
+ * Toggle Block/Unblock via Fetch API
+ */
 export const toggleCustomerStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const user = await User.findById(id);
         
+        // Ensure we don't block an admin by mistake via this route
+        if (user.role === 'admin') return res.status(403).json({ success: false });
+
         user.status = user.status === "active" ? "blocked" : "active";
         await user.save();
         
@@ -142,26 +107,4 @@ export const toggleCustomerStatus = async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false });
     }
-};
-
-export const postLogout = (req, res, next) => {
-    // 1. Passport's async logout
-    req.logout((err) => {
-        if (err) {
-            console.error("Logout Error:", err);
-            return next(err);
-        }
-        
-        // 2. Destroy the physical session in the database/store
-        req.session.destroy((err) => {
-            if (err) {
-                console.error("Session Destruction Error:", err);
-                return next(err);
-            }
-            
-            // 3. Wipe the browser cookie and redirect
-            res.clearCookie("connect.sid"); 
-            res.redirect("/admin/login");
-        });
-    });
 };

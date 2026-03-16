@@ -8,7 +8,7 @@ import {
     getDashboard, 
     getCustomers, 
     toggleCustomerStatus ,
-    postLogout
+    adminLogout
 } from "../controller/adminController.js";
 
 // Import middleware
@@ -28,6 +28,6 @@ router.get("/customers", isAdmin, getCustomers);
 // 2. Route to handle the Block/Unblock toggle via POST/PATCH
 router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
 
-router.get("/logout",isAdmin, postLogout);
+router.get("/logout",isAdmin, adminLogout);
 
 export default router;

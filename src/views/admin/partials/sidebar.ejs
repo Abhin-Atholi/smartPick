@@ -61,7 +61,7 @@
   <div class="p-6 pt-2 border-t border-gray-50 bg-gray-50/30">
   <div class="flex items-center gap-3 mb-4">
     <div class="relative w-10 h-10 rounded-xl bg-indigo-50 overflow-hidden border border-indigo-100 shadow-sm flex-shrink-0">
-      <img src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? encodeURIComponent(user.fullName) : 'Admin') + '&background=6366f1&color=fff' %>" 
+      <img src="<%= (typeof admin !== 'undefined' && admin && admin.profileImage) ? admin.profileImage : 'https://ui-avatars.com/api/?name=' + (typeof admin !== 'undefined' && admin ? encodeURIComponent(admin.fullName) : 'Admin') + '&background=6366f1&color=fff' %>" 
            alt="Admin" 
            class="w-full h-full object-cover"
            referrerpolicy="no-referrer"
@@ -71,7 +71,7 @@
     </div>
     
     <div class="overflow-hidden">
-      <p class="text-xs font-black text-slate-800 truncate"><%= locals.user ? user.fullName : 'Admin User' %></p>
+      <p class="text-xs font-black text-slate-800 truncate"><%= typeof admin !== 'undefined' && admin ? admin.fullName : 'Admin User' %></p>
       <p class="text-[9px] text-gray-400 truncate font-bold uppercase tracking-tighter">Super Admin</p>
     </div>
   </div>

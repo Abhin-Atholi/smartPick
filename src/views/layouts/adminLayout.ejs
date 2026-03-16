@@ -34,6 +34,28 @@
   </div>
 
   <script>
+    // Global Toast for messages
+    const urlParams = new URLSearchParams(window.location.search);
+    const msg = urlParams.get('msg');
+    if (msg) {
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+      
+      let icon = 'info';
+      if (msg.toLowerCase().includes('success') || msg.includes('✅')) icon = 'success';
+      if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('failed') || msg.includes('❌')) icon = 'error';
+
+      Toast.fire({ icon, title: msg });
+
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+
     const openBtn = document.querySelector("[data-drawer-open]");
     const overlay = document.querySelector("[data-drawer-overlay]");
     const drawer = document.querySelector("[data-drawer]");

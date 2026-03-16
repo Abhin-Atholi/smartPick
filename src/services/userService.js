@@ -1,18 +1,112 @@
-import User from "../model/userModel.js"
+import User from "../model/userModel.js";
+import bcrypt from "bcrypt";
+import { sendOtpEmail } from "./emailService.js";
+import { deleteLocalFile } from "../utils/fileHelper.js";
 
-export const updateProfile = async (userId, { firstName, lastName, phone }) => {
-  // minimal validation
-  if (!firstName && !lastName && !phone) {
-    return { ok: false, msg: "Nothing to update" };
+/**
+ * Logic: Process Profile Updates, handle image replacement, and email change security.
+ */
+export const processProfileUpdate = async (userId, updateData, file) => {
+  const { fullName, email, phone } = updateData;
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  // Handle Image Replacement
+  if (file) {
+    if (user.profileImage) deleteLocalFile(user.profileImage);
+    user.profileImage = `/uploads/profiles/${file.filename}`;
   }
 
-  const updated = await User.findByIdAndUpdate(
-    userId,
-    { $set: { firstName, lastName, phone } },
-    { new: true, runValidators: true }
-  ).select("firstName lastName phone email");
+  // Handle Email Change Security & OTP
+  if (email && email !== user.email) {
+    if (!user.password) {
+      throw new Error("Please set an account password before changing your email.");
+    }
 
-  return { ok: true, user: updated };
+    const emailExists = await User.findOne({ email, _id: { $ne: userId } });
+    if (emailExists) throw new Error("Email already taken");
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+    user.pendingEmail = email;
+    
+    user.fullName = fullName || user.fullName;
+    user.phone = phone || user.phone;
+    await user.save();
+    
+    await sendOtpEmail(email, otp);
+    return { type: "VERIFY_OTP", email };
+  }
+
+  user.fullName = fullName || user.fullName;
+  user.phone = phone || user.phone;
+  await user.save();
+
+  return { type: "SUCCESS", user };
 };
 
+/**
+ * Logic: Delete profile image from both DB and Disk
+ */
+export const removeImage = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user || !user.profileImage) throw new Error("No image to remove");
 
+  deleteLocalFile(user.profileImage);
+  user.profileImage = null;
+  await user.save();
+};
+
+/**
+ * Logic: Manage Addresses (Push, Set, Pull)
+ */
+export const addAddress = async (userId, addressData) => {
+  return await User.updateOne(
+    { _id: userId },
+    { $push: { addresses: addressData } }
+  );
+};
+
+export const updateAddress = async (userId, addressId, addressData) => {
+  const { fullName, phone, pincode, state, city, locality, house, area } = addressData;
+  return await User.updateOne(
+    { _id: userId, "addresses._id": addressId },
+    {
+      $set: {
+        "addresses.$.fullName": fullName,
+        "addresses.$.phone": phone,
+        "addresses.$.pincode": pincode,
+        "addresses.$.state": state,
+        "addresses.$.city": city,
+        "addresses.$.locality": locality,
+        "addresses.$.house": house,
+        "addresses.$.area": area,
+      },
+    }
+  );
+};
+
+export const deleteAddress = async (userId, addressId) => {
+  return await User.updateOne(
+    { _id: userId },
+    { $pull: { addresses: { _id: addressId } } }
+  );
+};
+
+/**
+ * Logic: Secure Password Hashing and Comparison
+ */
+export const changePassword = async (userId, { currentPassword, newPassword, confirmPassword }) => {
+  const user = await User.findById(userId);
+  
+  if (user.password) {
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) throw new Error("Current password is incorrect");
+  }
+
+  if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
+
+  user.password = await bcrypt.hash(newPassword, 12);
+  await user.save();
+};

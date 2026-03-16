@@ -1,177 +1,108 @@
 import User from "../model/userModel.js";
-import TempUser from "../model/tempUserModel.js"; // Import the new model
+import TempUser from "../model/tempUserModel.js";
 import { sendOtpEmail } from "./emailService.js";
 
 const genOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-export const getWaitSeconds = (lastSentAt) => {
-    if (!lastSentAt) return 0;
-    const diffSec = Math.floor((Date.now() - new Date(lastSentAt).getTime()) / 1000);
-    return diffSec < 60 ? 60 - diffSec : 0;
+export const getRemainingSeconds = (expiry) => {
+  const diff = Math.floor((new Date(expiry).getTime() - Date.now()) / 1000);
+  return Math.max(0, diff);
+};
+
+// Unified function to find a target for verification (used by loadVerify)
+export const getVerificationTarget = async (email, context) => {
+  const target = context === "changeEmail" 
+    ? await User.findOne({ pendingEmail: email })
+    : await TempUser.findOne({ email });
+  
+  if (!target) throw new Error("Session expired. Please start over.");
+  return target;
 };
 
 /**
- * NEW: Specifically for promoting TempUser to Permanent User
+ * NEW: Generic Verify for Password Resets
  */
-export const verifyRegisterOtp = async ({ email, otp }) => {
-    if (!email || !otp) return { ok: false, msg: "Email and OTP are required" };
-
-    const tempUser = await TempUser.findOne({ email });
-
-    if (!tempUser) {
-        return { ok: false, msg: "Registration session expired. Please sign up again." };
-    }
-
-    if (tempUser.otp !== otp) {
-        return { ok: false, msg: "Invalid OTP code." };
-    }
-
-    // Since it's a temp user, we don't need complicated purpose checks
-    // If they have the OTP and the record hasn't been deleted by TTL, they are good.
-
-    // SUCCESS: Move to permanent storage
-    const newUser = await User.create({
-        fullName: tempUser.fullName,
-        email: tempUser.email,
-        password: tempUser.password,
-        isVerified: true,
-        authProvider: "local"
-    });
-
-    // Cleanup the waiting room
-    await TempUser.deleteOne({ _id: tempUser._id });
-
-    return { ok: true, user: newUser };
-};
-
-/**
- * UPDATED: Handle OTPs for existing users (e.g., Reset Password)
- */
-export const sendOtp = async ({ email, userId, purpose }) => {
-    if (!purpose) return { ok: false, msg: "OTP purpose is required" };
-
-    // Logic for existing users
-    const user = userId
-        ? await User.findById(userId)
-        : await User.findOne({ email });
-
-    if (!user) return { ok: false, msg: "User not found" };
-
-    // 60-second flood protection
-    const waitSeconds = getWaitSeconds(user.otpLastSentAt);
-    if (waitSeconds > 0) {
-        return { ok: false, msg: `Wait ${waitSeconds}s`, waitSeconds, email: user.email };
-    }
-
-    const otp = genOtp();
-
-    await User.updateOne(
-        { _id: user._id },
-        {
-            $set: {
-                otp,
-                otpPurpose: purpose,
-                otpExpires: new Date(Date.now() + 3 * 60 * 1000),
-                otpLastSentAt: new Date(),
-            },
-        }
-    );
-
-    await sendOtpEmail(user.email, otp);
-    return { ok: true, email: user.email, waitSeconds: 60 };
-};
-
-
-// Verify OTP for a purpose
 export const verifyOtp = async ({ email, otp, purpose }) => {
-  if (!email || !otp || !purpose) {
-    return { ok: false, msg: "Missing fields" };
-  }
-
   const user = await User.findOne({ email });
   if (!user) return { ok: false, msg: "User not found" };
 
-  if (!user.otp || !user.otpExpires || !user.otpPurpose) {
-    return { ok: false, msg: "OTP not found. Please request again." };
-  }
+  if (user.otp !== otp) return { ok: false, msg: "Invalid OTP" };
+  if (user.otpPurpose !== purpose) return { ok: false, msg: "Invalid OTP purpose" };
+  if (new Date() > user.otpExpires) return { ok: false, msg: "OTP expired" };
 
-  if (user.otpPurpose !== purpose) {
-    return { ok: false, msg: "OTP purpose mismatch. Please request again." };
-  }
-
-  if (user.otpExpires < new Date()) {
-    return { ok: false, msg: "OTP expired. Please request again." };
-  }
-
-  if (user.otp !== otp) {
-    return { ok: false, msg: "Invalid OTP", waitSeconds: getWaitSeconds(user.otpLastSentAt) };
-  }
-
-  // success — clear OTP
-  user.otp = null;
-  user.otpPurpose = null;
-  user.otpExpires = null;
-  user.otpLastSentAt = null;
-  await user.save();
-
+  // Success: Clear the OTP fields
+  user.otp = undefined;
+  user.otpPurpose = undefined;
+  user.otpExpires = undefined;
+  // Note: We don't save yet; we return the user object so authService can update the password and save.
   return { ok: true, user };
 };
 
-// Add this to your existing otpService.js
-export const resendTempOtp = async (email) => {
-    const tempUser = await TempUser.findOne({ email });
-    if (!tempUser) return { ok: false, msg: "Session expired. Register again." };
-
-    // 🔥 GUARD: Prevent resend if the 3 minutes haven't passed yet
-    const now = new Date();
-    const expiry = new Date(tempUser.otpExpires);
+/**
+ * Unified verification for Registration and Email Changes
+ */
+export const verifyUniversalOtp = async (email, otp) => {
+  // 1. Check for Email Change first
+  const user = await User.findOne({ pendingEmail: email });
+  if (user) {
+    if (user.otp !== otp) throw new Error("Invalid OTP");
+    if (new Date() > user.otpExpires) throw new Error("OTP Expired");
     
-    if (now < expiry) {
-        return { ok: false, msg: "Please wait for the current OTP to expire." };
-    }
+    user.email = user.pendingEmail;
+    user.pendingEmail = null;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+    return { type: "EMAIL_CHANGE", user };
+  }
 
-    // Generate new OTP and set new 3-minute expiry (180,000ms)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const threeMinutesFromNow = new Date(Date.now() + 3 * 60 * 1000);
+  // 2. Fallback to Registration (TempUser)
+  const tempUser = await TempUser.findOne({ email });
+  if (!tempUser) throw new Error("Session expired.");
+  if (tempUser.otp !== otp) throw new Error("Invalid OTP");
+  if (new Date() > tempUser.otpExpires) throw new Error("OTP Expired");
 
-    tempUser.otp = otp;
-    tempUser.otpExpires = threeMinutesFromNow; 
-    await tempUser.save();
+  const newUser = await User.create({
+    fullName: tempUser.fullName,
+    email: tempUser.email,
+    password: tempUser.password,
+    isVerified: true,
+    authProvider: "local"
+  });
 
-    await sendOtpEmail(email, otp);
-    return { ok: true, email };
+  await TempUser.deleteOne({ _id: tempUser._id });
+  return { type: "REGISTRATION", user: newUser };
 };
 
+/**
+ * Resend Logic
+ */
+export const resendAnyOtp = async (email) => {
+  let target = await User.findOne({ pendingEmail: email }) || await TempUser.findOne({ email });
+  if (!target) throw new Error("Session expired.");
 
-export const verifyEmailChangeOtp = async ({ email, otp }) => {
-  try {
-    // 1. Find user where pendingEmail matches the email the OTP was sent to
-    const user = await User.findOne({ pendingEmail: email });
+  const otp = genOtp();
+  target.otp = otp;
+  target.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+  await target.save();
 
-    if (!user) {
-      return { ok: false, msg: "User not found or request expired." };
-    }
+  await sendOtpEmail(email, otp);
+  return getRemainingSeconds(target.otpExpires);
+};
 
-    // 2. Validate OTP and Expiry
-    if (user.otp !== otp) {
-      return { ok: false, msg: "Invalid OTP. Please try again." };
-    }
+/**
+ * Existing User OTP (for Password Reset start)
+ */
+export const sendOtp = async ({ email, purpose }) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User not found");
 
-    if (new Date() > user.otpExpires) {
-      return { ok: false, msg: "OTP has expired. Please resend." };
-    }
+  const otp = genOtp();
+  user.otp = otp;
+  user.otpPurpose = purpose;
+  user.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+  await user.save();
 
-    // 3. 🔥 SUCCESS: Promote pendingEmail to actual email
-    user.email = user.pendingEmail;
-    user.pendingEmail = null; // Clear the buffer
-    user.otp = undefined;     // Clear security fields
-    user.otpExpires = undefined;
-
-    await user.save();
-
-    return { ok: true, user };
-  } catch (error) {
-    console.error(error);
-    return { ok: false, msg: "Verification service error." };
-  }
+  await sendOtpEmail(email, otp);
+  return { ok: true, email };
 };

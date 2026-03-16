@@ -16,11 +16,11 @@
 
     <div class="flex items-center gap-3 pl-6 border-l border-gray-100">
       <div class="text-right hidden sm:block">
-        <p class="text-sm font-black text-slate-900"><%= user.fullName %></p>
+        <p class="text-sm font-black text-slate-900"><%= typeof admin !== 'undefined' && admin ? admin.fullName : 'Admin' %></p>
         <p class="text-[10px] text-indigo-500 font-black uppercase tracking-tighter">System Admin</p>
       </div>
       <div class="w-10 h-10 rounded-xl bg-indigo-50 overflow-hidden border border-indigo-100 shadow-sm">
-        <img src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? user.fullName : 'Admin') + '&background=6366f1&color=fff' %>" 
+        <img src="<%= (typeof admin !== 'undefined' && admin && admin.profileImage) ? admin.profileImage : 'https://ui-avatars.com/api/?name=' + (typeof admin !== 'undefined' && admin ? admin.fullName : 'Admin') + '&background=6366f1&color=fff' %>" 
      alt="Admin" 
      class="w-full h-full object-cover"
      onerror="this.src='https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff'">
