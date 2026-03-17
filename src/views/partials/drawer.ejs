@@ -11,8 +11,10 @@
 
       <div class="text-center mt-4 pb-4 border-b border-gray-200">
   <img class="w-20 h-20 rounded-full mx-auto object-cover border" 
-       src="<%= user?.profileImage || '/images/default-avatar.png' %>" 
-       alt="user">
+       src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? encodeURIComponent(user.fullName) : 'User') + '&background=6366f1&color=fff' %>" 
+       alt="user"
+       referrerpolicy="no-referrer"
+       onerror="this.src='https://ui-avatars.com/api/?name=User&background=6366f1&color=fff'">
   
   <div class="font-black mt-3"><%= user?.fullName || "User" %></div>
   <div class="text-sm text-gray-500"><%= user?.email || "user@example.com" %></div>

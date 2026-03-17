@@ -25,7 +25,7 @@
       </div>
 
       <div class="flex items-center gap-6">
-        <img class="w-24 h-24 rounded-full border object-cover shadow-sm" src="<%= user.profileImage || '/images/default-avatar.png' %>" alt="avatar">
+        <img class="w-24 h-24 rounded-full border object-cover shadow-sm" src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? encodeURIComponent(user.fullName) : 'User') + '&background=6366f1&color=fff' %>" alt="avatar" referrerpolicy="no-referrer" onerror="this.src='https://ui-avatars.com/api/?name=User&background=6366f1&color=fff'">
         <div>
           <h3 class="text-2xl font-bold"><%= user.fullName %></h3>
           <p class="text-gray-500"><%= user.email %></p>
@@ -64,7 +64,7 @@
       <div>
         <label class="block text-sm font-bold mb-1 text-gray-700">Profile Picture</label>
         <div class="flex items-center gap-4 mb-3">
-          <img id="preview" src="<%= user.profileImage || '/images/default-avatar.png' %>" class="w-16 h-16 rounded-full border object-cover">
+          <img id="preview" src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? encodeURIComponent(user.fullName) : 'User') + '&background=6366f1&color=fff' %>" class="w-16 h-16 rounded-full border object-cover" referrerpolicy="no-referrer" onerror="this.src='https://ui-avatars.com/api/?name=User&background=6366f1&color=fff'">
           <% if (user.profileImage) { %>
             <button type="button" onclick="removeImage()" class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition">
               Remove Current Photo

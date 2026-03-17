@@ -15,7 +15,6 @@ passport.use(
     const googleId = profile.id;
     const name = profile.displayName;
     const profileImage = profile.photos?.[0]?.value.replace('=s96-c', '=s400-c'); 
-    console.log("CLEANED IMAGE URL:", profileImage);// Google URL
 
     if (!email) return done(null, false);
 

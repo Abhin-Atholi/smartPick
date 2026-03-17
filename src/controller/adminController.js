@@ -19,12 +19,12 @@ export const postLogin = async (req, res) => {
 
         req.session.save(() => res.redirect("/admin/dashboard"));
     } catch (error) {
-        res.render("admin/login", { msg: error.message, title: "Admin Login" });
+        res.redirect(`/admin/login?msg=${encodeURIComponent(error.message)}`);
     }
 };
 
 export const getLogin = (req, res) => {
-    res.render("admin/login", { msg: null, title: "Admin Login" });
+    res.render("admin/login", { msg: req.query.msg || null, title: "Admin Login" });
 };
 
 export const getDashboard = (req, res) => {

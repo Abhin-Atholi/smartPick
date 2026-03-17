@@ -24,7 +24,8 @@
       <div>
         <label class="block text-sm font-bold mb-2">Email Address</label>
         <input name="email" type="email" placeholder="name@example.com" 
-          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"/>
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+          value="<%= locals.email ? email : '' %>"/>
       </div>
 
       <div>
