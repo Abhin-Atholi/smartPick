@@ -54,6 +54,7 @@ export const resetPassword = async (req, res) => {
 export const registerUser = async (req, res) => {
   try {
     const result = await authService.register(req.body);
+    console.log(result.otp)
     await sendOtpEmail(result.email, result.otp); 
     res.redirect(`/verify?email=${encodeURIComponent(result.email)}`);
   } catch (err) {
