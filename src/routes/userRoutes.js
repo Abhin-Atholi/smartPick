@@ -84,7 +84,6 @@ router.post("/account/remove-image", protectRoute, accountController.removeProfi
 router.get("/account/addresses", protectRoute, accountController.loadAddresses);
 router.post("/account/addresses", protectRoute, accountController.addAddress);
 
-router.get("/account/addresses/:id/edit", protectRoute, accountController.loadEditAddress);
 router.post("/account/addresses/:id", protectRoute, accountController.updateAddress);
 
 router.post("/account/addresses/:id/delete", protectRoute, accountController.deleteAddress);
