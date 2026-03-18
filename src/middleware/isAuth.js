@@ -33,7 +33,7 @@ export const redirectIfAuth = (req, res, next) => {
 
 // If a user is already verified, don't let them stay on the OTP page
 export const redirectIfVerified = async (req, res, next) => {
-  const email = req.query.email || req.body.email;
+  const email = req.query?.email || req.body?.email;
   if (!email) return next();
 
   const user = await User.findOne({ email }).select("isVerified");

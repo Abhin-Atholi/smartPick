@@ -10,8 +10,8 @@ const tempUserSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        // 🔥 INCREASE TO 300 (5 mins) to prevent background deletion before timer ends
-        expires: 300 
+        // Document lives for 10 minutes (600s). The actual OTP inside it expires in 2 mins. 
+        expires: 600 
     }
 });
 

@@ -24,7 +24,7 @@ export const register = async ({ name, email, password, confirmPassword }) => {
       email,
       password: hashedPassword,
       otp,
-      otpExpires: new Date(Date.now() + 3 * 60 * 1000)
+      otpExpires: new Date(Date.now() + 2 * 60 * 1000)
     },
     { upsert: true, new: true }
   );

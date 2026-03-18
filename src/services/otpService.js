@@ -81,9 +81,14 @@ export const resendAnyOtp = async (email) => {
   let target = await User.findOne({ pendingEmail: email }) || await TempUser.findOne({ email });
   if (!target) throw new Error("Session expired.");
 
+  // Check if current OTP is still valid
+  if (target.otpExpires && new Date() < target.otpExpires) {
+    throw new Error("Please wait for your previous OTP to expire before requesting a new one.");
+  }
+
   const otp = genOtp();
   target.otp = otp;
-  target.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+  target.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
   await target.save();
 
   await sendOtpEmail(email, otp);
@@ -100,7 +105,7 @@ export const sendOtp = async ({ email, purpose }) => {
   const otp = genOtp();
   user.otp = otp;
   user.otpPurpose = purpose;
-  user.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+  user.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
   await user.save();
 
   await sendOtpEmail(email, otp);
