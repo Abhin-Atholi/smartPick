@@ -86,45 +86,51 @@
     </div>
 
     <div class="overflow-y-auto flex-1">
+      <% if (typeof modalError !== "undefined" && modalError && (typeof modalType === "undefined" || modalType === "add")) { %>
+        <div class="mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100">
+          <%= modalError %>
+        </div>
+      <% } %>
+
       <form method="POST" action="/account/addresses" class="p-6 grid md:grid-cols-2 gap-4">
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
-          <input name="fullName" placeholder="John Doe" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="fullName" placeholder="John Doe" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.fullName || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Phone Number</label>
-          <input name="phone" placeholder="10-digit mobile number" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="phone" placeholder="10-digit mobile number" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.phone || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Pincode</label>
-          <input name="pincode" placeholder="6-digit pincode" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="pincode" placeholder="6-digit pincode" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.pincode || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">State</label>
-          <input name="state" placeholder="State" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="state" placeholder="State" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.state || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">City</label>
-          <input name="city" placeholder="City / District" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="city" placeholder="City / District" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.city || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Locality</label>
-          <input name="locality" placeholder="Locality / Town" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="locality" placeholder="Locality / Town" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.locality || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="md:col-span-2 space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">House / Building</label>
-          <input name="house" placeholder="House No, Building Name" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="house" placeholder="House No, Building Name" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.house || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="md:col-span-2 space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Area / Street</label>
-          <input name="area" placeholder="Area, Colony, Sector, Village" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input name="area" placeholder="Area, Colony, Sector, Village" value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.area || '' : '' %>" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="md:col-span-2 flex gap-3 pt-2 border-t">
@@ -145,45 +151,51 @@
     </div>
 
     <div class="overflow-y-auto flex-1">
+      <% if (typeof modalError !== "undefined" && modalError && modalType === "edit") { %>
+        <div class="mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100">
+          <%= modalError %>
+        </div>
+      <% } %>
+
       <form id="editAddressForm" method="POST" action="" class="p-6 grid md:grid-cols-2 gap-4">
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
-          <input id="edit-fullName" name="fullName" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-fullName" name="fullName" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Phone Number</label>
-          <input id="edit-phone" name="phone" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-phone" name="phone" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Pincode</label>
-          <input id="edit-pincode" name="pincode" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-pincode" name="pincode" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">State</label>
-          <input id="edit-state" name="state" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-state" name="state" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">City</label>
-          <input id="edit-city" name="city" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-city" name="city" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Locality</label>
-          <input id="edit-locality" name="locality" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-locality" name="locality" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="md:col-span-2 space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">House / Building</label>
-          <input id="edit-house" name="house" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-house" name="house" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="md:col-span-2 space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase ml-1">Area / Street</label>
-          <input id="edit-area" name="area" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition" required>
+          <input id="edit-area" name="area" class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
         </div>
 
         <div class="md:col-span-2 flex gap-3 pt-2 border-t">
@@ -209,9 +221,7 @@
   // ---- Edit Modal ----
   function openEditModal(btn) {
     const id = btn.dataset.id;
-    // Set the form action to the update route
     document.getElementById('editAddressForm').action = `/account/addresses/${id}`;
-    // Pre-fill the fields
     document.getElementById('edit-fullName').value  = btn.dataset.fullname;
     document.getElementById('edit-phone').value     = btn.dataset.phone;
     document.getElementById('edit-pincode').value   = btn.dataset.pincode;
@@ -220,7 +230,6 @@
     document.getElementById('edit-locality').value  = btn.dataset.locality;
     document.getElementById('edit-house').value     = btn.dataset.house;
     document.getElementById('edit-area').value      = btn.dataset.area;
-
     document.getElementById('editAddressModal').classList.remove('hidden');
   }
   function closeEditModal() {
@@ -234,4 +243,25 @@
   document.getElementById('editAddressModal').addEventListener('click', function(e) {
     if (e.target === this) closeEditModal();
   });
+
+  // Auto-open the correct modal if there was a backend error
+  <% if (typeof modalType !== "undefined" && modalType === "add") { %>
+    openAddModal();
+  <% } %>
+
+  <% if (typeof modalType !== "undefined" && modalType === "edit") { %>
+    // Pre-fill edit modal with the submitted data so the user doesn't lose their input
+    <% if (typeof editAddressData !== "undefined" && editAddressData) { %>
+      document.getElementById('editAddressForm').action = `/account/addresses/<%= editAddressData._id %>`;
+      document.getElementById('edit-fullName').value  = `<%= editAddressData.fullName || '' %>`;
+      document.getElementById('edit-phone').value     = `<%= editAddressData.phone || '' %>`;
+      document.getElementById('edit-pincode').value   = `<%= editAddressData.pincode || '' %>`;
+      document.getElementById('edit-state').value     = `<%= editAddressData.state || '' %>`;
+      document.getElementById('edit-city').value      = `<%= editAddressData.city || '' %>`;
+      document.getElementById('edit-locality').value  = `<%= editAddressData.locality || '' %>`;
+      document.getElementById('edit-house').value     = `<%= editAddressData.house || '' %>`;
+      document.getElementById('edit-area').value      = `<%= editAddressData.area || '' %>`;
+    <% } %>
+    document.getElementById('editAddressModal').classList.remove('hidden');
+  <% } %>
 </script>

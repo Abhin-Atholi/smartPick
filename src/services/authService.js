@@ -7,7 +7,10 @@ import * as otpService from "./otpService.js";
  * Register: Handles temporary user creation and OTP generation
  */
 export const register = async ({ name, email, password, confirmPassword }) => {
-  if (!name || !email || !password || !confirmPassword) throw new Error("All fields are required");
+  if (!name && !email && !password && !confirmPassword) throw new Error("All fields are required");
+  if (name.length<3) throw new Error("Name should have atleast 3 characters");
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) throw new Error("Invalid email format");
   if (password.length < 8) throw new Error("Password must have at least 8 characters");
   if (password !== confirmPassword) throw new Error("Passwords do not match");
 

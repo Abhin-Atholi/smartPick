@@ -28,7 +28,7 @@ export const processProfileUpdate = async (userId, updateData, file) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
-    user.otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+    user.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
     user.pendingEmail = email;
     
     user.fullName = fullName || user.fullName;
@@ -62,6 +62,26 @@ export const removeImage = async (userId) => {
  * Logic: Manage Addresses (Push, Set, Pull)
  */
 export const addAddress = async (userId, addressData) => {
+  const { fullName, phone, pincode, state, city, locality, house, area } = addressData;
+
+  // Field-level validation (service concern)
+  if (!fullName || fullName.trim().length < 3)
+    throw new Error("Full name must be at least 3 characters.");
+  if (!phone || !/^[6-9]\d{9}$/.test(phone))
+    throw new Error("Enter a valid 10-digit Indian mobile number.");
+  if (!pincode || !/^\d{6}$/.test(pincode))
+    throw new Error("Pincode must be exactly 6 digits.");
+  if (!state || state.trim().length < 2)
+    throw new Error("Please enter a valid state.");
+  if (!city || city.trim().length < 2)
+    throw new Error("Please enter a valid city.");
+  if (!locality || locality.trim().length < 2)
+    throw new Error("Please enter a valid locality.");
+  if (!house || house.trim().length < 3)
+    throw new Error("House / Building field must be at least 3 characters.");
+  if (!area || area.trim().length < 3)
+    throw new Error("Area / Street must be at least 3 characters.");
+
   return await User.updateOne(
     { _id: userId },
     { $push: { addresses: addressData } }
@@ -70,6 +90,25 @@ export const addAddress = async (userId, addressData) => {
 
 export const updateAddress = async (userId, addressId, addressData) => {
   const { fullName, phone, pincode, state, city, locality, house, area } = addressData;
+
+  // Field-level validation (service concern)
+  if (!fullName || fullName.trim().length < 3)
+    throw new Error("Full name must be at least 3 characters.");
+  if (!phone || !/^[6-9]\d{9}$/.test(phone))
+    throw new Error("Enter a valid 10-digit Indian mobile number.");
+  if (!pincode || !/^\d{6}$/.test(pincode))
+    throw new Error("Pincode must be exactly 6 digits.");
+  if (!state || state.trim().length < 2)
+    throw new Error("Please enter a valid state.");
+  if (!city || city.trim().length < 2)
+    throw new Error("Please enter a valid city.");
+  if (!locality || locality.trim().length < 2)
+    throw new Error("Please enter a valid locality.");
+  if (!house || house.trim().length < 3)
+    throw new Error("House / Building field must be at least 3 characters.");
+  if (!area || area.trim().length < 3)
+    throw new Error("Area / Street must be at least 3 characters.");
+
   return await User.updateOne(
     { _id: userId, "addresses._id": addressId },
     {

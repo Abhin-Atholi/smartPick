@@ -62,10 +62,19 @@ export const removeProfileImage = async (req, res) => {
 export const loadAddresses = async (req, res) => {
   try {
     const user = await User.findById(req.session.userId).select("addresses");
+
+    // Read and immediately clear any flash data set by POST error handlers (PRG pattern)
+    const flash = req.session.flash || {};
+    delete req.session.flash;
+
     res.render("user/addresses", {
       title: "Saved Addresses",
       addresses: user?.addresses || [],
       msg: null,
+      modalError:      flash.modalError      || null,
+      modalType:       flash.modalType       || null,
+      editAddressData: flash.editAddressData || null,
+      addAddressData:  flash.addAddressData  || null,
     });
   } catch (err) {
     res.status(500).send("Server Error");
@@ -77,23 +86,12 @@ export const loadAddresses = async (req, res) => {
  */
 export const addAddress = async (req, res) => {
   try {
-    const { fullName, phone, pincode, state, city, locality, house, area } = req.body;
-
-    // Basic Validation (Could also be moved to middleware/Joi)
-    if (!fullName || !phone || !pincode || !state || !city || !locality || !house || !area) {
-      throw new Error("All fields are required");
-    }
-
     await userService.addAddress(req.session.userId, req.body);
     res.redirect("/account/addresses");
 
   } catch (err) {
-    const user = await User.findById(req.session.userId).select("addresses");
-    res.render("user/addresses", {
-      title: "Saved Addresses",
-      addresses: user?.addresses || [],
-      msg: err.message,
-    });
+    req.session.flash = { modalError: err.message, modalType: "add", addAddressData: req.body };
+    return req.session.save(() => res.redirect("/account/addresses"));
   }
 };
 
@@ -121,11 +119,12 @@ export const updateAddress = async (req, res) => {
     await userService.updateAddress(req.session.userId, req.params.id, req.body);
     res.redirect("/account/addresses");
   } catch (err) {
-    res.render("user/edit-address", {
-      title: "Edit Address",
-      address: { _id: req.params.id, ...req.body },
-      msg: err.message,
-    });
+    req.session.flash = {
+      modalError: err.message,
+      modalType: "edit",
+      editAddressData: { _id: req.params.id, ...req.body },
+    };
+    return req.session.save(() => res.redirect("/account/addresses"));
   }
 };
 

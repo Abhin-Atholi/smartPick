@@ -87,6 +87,7 @@ export const resendAnyOtp = async (email) => {
   }
 
   const otp = genOtp();
+  console.log(otp)
   target.otp = otp;
   target.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
   await target.save();
