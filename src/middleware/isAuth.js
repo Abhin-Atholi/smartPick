@@ -67,9 +67,17 @@ export const checkBlocked = async (req, res, next) => {
     const user = await User.findById(currentUser._id).select("status");
 
     if (!user || user.status === "blocked") {
-        return req.session.destroy((err) => {
-          if (err) console.error("Session destruction error:", err);
-          res.clearCookie("connect.sid"); 
+        // Only clear user-specific session data, preserve admin session
+        delete req.session.userId;
+        delete req.session.user;
+        delete req.session.passport; // Passport stores user ref here
+
+        // Clear Passport's req.user for the current request
+        // (Don't use req.logout() — Passport 0.6+ regenerates the session, wiping admin data)
+        req.user = null;
+
+        return req.session.save((err) => {
+          if (err) console.error("Session save error:", err);
           return res.redirect("/login?msg=Your account has been blocked.");
         });
     }
