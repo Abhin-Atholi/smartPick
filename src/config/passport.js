@@ -11,7 +11,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
   try {
-    const email = profile.emails?.[0]?.value;
+    const email = profile.emails?.[0]?.value?.toLowerCase();
     const googleId = profile.id;
     const name = profile.displayName;
     const profileImage = profile.photos?.[0]?.value.replace('=s96-c', '=s400-c'); 

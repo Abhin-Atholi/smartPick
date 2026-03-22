@@ -18,25 +18,26 @@ export const processProfileUpdate = async (userId, updateData, file) => {
   }
 
   // Handle Email Change Security & OTP
-  if (email && email !== user.email) {
+  const normalizedEmail = email ? email.trim().toLowerCase() : email;
+  if (normalizedEmail && normalizedEmail !== user.email) {
     if (!user.password) {
       throw new Error("Please set an account password before changing your email.");
     }
 
-    const emailExists = await User.findOne({ email, _id: { $ne: userId } });
+    const emailExists = await User.findOne({ email: normalizedEmail, _id: { $ne: userId } });
     if (emailExists) throw new Error("Email already taken");
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
-    user.pendingEmail = email;
+    user.pendingEmail = normalizedEmail;
     
     user.fullName = fullName || user.fullName;
     user.phone = phone || user.phone;
     await user.save();
     
-    await sendOtpEmail(email, otp);
-    return { type: "VERIFY_OTP", email };
+    await sendOtpEmail(normalizedEmail, otp);
+    return { type: "VERIFY_OTP", email: normalizedEmail };
   }
 
   user.fullName = fullName || user.fullName;

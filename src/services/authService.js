@@ -8,6 +8,7 @@ import * as otpService from "./otpService.js";
  */
 export const register = async ({ name, email, password, confirmPassword }) => {
   if (!name && !email && !password && !confirmPassword) throw new Error("All fields are required");
+  email = email.trim().toLowerCase();
   if (name.length<3) throw new Error("Name should have atleast 3 characters");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) throw new Error("Invalid email format");
@@ -40,6 +41,7 @@ export const register = async ({ name, email, password, confirmPassword }) => {
  */
 export const login = async ({ email, password }) => {
   if (!email || !password) throw new Error("Please fill all fields");
+  email = email.trim().toLowerCase();
 
   const user = await User.findOne({ email });
   if (!user) throw new Error("No user found, please register first");

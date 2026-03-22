@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 
 // Ensure the directory exists, otherwise Multer will throw an error
-const uploadDir = "src/public/uploads/profiles/";
+const uploadDir = "public/uploads/profiles/";
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
