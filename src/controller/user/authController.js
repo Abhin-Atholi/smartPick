@@ -1,6 +1,6 @@
-import * as authService from "../services/authService.js";
-import * as otpService from "../services/otpService.js";
-import { sendOtpEmail } from "../services/emailService.js";
+import * as authService from "../../services/user/authService.js";
+import * as otpService from "../../services/common/otpService.js";
+import { sendOtpEmail } from "../../services/common/emailService.js";
 
 export const loadLogin = (req, res) => res.render("user/login", { title: "Login", msg: req.query.msg || null, email: req.query.email || "" });
 export const loadRegister = (req, res) => res.render("user/register", { title: "Register", msg: req.query.msg || null, name: req.query.name || "", email: req.query.email || "" });

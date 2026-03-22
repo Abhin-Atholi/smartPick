@@ -1,5 +1,5 @@
-import User from "../model/userModel.js";
-import * as adminService from "../services/adminService.js";
+import User from "../../model/userModel.js";
+import * as adminService from "../../services/admin/adminService.js";
 
 export const postLogin = async (req, res) => {
     try {

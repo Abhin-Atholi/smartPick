@@ -1,4 +1,4 @@
-import * as userService from "../services/userService.js"; // Ensure this filename is correct
+import * as userService from "../../services/user/userService.js"; // Ensure this filename is correct
 
 export const loadHome = (req, res) => {
   console.log("Home rendered");

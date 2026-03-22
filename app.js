@@ -4,13 +4,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import "dotenv/config";
 import connectDB from "./src/config/db.js";
-import userRoutes from "./src/routes/userRoutes.js";
 import layouts from "express-ejs-layouts";
 import { setAuthLocals } from "./src/middleware/isAuth.js";
 import nocache from "nocache";
 import passport from "passport";
 import "./src/config/passport.js"; 
-import adminRoutes from './src/routes/adminRoutes.js';
+import mountRoutes from "./src/routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,8 +49,7 @@ app.use((req, res, next) => {
 
 app.use(setAuthLocals);
 
-app.use("/admin",adminRoutes)
-app.use("/", userRoutes);
+mountRoutes(app);
 
 
 const PORT = process.env.PORT || 3000;

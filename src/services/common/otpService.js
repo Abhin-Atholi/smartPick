@@ -1,5 +1,5 @@
-import User from "../model/userModel.js";
-import TempUser from "../model/tempUserModel.js";
+import User from "../../model/userModel.js";
+import TempUser from "../../model/tempUserModel.js";
 import { sendOtpEmail } from "./emailService.js";
 
 const genOtp = () => Math.floor(100000 + Math.random() * 900000).toString();

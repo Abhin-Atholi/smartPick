@@ -9,10 +9,10 @@ import {
     getCustomers, 
     toggleCustomerStatus ,
     adminLogout
-} from "../controller/adminController.js";
+} from "../../controller/admin/adminController.js";
 
 // Import middleware
-import { isAdmin, redirectIfAdminAuth } from "../middleware/adminAuth.js";
+import { isAdmin, redirectIfAdminAuth } from "../../middleware/adminAuth.js";
 
 // --- Auth Routes ---
 router.get("/login", redirectIfAdminAuth, getLogin);

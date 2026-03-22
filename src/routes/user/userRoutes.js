@@ -1,11 +1,11 @@
 import express from "express"
 const router = express.Router();
-import * as userController from "../controller/userController.js";
-import * as authController from "../controller/authController.js";
+import * as userController from "../../controller/user/userController.js";
+import * as authController from "../../controller/user/authController.js";
 import passport from "passport";
-import * as accountController from "../controller/accountController.js";
-import upload from "../middleware/multer.js";
-import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../middleware/isAuth.js";
+import * as accountController from "../../controller/user/accountController.js";
+import upload from "../../middleware/multer.js";
+import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../../middleware/isAuth.js";
 
 router.use(checkBlocked);
 

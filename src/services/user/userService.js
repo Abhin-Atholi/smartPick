@@ -1,7 +1,7 @@
-import User from "../model/userModel.js";
+import User from "../../model/userModel.js";
 import bcrypt from "bcrypt";
-import { sendOtpEmail } from "./emailService.js";
-import { deleteLocalFile } from "../utils/fileHelper.js";
+import { sendOtpEmail } from "../common/emailService.js";
+import { deleteLocalFile } from "../../utils/fileHelper.js";
 
 /**
  * Logic: Process Profile Updates, handle image replacement, and email change security.

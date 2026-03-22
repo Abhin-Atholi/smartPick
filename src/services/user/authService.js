@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
-import User from "../model/userModel.js";
-import TempUser from "../model/tempUserModel.js";
-import * as otpService from "./otpService.js";
+import User from "../../model/userModel.js";
+import TempUser from "../../model/tempUserModel.js";
+import * as otpService from "../common/otpService.js";
 
 /**
  * Register: Handles temporary user creation and OTP generation

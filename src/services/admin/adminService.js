@@ -1,4 +1,4 @@
-import User from "../model/userModel.js";
+import User from "../../model/userModel.js";
 import bcrypt from "bcrypt";
 
 export const authenticateAdmin = async (email, password) => {

@@ -1,5 +1,5 @@
-import User from "../model/userModel.js";
-import * as userService from "../services/userService.js";
+import User from "../../model/userModel.js";
+import * as userService from "../../services/user/userService.js";
 
 /**
  * GET: Load Account Overview
