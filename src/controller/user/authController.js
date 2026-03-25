@@ -1,6 +1,6 @@
 import * as authService from "../../services/user/authService.js";
 import * as otpService from "../../services/common/otpService.js";
-import { sendOtpEmail } from "../../services/common/emailService.js";
+
 
 export const loadLogin = (req, res) => res.render("user/login", { title: "Login", msg: req.query.msg || null, email: req.query.email || "" });
 export const loadRegister = (req, res) => res.render("user/register", { title: "Register", msg: req.query.msg || null, name: req.query.name || "", email: req.query.email || "" });
@@ -27,7 +27,7 @@ export const loadResetPassword = async (req, res) => {
     const { email, msg } = req.query;
     // Pass 'null' or a dummy context because it's looking in the permanent User collection
     const target = await otpService.getVerificationTarget(email, "resetPassword"); 
-    const remainingSeconds = otpService.getRemainingSeconds(target.otpExpires);
+    const remainingSeconds = await otpService.getRemainingSeconds(email, "reset_password");
     
     res.render("user/reset-password", { 
       title: "Reset Password", 
@@ -45,6 +45,7 @@ export const resetPassword = async (req, res) => {
     await authService.finalizePasswordReset(req.body);
     res.redirect("/login?msg=Password reset successful! ✅");
   } catch (err) {
+    console.log("got u")
     res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
   }
 };
@@ -54,8 +55,6 @@ export const resetPassword = async (req, res) => {
 export const registerUser = async (req, res) => {
   try {
     const result = await authService.register(req.body);
-    console.log(result.otp)
-    await sendOtpEmail(result.email, result.otp); 
     res.redirect(`/verify?email=${encodeURIComponent(result.email)}`);
   } catch (err) {
     res.redirect(`/register?msg=${encodeURIComponent(err.message)}&name=${encodeURIComponent(req.body.name || "")}&email=${encodeURIComponent(req.body.email || "")}`);
@@ -86,7 +85,8 @@ export const loadVerify = async (req, res) => {
   try {
     const { email, context, msg } = req.query;
     const target = await otpService.getVerificationTarget(email, context);
-    const remainingSeconds = otpService.getRemainingSeconds(target.otpExpires);
+    const purpose = context === "changeEmail" ? "changeEmail" : "register";
+    const remainingSeconds = await otpService.getRemainingSeconds(email, purpose);
     
     res.render("user/verify", { 
       title: "Verify", 
@@ -106,7 +106,16 @@ export const verifyOtp = async (req, res) => {
       req.session.user.email = result.user.email;
       return res.redirect("/account?msg=Email updated! ✅");
     }
-    res.redirect("/login?msg=Verified! Please login.");
+    req.session.userId = result.user._id;
+
+    req.session.user = {
+      _id: result.user._id,
+      fullName: result.user.fullName,
+      email: result.user.email,
+      role: result.user.role,
+      profileImage: result.user.profileImage || null
+    };
+    req.session.save(() => res.redirect("/home"));
   } catch (err) {
     res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
   }
@@ -114,10 +123,22 @@ export const verifyOtp = async (req, res) => {
 
 export const resendOtp = async (req, res) => {
   try {
-    const remainingSeconds = await otpService.resendAnyOtp(req.body.email);
-    // Even on success we can just redirect so they don't get stuck on a POST resubmission if they hit back
-    res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=OTP+sent+again+✅`);
+    const isReset = req.originalUrl.includes("reset");
+    const explicitPurpose = isReset ? "reset_password" : null;
+    
+    const remainingSeconds = await otpService.resendAnyOtp(req.body.email, explicitPurpose);
+    
+    if (isReset) {
+      res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email)}&msg=OTP+sent+again+✅`);
+    } else {
+      res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=OTP+sent+again+✅`);
+    }
   } catch (err) {
-    res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
+    const isReset = req.originalUrl.includes("reset");
+    if (isReset) {
+      res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
+    } else {
+      res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
+    }
   }
 };

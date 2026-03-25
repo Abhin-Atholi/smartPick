@@ -1,7 +1,7 @@
 import User from "../../model/userModel.js";
 import bcrypt from "bcrypt";
-import { sendOtpEmail } from "../common/emailService.js";
 import { deleteLocalFile } from "../../utils/fileHelper.js";
+import * as otpService from "../common/otpService.js";
 
 /**
  * Logic: Process Profile Updates, handle image replacement, and email change security.
@@ -27,16 +27,13 @@ export const processProfileUpdate = async (userId, updateData, file) => {
     const emailExists = await User.findOne({ email: normalizedEmail, _id: { $ne: userId } });
     if (emailExists) throw new Error("Email already taken");
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otp = otp;
-    user.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
     user.pendingEmail = normalizedEmail;
     
     user.fullName = fullName || user.fullName;
     user.phone = phone || user.phone;
     await user.save();
     
-    await sendOtpEmail(normalizedEmail, otp);
+    await otpService.sendOtp({ email: normalizedEmail, purpose: "changeEmail" });
     return { type: "VERIFY_OTP", email: normalizedEmail };
   }
 

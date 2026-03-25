@@ -19,21 +19,19 @@ export const register = async ({ name, email, password, confirmPassword }) => {
   if (existing) throw new Error("User already exists");
 
   const hashedPassword = await bcrypt.hash(password, 12);
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
   await TempUser.findOneAndUpdate(
     { email },
     {
       fullName: name,
       email,
-      password: hashedPassword,
-      otp,
-      otpExpires: new Date(Date.now() + 2 * 60 * 1000)
+      password: hashedPassword
     },
     { upsert: true, new: true }
   );
 
-  return { email, otp }; 
+  await otpService.sendOtp({ email, purpose: "register" });
+
+  return { email }; 
 };
 
 /**
@@ -77,6 +75,7 @@ if (user.role !== 'user') {
  * Finalize Password Reset: Hashing new password after OTP success
  */
 export const finalizePasswordReset = async ({ email, otp, password, confirmPassword }) => {
+  if(!otp) throw new Error("Please enter the otp")
   if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
   if (password !== confirmPassword) throw new Error("Passwords do not match");
 
@@ -87,11 +86,6 @@ export const finalizePasswordReset = async ({ email, otp, password, confirmPassw
   // result.user is the Mongoose document returned by otpService
   const user = result.user;
   user.password = await bcrypt.hash(password, 12);
-  
-  // Clear any remaining OTP fields just in case
-  user.otp = undefined;
-  user.otpPurpose = undefined;
-  user.otpExpires = undefined;
 
   await user.save();
 };

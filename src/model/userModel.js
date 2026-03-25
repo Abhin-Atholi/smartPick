@@ -28,10 +28,6 @@ export const userSchema = new mongoose.Schema({
 
 
   isVerified: { type: Boolean, default: false },
-  otp: { type: String, default: null },
-  otpExpires: { type: Date, default: null },
-  otpLastSentAt: { type: Date, default: null },
-  otpPurpose: { type: String, enum: ["verify", "reset_password"], default: null },
 
   authProvider: { type: String, enum: ["local", "google"], default: "local" },
   googleId: { type: String, default: null },
