@@ -56,18 +56,20 @@ export const verifyOtp = async ({ email, otp, purpose }) => {
 /**
  * Unified verification for Registration and Email Changes
  */
-export const verifyUniversalOtp = async (email, otp) => {
-  let purpose = "register";
+export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
+  let purpose = explicitPurpose || "register";
   
-  // Check if it's an email change
-  const existingUserWithPending = await User.findOne({ pendingEmail: email });
-  if (existingUserWithPending) {
-    purpose = "changeEmail";
+  if (!explicitPurpose) {
+    // Fallback: Check if it's an email change
+    const existingUserWithPending = await User.findOne({ pendingEmail: email });
+    if (existingUserWithPending) {
+      purpose = "changeEmail";
+    }
   }
 
   const result = await verifyOtp({ email, otp, purpose });
   if (!result.ok) throw new Error(result.msg);
-
+  console.log("the otp is okay")
   if (purpose === "changeEmail") {
     const user = result.user;
     user.email = user.pendingEmail;

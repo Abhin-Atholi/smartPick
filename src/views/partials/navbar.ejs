@@ -30,7 +30,7 @@
         <button class="w-10 h-10 rounded-xl hover:bg-gray-100 grid place-items-center relative" title="Cart">
           🛒 <span class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full">2</span>
         </button>
-        <a href="/logout" class="hidden sm:inline-flex px-4 py-2 rounded-full border border-red-200 text-red-500 font-black text-sm hover:bg-red-50">
+        <a href="/logout" onclick="confirmLogout(event, this.href)" class="hidden sm:inline-flex px-4 py-2 rounded-full border border-red-200 text-red-500 font-black text-sm hover:bg-red-50">
           Log Out
         </a>
       <% } else { %>

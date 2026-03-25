@@ -1,5 +1,6 @@
 import * as authService from "../../services/user/authService.js";
 import * as otpService from "../../services/common/otpService.js";
+import passport from "passport";
 
 
 export const loadLogin = (req, res) => res.render("user/login", { title: "Login", msg: req.query.msg || null, email: req.query.email || "" });
@@ -79,6 +80,32 @@ export const loginUser = async (req, res) => {
   }
 };
 
+/** * GOOGLE AUTH FLOW 
+ */
+export const googleAuth = passport.authenticate("google", { scope: ["profile", "email"] });
+
+export const backupAdminSession = (req, res, next) => {
+  req.sessionBackup = {
+    adminId: req.session.adminId,
+    admin: req.session.admin
+  };
+  next();
+};
+
+export const googleAuthAuthenticate = passport.authenticate("google", { failureRedirect: "/login", keepSessionInfo: true });
+
+export const googleAuthCallback = (req, res) => {
+  if (req.sessionBackup?.adminId && req.sessionBackup?.admin) {
+    req.session.adminId = req.sessionBackup.adminId;
+    req.session.admin = req.sessionBackup.admin;
+  }
+
+  req.session.userId = req.user._id;
+  req.session.user = req.user;
+
+  res.redirect("/home");
+};
+
 /** * VERIFICATION & OTP 
  */
 export const loadVerify = async (req, res) => {
@@ -91,6 +118,7 @@ export const loadVerify = async (req, res) => {
     res.render("user/verify", { 
       title: "Verify", 
       email, 
+      purpose,
       remainingSeconds, 
       msg: msg || (remainingSeconds === 0 ? "OTP Expired" : null) 
     });
@@ -101,13 +129,14 @@ export const loadVerify = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
   try {
-    const result = await otpService.verifyUniversalOtp(req.body.email, req.body.otp);
+    const result = await otpService.verifyUniversalOtp(req.body.email, req.body.otp, req.body.purpose);
     if (result.type === "EMAIL_CHANGE") {
       req.session.user.email = result.user.email;
       return res.redirect("/account?msg=Email updated! ✅");
     }
+    
     req.session.userId = result.user._id;
-
+    
     req.session.user = {
       _id: result.user._id,
       fullName: result.user.fullName,
@@ -124,21 +153,21 @@ export const verifyOtp = async (req, res) => {
 export const resendOtp = async (req, res) => {
   try {
     const isReset = req.originalUrl.includes("reset");
-    const explicitPurpose = isReset ? "reset_password" : null;
+    const explicitPurpose = isReset ? "reset_password" : req.body.purpose;
     
     const remainingSeconds = await otpService.resendAnyOtp(req.body.email, explicitPurpose);
     
     if (isReset) {
       res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email)}&msg=OTP+sent+again+✅`);
     } else {
-      res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=OTP+sent+again+✅`);
+      res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&context=${req.body.purpose === 'changeEmail' ? 'changeEmail' : 'register'}&msg=OTP+sent+again+✅`);
     }
   } catch (err) {
     const isReset = req.originalUrl.includes("reset");
     if (isReset) {
       res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
     } else {
-      res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
+      res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&context=${req.body.purpose === 'changeEmail' ? 'changeEmail' : 'register'}&msg=${encodeURIComponent(err.message)}`);
     }
   }
 };

@@ -6,14 +6,15 @@
     <p class="text-sm text-gray-500 mt-1 mb-6">Enter your credentials to access your account</p>
 
 <% if (locals.msg) { %>
-  <div id="error-message" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+  <% const isSuccess = msg.includes('successful') || msg.includes('✅'); %>
+  <div id="error-message" class="<%= isSuccess ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500' %> border-l-4 p-4 mb-6">
     <div class="flex">
       <div class="flex-shrink-0">
-        <span class="text-red-500">⚠️</span>
+        <span class="<%= isSuccess ? 'text-green-500' : 'text-red-500' %>"><%- isSuccess ? '✅' : '⚠️' %></span>
       </div>
       <div class="ml-3">
-        <p class="text-sm text-red-700 font-medium">
-          <%= msg %>
+        <p class="text-sm <%= isSuccess ? 'text-green-700' : 'text-red-700' %> font-medium">
+          <%= msg.replace('✅', '').trim() %>
         </p>
       </div>
     </div>

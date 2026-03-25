@@ -8,7 +8,7 @@ import layouts from "express-ejs-layouts";
 import { setAuthLocals } from "./src/middleware/isAuth.js";
 import nocache from "nocache";
 import passport from "passport";
-import "./src/config/passport.js"; 
+import "./src/config/passport.js";
 import mountRoutes from "./src/routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,7 +34,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || "Smartpick-secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 } 
+    cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
 

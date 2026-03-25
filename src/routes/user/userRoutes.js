@@ -2,7 +2,6 @@ import express from "express"
 const router = express.Router();
 import * as userController from "../../controller/user/userController.js";
 import * as authController from "../../controller/user/authController.js";
-import passport from "passport";
 import * as accountController from "../../controller/user/accountController.js";
 import upload from "../../middleware/multer.js";
 import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../../middleware/isAuth.js";
@@ -30,34 +29,12 @@ router.get("/home", protectRoute, userController.loadHome);
 router.get("/logout", protectRoute, userController.logout);
 
 // Google OAuth
-router.get("/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+router.get("/auth/google", authController.googleAuth);
 
 router.get("/auth/google/callback",
-  (req, res, next) => {
-    // Passport 0.6.0+ regenerates the session during login, destroying custom variables.
-    // We must back up the admin session BEFORE passport.authenticate runs.
-    req.sessionBackup = {
-      adminId: req.session.adminId,
-      admin: req.session.admin
-    };
-    next();
-  },
-  passport.authenticate("google", { failureRedirect: "/login", keepSessionInfo: true }),
-  (req, res) => {
-    // Restore admin if they were logged in
-    if (req.sessionBackup?.adminId && req.sessionBackup?.admin) {
-      req.session.adminId = req.sessionBackup.adminId;
-      req.session.admin = req.sessionBackup.admin;
-    }
-
-    // Passport automatically populates req.user
-    req.session.userId = req.user._id;
-    req.session.user = req.user;
-
-    res.redirect("/home");
-  }
+  authController.backupAdminSession,
+  authController.googleAuthAuthenticate,
+  authController.googleAuthCallback
 );
 
 

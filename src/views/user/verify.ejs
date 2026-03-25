@@ -13,13 +13,15 @@
     </div>
 
     <% if (msg) { %>
-      <div class="mb-4 text-sm text-red-500 text-center font-semibold">
-        <%= msg %>
+      <% const isSuccess = msg.includes('successful') || msg.includes('✅'); %>
+      <div class="mb-4 text-sm <%= isSuccess ? 'text-green-600' : 'text-red-500' %> text-center font-semibold">
+        <%= msg.replace('✅', '').trim() %>
       </div>
     <% } %>
 
     <form method="POST" action="/verify" class="space-y-4">
       <input type="hidden" name="email" value="<%= email %>">
+      <input type="hidden" name="purpose" value="<%= typeof purpose !== 'undefined' ? purpose : 'register' %>">
 
       <div>
         <label class="block text-sm font-semibold mb-2">OTP Code</label>
@@ -45,6 +47,7 @@
 
     <form method="POST" action="/resend-otp" class="mt-4">
       <input type="hidden" name="email" value="<%= email %>">
+      <input type="hidden" name="purpose" value="<%= typeof purpose !== 'undefined' ? purpose : 'register' %>">
       <button
         id="resendBtn"
         type="submit"

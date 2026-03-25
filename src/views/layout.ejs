@@ -14,6 +14,25 @@
   <%- body %>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
+    function confirmLogout(event, url) {
+      event.preventDefault();
+      Swal.fire({
+        title: "Log Out?",
+        text: "Are you sure you want to log out of your account?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#EF4444",
+        cancelButtonColor: "#6B7280",
+        confirmButtonText: "Yes, log out",
+        cancelButtonText: "Cancel",
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = url;
+        }
+      });
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const msg = urlParams.get('msg');
     if (msg) {

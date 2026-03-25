@@ -1,13 +1,9 @@
 import mongoose from "mongoose"
 
-
-
 // your userSchema...
 export const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   fullName: { type: String, required: true },
-  firstName: { type: String },
-  lastName: { type: String },
   profileImage: { type: String },
   role: { type: String, enum: ["admin", "user"], default: "user", index: true },
   phone: { type: String },

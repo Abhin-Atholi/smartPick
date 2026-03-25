@@ -2,12 +2,12 @@ import express from "express";
 const router = express.Router();
 
 // Import controller functions
-import { 
-    getLogin, 
-    postLogin, 
-    getDashboard, 
-    getCustomers, 
-    toggleCustomerStatus ,
+import {
+    getLogin,
+    postLogin,
+    getDashboard,
+    getCustomers,
+    toggleCustomerStatus,
     adminLogout
 } from "../../controller/admin/adminController.js";
 
@@ -28,6 +28,6 @@ router.get("/customers", isAdmin, getCustomers);
 // 2. Route to handle the Block/Unblock toggle via POST/PATCH
 router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
 
-router.get("/logout",isAdmin, adminLogout);
+router.get("/logout", isAdmin, adminLogout);
 
 export default router;
