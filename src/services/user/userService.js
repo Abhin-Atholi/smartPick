@@ -2,6 +2,7 @@ import User from "../../model/userModel.js";
 import bcrypt from "bcrypt";
 import { deleteLocalFile } from "../../utils/fileHelper.js";
 import * as otpService from "../common/otpService.js";
+import Address from "../../model/addressModel.js";
 
 /**
  * Logic: Process Profile Updates, handle image replacement, and email change security.
@@ -80,10 +81,7 @@ export const addAddress = async (userId, addressData) => {
   if (!area || area.trim().length < 3)
     throw new Error("Area / Street must be at least 3 characters.");
 
-  return await User.updateOne(
-    { _id: userId },
-    { $push: { addresses: addressData } }
-  );
+  return await Address.create({ userId, ...addressData });
 };
 
 export const updateAddress = async (userId, addressId, addressData) => {
@@ -107,28 +105,16 @@ export const updateAddress = async (userId, addressId, addressData) => {
   if (!area || area.trim().length < 3)
     throw new Error("Area / Street must be at least 3 characters.");
 
-  return await User.updateOne(
-    { _id: userId, "addresses._id": addressId },
+  return await Address.findOneAndUpdate(
+    { _id: addressId, userId },
     {
-      $set: {
-        "addresses.$.fullName": fullName,
-        "addresses.$.phone": phone,
-        "addresses.$.pincode": pincode,
-        "addresses.$.state": state,
-        "addresses.$.city": city,
-        "addresses.$.locality": locality,
-        "addresses.$.house": house,
-        "addresses.$.area": area,
-      },
+      $set: { fullName, phone, pincode, state, city, locality, house, area },
     }
   );
 };
 
 export const deleteAddress = async (userId, addressId) => {
-  return await User.updateOne(
-    { _id: userId },
-    { $pull: { addresses: { _id: addressId } } }
-  );
+  return await Address.findOneAndDelete({ _id: addressId, userId });
 };
 
 /**

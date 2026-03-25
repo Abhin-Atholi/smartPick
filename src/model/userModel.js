@@ -1,19 +1,6 @@
 import mongoose from "mongoose"
 
-export const addressSchema = new mongoose.Schema(
-  {
-    fullName: { type: String, required: true },
-    phone: { type: String, required: true },
-    pincode: { type: String, required: true },
-    state: { type: String, required: true },
-    city: { type: String, required: true },      // City / District
-    locality: { type: String, required: true },  // Locality / Town
-    house: { type: String, required: true },     // House no, building, company
-    area: { type: String, required: true },      // Area, colony, street...
-    country: { type: String, default: "India" },
-  },
-  { timestamps: true }
-);
+
 
 // your userSchema...
 export const userSchema = new mongoose.Schema({
@@ -40,8 +27,7 @@ export const userSchema = new mongoose.Schema({
     },
   },
 
-  // ✅ ADD THIS
-  addresses: { type: [addressSchema], default: [] },
+
 
 }, { timestamps: true });
 

@@ -1,5 +1,6 @@
 import User from "../../model/userModel.js";
 import * as userService from "../../services/user/userService.js";
+import Address from "../../model/addressModel.js";
 
 /**
  * GET: Load Account Overview
@@ -61,7 +62,7 @@ export const removeProfileImage = async (req, res) => {
  */
 export const loadAddresses = async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId).select("addresses");
+    const addresses = await Address.find({ userId: req.session.userId });
 
     // Read and immediately clear any flash data set by POST error handlers (PRG pattern)
     const flash = req.session.flash || {};
@@ -69,7 +70,7 @@ export const loadAddresses = async (req, res) => {
 
     res.render("user/addresses", {
       title: "Saved Addresses",
-      addresses: user?.addresses || [],
+      addresses: addresses || [],
       msg: null,
       modalError:      flash.modalError      || null,
       modalType:       flash.modalType       || null,
@@ -100,8 +101,7 @@ export const addAddress = async (req, res) => {
  */
 export const loadEditAddress = async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId).select("addresses");
-    const address = user?.addresses?.id(req.params.id);
+    const address = await Address.findOne({ _id: req.params.id, userId: req.session.userId });
 
     if (!address) return res.redirect("/account/addresses");
 

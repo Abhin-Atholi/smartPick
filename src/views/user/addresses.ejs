@@ -47,7 +47,7 @@
                       class="text-indigo-600 text-sm font-black hover:underline">
                       ✎ Edit
                     </button>
-                    <form method="POST" action="/account/addresses/<%= a._id %>/delete" onsubmit="return confirm('Delete this address?')">
+                    <form method="POST" action="/account/addresses/<%= a._id %>/delete" onsubmit="confirmDelete(event, this)">
                       <button class="text-gray-400 hover:text-red-500 transition-colors" type="submit"><span>&#x1F5D1;</span></button>
                     </form>
                   </div>
@@ -209,7 +209,28 @@
 
 <%- include("../partials/footer") %>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+  // ---- Delete Confirmation Modal (SweetAlert) ----
+  function confirmDelete(event, form) {
+    event.preventDefault();
+    Swal.fire({
+      title: "Delete Address?",
+      text: "Are you sure you want to remove this address?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#6B7280",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit();
+      }
+    });
+  }
+
   // ---- Add Modal ----
   function openAddModal() {
     document.getElementById('addAddressModal').classList.remove('hidden');
