@@ -52,20 +52,18 @@ router.post("/resend-reset-otp", authController.resendOtp);
 
 
 router.get("/account", protectRoute, accountController.loadAccount);
-router.post("/account/update-profile", protectRoute, upload.single("profileImage"), accountController.updateProfile);
-router.post("/account/remove-image", protectRoute, accountController.removeProfileImage);
+router.put("/account/update-profile", protectRoute, upload.single("profileImage"), accountController.updateProfile);
+router.delete("/account/remove-image", protectRoute, accountController.removeProfileImage);
 
 
 
 
 router.get("/account/addresses", protectRoute, accountController.loadAddresses);
 router.post("/account/addresses", protectRoute, accountController.addAddress);
-
-router.post("/account/addresses/:id", protectRoute, accountController.updateAddress);
-
-router.post("/account/addresses/:id/delete", protectRoute, accountController.deleteAddress);
+router.put("/account/addresses/:id", protectRoute, accountController.updateAddress);
+router.delete("/account/addresses/:id", protectRoute, accountController.deleteAddress);
 
 router.get("/account/security", protectRoute, accountController.loadSecurity);
-router.post("/account/update-password", protectRoute, accountController.updatePassword);
+router.put("/account/update-password", protectRoute, accountController.updatePassword);
 
 export default router;

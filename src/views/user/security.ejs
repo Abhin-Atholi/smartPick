@@ -21,20 +21,22 @@
             </div>
             <% } %>
 
-              <form action="/account/update-password" method="POST" class="max-w-md space-y-5">
+            <div id="js-msg-container" class="hidden mb-6 p-4 text-sm rounded-xl font-bold"></div>
 
-                <% if (user.password) { %>
-                  <div>
+              <form id="updatePasswordForm" class="max-w-md space-y-5">
+
+                  <div id="current-password-group" class="<%= user.password ? '' : 'hidden' %>">
                     <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">Current Password</label>
-                    <input type="password" name="currentPassword" required
+                    <input type="password" id="currentPasswordInput" name="currentPassword" <%= user.password ? 'required' : '' %>
                       class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
                   </div>
-                  <% } else { %>
-                    <div class="p-4 bg-indigo-50 text-indigo-700 text-sm rounded-xl mb-4 border border-indigo-100">
+                  
+                  <% if (!user.password) { %>
+                    <div id="google-login-notice" class="p-4 bg-indigo-50 text-indigo-700 text-sm rounded-xl mb-4 border border-indigo-100">
                       <p class="font-bold mb-1">Using Google Login</p>
                       You haven't set a password yet. Set one below to enable manual login and email updates.
                     </div>
-                    <% } %>
+                  <% } %>
 
                       <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">New Password</label>
@@ -60,5 +62,58 @@
         </main>
       </div>
   </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    document.getElementById('updatePasswordForm').addEventListener('submit', async function (e) {
+      e.preventDefault(); // Prevent full page reload
+      
+      const form = e.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const msgContainer = document.getElementById('js-msg-container');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      let originalBtnText = submitBtn.innerText;
+      
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Updating...';
+
+        // Axios PUT Request to the updated route
+        const response = await axios.put('/account/update-password', data);
+        
+        // Show success styling and message
+        msgContainer.className = 'p-4 mb-6 text-sm rounded-xl font-bold bg-green-50 text-green-700 border border-green-100';
+        msgContainer.innerText = response.data.message;
+        msgContainer.classList.remove('hidden');
+        form.reset(); 
+        
+        // Handle UI update for Google Auth users setting password for the first time
+        const googleNotice = document.getElementById('google-login-notice');
+        if (googleNotice) {
+          googleNotice.remove(); // Remove the notice permanently for this session
+          
+          const currentPwdGroup = document.getElementById('current-password-group');
+          if (currentPwdGroup) currentPwdGroup.classList.remove('hidden'); // Reveal Current Password field
+          
+          const currentPwdInput = document.getElementById('currentPasswordInput');
+          if (currentPwdInput) currentPwdInput.required = true; // Make sure it's required for future submissions
+          
+          originalBtnText = 'Update Password'; // Update the restored button text
+        }
+
+      } catch (error) {
+        // Handle Validation or Server Errors
+        const errorMsg = error.response?.data?.message || 'Failed to update password. Please try again.';
+
+        msgContainer.className = 'p-4 mb-6 text-sm rounded-xl font-bold bg-red-50 text-red-700 border border-red-100';
+        msgContainer.innerText = errorMsg;
+        msgContainer.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalBtnText; // Restore original text
+      }
+    });
+  </script>
 
   <%- include("../partials/footer") %>

@@ -45,11 +45,10 @@
                               class="text-indigo-600 text-sm font-black hover:underline">
                               ✎ Edit
                             </button>
-                            <form method="POST" action="/account/addresses/<%= a._id %>/delete"
-                              onsubmit="confirmDelete(event, this)">
-                              <button class="text-gray-400 hover:text-red-500 transition-colors"
-                                type="submit"><span>&#x1F5D1;</span></button>
-                            </form>
+                            <button onclick="confirmDelete(event, '<%= a._id %>')"
+                                class="text-gray-400 hover:text-red-500 transition-colors">
+                              <span>&#x1F5D1;delete</span>
+                            </button>
                           </div>
                         </div>
 
@@ -107,8 +106,9 @@
             <%= modalError %>
           </div>
           <% } %>
+          <div id="addModalError" class="hidden mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100"></div>
 
-            <form method="POST" action="/account/addresses" class="p-6 grid md:grid-cols-2 gap-4">
+            <form id="addAddressForm" class="p-6 grid md:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
                 <input name="fullName" placeholder="John Doe"
@@ -192,8 +192,9 @@
             <%= modalError %>
           </div>
           <% } %>
+          <div id="editModalError" class="hidden mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100"></div>
 
-            <form id="editAddressForm" method="POST" action="" class="p-6 grid md:grid-cols-2 gap-4">
+            <form id="editAddressForm" data-action="" class="p-6 grid md:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
                 <input id="edit-fullName" name="fullName"
@@ -256,10 +257,11 @@
 
   <%- include("../partials/footer") %>
 
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-      // ---- Delete Confirmation Modal (SweetAlert) ----
-      function confirmDelete(event, form) {
+      // ---- Delete Confirmation Modal (SweetAlert with Axios) ----
+      function confirmDelete(event, id) {
         event.preventDefault();
         Swal.fire({
           title: "Delete Address?",
@@ -271,12 +273,46 @@
           confirmButtonText: "Yes, delete it!",
           cancelButtonText: "Cancel",
           reverseButtons: true
-        }).then((result) => {
+        }).then(async (result) => {
           if (result.isConfirmed) {
-            form.submit();
+            try {
+              await axios.delete(`/account/addresses/${id}`);
+              window.location.reload();
+            } catch (err) {
+              Swal.fire("Error", err.response?.data?.message || "Failed to delete address", "error");
+            }
           }
         });
       }
+
+      // ---- Add Address Form (Axios Request) ----
+      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(this).entries());
+        try {
+          await axios.post('/account/addresses', data);
+          window.location.reload();
+        } catch (err) {
+          const errBox = document.getElementById('addModalError');
+          errBox.innerText = err.response?.data?.message || "Something went wrong";
+          errBox.classList.remove('hidden');
+        }
+      });
+
+      // ---- Edit Address Form (Axios Request) ----
+      document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(this).entries());
+        const actionUrl = this.dataset.action;
+        try {
+          await axios.put(actionUrl, data);
+          window.location.reload();
+        } catch (err) {
+          const errBox = document.getElementById('editModalError');
+          errBox.innerText = err.response?.data?.message || "Something went wrong";
+          errBox.classList.remove('hidden');
+        }
+      });
 
       // ---- Add Modal ----
       function openAddModal() {
@@ -289,7 +325,7 @@
       // ---- Edit Modal ----
       function openEditModal(btn) {
         const id = btn.dataset.id;
-        document.getElementById('editAddressForm').action = `/account/addresses/${id}`;
+        document.getElementById('editAddressForm').dataset.action = `/account/addresses/${id}`;
         document.getElementById('edit-fullName').value = btn.dataset.fullname;
         document.getElementById('edit-phone').value = btn.dataset.phone;
         document.getElementById('edit-pincode').value = btn.dataset.pincode;
@@ -320,7 +356,7 @@
   <% if (typeof modalType !== "undefined" && modalType === "edit") { %>
     // Pre-fill edit modal with the submitted data so the user doesn't lose their input
     <% if (typeof editAddressData !== "undefined" && editAddressData) { %>
-          document.getElementById('editAddressForm').action = `/account/addresses/<%= editAddressData._id %>`;
+          document.getElementById('editAddressForm').dataset.action = `/account/addresses/<%= editAddressData._id %>`;
           document.getElementById('edit-fullName').value = `<%= editAddressData.fullName || '' %>`;
           document.getElementById('edit-phone').value = `<%= editAddressData.phone || '' %>`;
           document.getElementById('edit-pincode').value = `<%= editAddressData.pincode || '' %>`;

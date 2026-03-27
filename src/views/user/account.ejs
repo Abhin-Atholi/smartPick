@@ -56,7 +56,7 @@
         <button onclick="toggleModal('editProfileModal')" class="text-gray-400 hover:text-black transition">✕</button>
       </div>
 
-      <form action="/account/update-profile" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
+      <form id="editProfileForm" class="p-6 space-y-4">
         <div>
           <label class="block text-sm font-bold mb-1 text-gray-700">Full Name</label>
           <input type="text" name="fullName" value="<%= user.fullName %>" required
@@ -105,40 +105,77 @@
   </div>
   <%- include("../partials/footer") %>
 
-    <script>
-      function toggleModal(id) {
-        const modal = document.getElementById(id);
-        modal.classList.toggle('hidden');
-      }
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    function toggleModal(id) {
+      const modal = document.getElementById(id);
+      modal.classList.toggle('hidden');
+    }
 
-      function previewImage(event) {
-        if (event.target.files && event.target.files[0]) {
-          const reader = new FileReader();
-          reader.onload = function () {
-            const output = document.getElementById('preview');
-            output.src = reader.result;
-          }
-          reader.readAsDataURL(event.target.files[0]);
+    function previewImage(event) {
+      if (event.target.files && event.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function () {
+          const output = document.getElementById('preview');
+          output.src = reader.result;
         }
+        reader.readAsDataURL(event.target.files[0]);
       }
+    }
 
-      async function removeImage() {
-        if (confirm("Delete your profile picture?")) {
+    function removeImage() {
+      Swal.fire({
+        title: "Remove Profile Picture?",
+        text: "Are you sure you want to delete your current photo?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#EF4444",
+        cancelButtonColor: "#6B7280",
+        confirmButtonText: "Yes, remove it!",
+        cancelButtonText: "Cancel",
+        reverseButtons: true
+      }).then(async (result) => {
+        if (result.isConfirmed) {
           try {
-            const response = await fetch('/account/remove-image', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (response.ok) {
-              window.location.reload();
-            } else {
-              alert("Failed to remove image.");
-            }
+            const response = await axios.delete('/account/remove-image');
+            window.location.href = '/account?msg=' + encodeURIComponent(response.data.message);
           } catch (err) {
             console.error("Error:", err);
-            alert("An error occurred.");
+            Swal.fire("Error", err.response?.data?.message || "An error occurred.", "error");
           }
         }
+      });
+    }
+
+    document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerText;
+      
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Saving...';
+        
+        const response = await axios.put('/account/update-profile', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        if (response.data.redirect) {
+          window.location.href = response.data.redirect;
+        } else {
+          window.location.href = '/account?msg=' + encodeURIComponent(response.data.message);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        Swal.fire("Error", err.response?.data?.message || "Failed to update profile.", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalText;
       }
-    </script>
+    });
+  </script>

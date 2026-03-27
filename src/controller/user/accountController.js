@@ -8,14 +8,14 @@ import Address from "../../model/addressModel.js";
 export const loadAccount = async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);
-    res.render("user/account", { title: "My Account", user, msg: null });
+    res.render("user/account", { title: "My Account", user, msg: req.query.msg || null });
   } catch (err) {
     res.status(500).send("Server Error");
   }
 };
 
 /**
- * POST: Update Profile (Handles Image, Data, and Email Change/OTP)
+ * PUT: Update Profile (Handles Image, Data, and Email Change/OTP via Axios)
  */
 export const updateProfile = async (req, res) => {
   try {
@@ -30,16 +30,15 @@ export const updateProfile = async (req, res) => {
     req.session.user.fullName = user.fullName;
     req.session.user.profileImage = user.profileImage;
 
-    // Handle Redirects based on Service outcome
+    // Handle Redirects based on Service outcome via JSON
     if (result.type === "VERIFY_OTP") {
-      return res.redirect(`/verify?email=${encodeURIComponent(result.email)}&context=changeEmail`);
+      return res.status(200).json({ success: true, redirect: `/verify?email=${encodeURIComponent(result.email)}&context=changeEmail` });
     }
 
-    req.session.save(() => res.redirect("/account?msg=Profile updated successfully ✅"));
+    req.session.save(() => res.status(200).json({ success: true, message: "Profile updated successfully ✅", user: { fullName: user.fullName, profileImage: user.profileImage } }));
 
   } catch (err) {
-    const user = await User.findById(req.session.userId);
-    res.render("user/account", { title: "My Account", user, msg: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 
@@ -83,21 +82,19 @@ export const loadAddresses = async (req, res) => {
 };
 
 /**
- * POST: Add New Address
+ * POST: Add New Address (via Axios)
  */
 export const addAddress = async (req, res) => {
   try {
     await userService.addAddress(req.session.userId, req.body);
-    res.redirect("/account/addresses");
-
+    res.status(200).json({ success: true, message: "Address added successfully ✅" });
   } catch (err) {
-    req.session.flash = { modalError: err.message, modalType: "add", addAddressData: req.body };
-    return req.session.save(() => res.redirect("/account/addresses"));
+    res.status(400).json({ success: false, message: err.message, addAddressData: req.body });
   }
 };
 
 /**
- * GET: Load Edit Address Page
+ * GET: Load Edit Address Page (Can be skipped if modal handles it via data attributes)
  */
 export const loadEditAddress = async (req, res) => {
   try {
@@ -112,31 +109,26 @@ export const loadEditAddress = async (req, res) => {
 };
 
 /**
- * POST: Update Existing Address
+ * PUT: Update Existing Address (via Axios)
  */
 export const updateAddress = async (req, res) => {
   try {
     await userService.updateAddress(req.session.userId, req.params.id, req.body);
-    res.redirect("/account/addresses");
+    res.status(200).json({ success: true, message: "Address updated successfully ✅" });
   } catch (err) {
-    req.session.flash = {
-      modalError: err.message,
-      modalType: "edit",
-      editAddressData: { _id: req.params.id, ...req.body },
-    };
-    return req.session.save(() => res.redirect("/account/addresses"));
+    res.status(400).json({ success: false, message: err.message, editAddressData: req.body });
   }
 };
 
 /**
- * POST/DELETE: Remove Address
+ * DELETE: Remove Address (via Axios)
  */
 export const deleteAddress = async (req, res) => {
   try {
     await userService.deleteAddress(req.session.userId, req.params.id);
-    res.redirect("/account/addresses");
+    res.status(200).json({ success: true, message: "Address deleted successfully ✅" });
   } catch (err) {
-    res.status(500).send("Server Error");
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 
@@ -157,14 +149,13 @@ export const loadSecurity = async (req, res) => {
 };
 
 /**
- * POST: Update Password
+ * PUT: Update Password (via Axios / AJAX)
  */
 export const updatePassword = async (req, res) => {
   try {
     await userService.changePassword(req.session.userId, req.body);
-    res.redirect("/account/security?msg=Password updated successfully ✅");
+    res.status(200).json({ success: true, message: "Password updated successfully ✅" });
   } catch (err) {
-    const user = await User.findById(req.session.userId);
-    res.render("user/security", { title: "Security", user, msg: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };
