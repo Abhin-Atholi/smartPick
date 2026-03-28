@@ -1,43 +1,45 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
-// Ensure the directory exists, otherwise Multer will throw an error
-const uploadDir = "public/uploads/profiles/";
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// 1. Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir); // Files will be saved here
-  },
-  filename: (req, file, cb) => {
-    // Creates a unique name: userId-timestamp.extension
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "profile-" + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-// 2. File Filter (Security: Only allow images)
+// File Filter (Security: Only allow images)
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
+  // We can't rely just on path.extname here easily since cloudinary will handle it, but we can check originalname and mimetype
+  const isImage = file.mimetype.startsWith('image/');
+  
+  if (isImage) {
     return cb(null, true);
   } else {
-    cb(new Error("Only images (jpeg, jpg, png, webp) are allowed!"));
+    cb(new Error("Only images are allowed!"));
   }
 };
 
-// 3. Initialize Multer
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // Limit 2MB
-  fileFilter: fileFilter,
-});
+/**
+ * Reusable utility to create a multer instance that uploads to a specific Cloudinary folder.
+ * @param {string} folderName - The folder inside Cloudinary where images will be stored (e.g., 'smartpick/profiles')
+ * @returns {multer.Multer}
+ */
+export const createCloudinaryUpload = (folderName) => {
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: folderName,
+      allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+      // You can add transformation options here if needed, e.g. resizing
+      // transformation: [{ width: 500, height: 500, crop: 'limit' }]
+    },
+  });
+
+  return multer({
+    storage: storage,
+    limits: { fileSize: 2 * 1024 * 1024 }, // Limit 2MB
+    fileFilter: fileFilter,
+  });
+};
+
+// Kept for backward compatibility in case some routes still expect the default `upload`
+// You should slowly migrate them to use `createCloudinaryUpload('folder_name')`
+const upload = createCloudinaryUpload('smartpick/profiles');
 
 export default upload;

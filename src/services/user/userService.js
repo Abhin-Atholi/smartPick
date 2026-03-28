@@ -1,6 +1,6 @@
 import User from "../../model/userModel.js";
 import bcrypt from "bcrypt";
-import { deleteLocalFile } from "../../utils/fileHelper.js";
+import { deleteLocalFile, deleteCloudinaryFile } from "../../utils/fileHelper.js";
 import * as otpService from "../common/otpService.js";
 import Address from "../../model/addressModel.js";
 
@@ -14,8 +14,17 @@ export const processProfileUpdate = async (userId, updateData, file) => {
 
   // Handle Image Replacement
   if (file) {
-    if (user.profileImage) deleteLocalFile(user.profileImage);
-    user.profileImage = `/uploads/profiles/${file.filename}`;
+    // If user already had a Cloudinary image, delete it
+    if (user.profileImageId) {
+      await deleteCloudinaryFile(user.profileImageId);
+    } else if (user.profileImage) {
+      // Legacy fallback
+      deleteLocalFile(user.profileImage);
+    }
+    
+    // multer-storage-cloudinary provides URL in `path` and public_id in `filename`
+    user.profileImage = file.path;
+    user.profileImageId = file.filename;
   }
 
   // Handle Email Change Security & OTP
@@ -50,10 +59,16 @@ export const processProfileUpdate = async (userId, updateData, file) => {
  */
 export const removeImage = async (userId) => {
   const user = await User.findById(userId);
-  if (!user || !user.profileImage) throw new Error("No image to remove");
+  if (!user || (!user.profileImage && !user.profileImageId)) throw new Error("No image to remove");
 
-  deleteLocalFile(user.profileImage);
+  if (user.profileImageId) {
+    await deleteCloudinaryFile(user.profileImageId);
+  } else if (user.profileImage) {
+    deleteLocalFile(user.profileImage);
+  }
+  
   user.profileImage = null;
+  user.profileImageId = null;
   await user.save();
 };
 

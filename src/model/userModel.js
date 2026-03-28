@@ -5,6 +5,7 @@ export const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   fullName: { type: String, required: true },
   profileImage: { type: String },
+  profileImageId: { type: String, default: null },
   role: { type: String, enum: ["admin", "user"], default: "user", index: true },
   phone: { type: String },
   status: { type: String, enum: ["active", "blocked"], default: "active", index: true },
