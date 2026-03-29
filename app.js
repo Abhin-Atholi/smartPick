@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import "dotenv/config";
 import connectDB from "./src/config/db.js";
 import layouts from "express-ejs-layouts";
-import { setAuthLocals } from "./src/middleware/isAuth.js";
+import { setAuthLocals } from "./src/middleware/user/isAuth.js";
 import nocache from "nocache";
 import passport from "passport";
 import "./src/config/passport.js";

@@ -12,7 +12,7 @@ import {
 } from "../../controller/admin/adminController.js";
 
 // Import middleware
-import { isAdmin, redirectIfAdminAuth } from "../../middleware/adminAuth.js";
+import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.js";
 
 // --- Auth Routes ---
 router.get("/login", redirectIfAdminAuth, getLogin);

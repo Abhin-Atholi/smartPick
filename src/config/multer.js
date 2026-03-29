@@ -1,6 +1,6 @@
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../config/cloudinary.js";
+import cloudinary from "./cloudinary.js";
 
 // File Filter (Security: Only allow images)
 const fileFilter = (req, file, cb) => {

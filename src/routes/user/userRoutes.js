@@ -3,8 +3,8 @@ const router = express.Router();
 import * as userController from "../../controller/user/userController.js";
 import * as authController from "../../controller/user/authController.js";
 import * as accountController from "../../controller/user/accountController.js";
-import upload from "../../middleware/multer.js";
-import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../../middleware/isAuth.js";
+import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../../middleware/user/isAuth.js";
+import { profileUploadMiddleware } from "../../middleware/user/profileUpload.js";
 
 router.use(checkBlocked);
 
@@ -51,8 +51,10 @@ router.post("/resend-reset-otp", authController.resendOtp);
 
 
 
+
+
 router.get("/account", protectRoute, accountController.loadAccount);
-router.put("/account/update-profile", protectRoute, upload.single("profileImage"), accountController.updateProfile);
+router.put("/account/update-profile", protectRoute, profileUploadMiddleware, accountController.updateProfile);
 router.delete("/account/remove-image", protectRoute, accountController.removeProfileImage);
 
 

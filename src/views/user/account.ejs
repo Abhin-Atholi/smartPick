@@ -114,13 +114,21 @@
     }
 
     function previewImage(event) {
-      if (event.target.files && event.target.files[0]) {
+      const file = event.target.files && event.target.files[0];
+      if (file) {
+        // Size validation (2MB limit)
+        if (file.size > 2 * 1024 * 1024) {
+          Swal.fire("Error", "Image size must be less than 2MB.", "error");
+          event.target.value = ''; // Reset input
+          return;
+        }
+
         const reader = new FileReader();
         reader.onload = function () {
           const output = document.getElementById('preview');
           output.src = reader.result;
         }
-        reader.readAsDataURL(event.target.files[0]);
+        reader.readAsDataURL(file);
       }
     }
 

@@ -1,4 +1,4 @@
-import User from "../model/userModel.js";
+import User from "../../model/userModel.js";
 
 export const setAuthLocals = (req, res, next) => {
     // 🛠️ FIX 1: If the user has an old admin session in req.session.user, clean it up!
