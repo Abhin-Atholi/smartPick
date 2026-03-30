@@ -14,6 +14,10 @@ import {
 // Import middleware
 import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.js";
 
+// Import module routes
+import categoryRoutes from "./categoryRoutes.js";
+import subcategoryRoutes from "./subcategoryRoutes.js";
+
 // --- Auth Routes ---
 router.get("/login", redirectIfAdminAuth, getLogin);
 router.post("/login", postLogin);
@@ -29,5 +33,9 @@ router.get("/customers", isAdmin, getCustomers);
 router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
 
 router.get("/logout", isAdmin, adminLogout);
+
+// --- Category & Subcategory Modules ---
+router.use("/categories", categoryRoutes);
+router.use("/subcategories", subcategoryRoutes);
 
 export default router;

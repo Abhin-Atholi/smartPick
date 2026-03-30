@@ -1,0 +1,269 @@
+<% layout('../../layouts/layout') %>
+<% title = 'Category Management' %>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Total Categories</p>
+            <h3 class="text-3xl font-black text-slate-800"><%= typeof totalCategories !== 'undefined' ? totalCategories : 0 %></h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl text-indigo-600">
+            📁
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Subcategories</p>
+            <h3 class="text-3xl font-black text-slate-800"><%= typeof totalSubcategories !== 'undefined' ? totalSubcategories : 0 %></h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-xl text-blue-600">
+            📑
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Active</p>
+            <h3 class="text-3xl font-black text-slate-800"><%= typeof activeCategories !== 'undefined' ? activeCategories : 0 %></h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xl text-emerald-600">
+            ✅
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Hidden</p>
+            <h3 class="text-3xl font-black text-slate-800"><%= typeof hiddenCategories !== 'undefined' ? hiddenCategories : 0 %></h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-xl text-rose-600">
+            🚫
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
+    <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+        <h2 class="text-xl font-black text-slate-800">Category Management</h2>
+        <a href="/admin/category/new" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2">
+            <span>+</span> Add Category
+        </a>
+    </div>
+
+    <form action="/admin/category" method="GET" class="flex flex-col md:flex-row gap-4">
+        <div class="relative flex-1 group">
+            <span class="absolute left-4 top-3 text-gray-400">🔍</span>
+
+            <input name="search" id="searchInput" value="<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>" type="text"
+                placeholder="Search categories..."
+                class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all">
+
+            <% if (typeof currentSearch !== 'undefined' && currentSearch && currentSearch.length > 0) { %>
+                <a href="/admin/category?status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>"
+                    class="absolute right-4 top-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold"
+                    title="Clear search">
+                    ✕
+                </a>
+            <% } %>
+        </div>
+
+        <div class="flex gap-2">
+            <select name="status" onchange="this.form.submit()"
+                class="bg-gray-50 border border-gray-200 rounded-xl px-6 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors">
+                <option value="All" <%= typeof currentStatus !== 'undefined' && currentStatus === 'All' ? 'selected' : '' %>>All Statuses</option>
+                <option value="Active" <%= typeof currentStatus !== 'undefined' && currentStatus === 'Active' ? 'selected' : '' %>>Active</option>
+                <option value="Hidden" <%= typeof currentStatus !== 'undefined' && currentStatus === 'Hidden' ? 'selected' : '' %>>Hidden</option>
+            </select>
+
+            <button type="submit"
+                class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">
+                SEARCH
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black">
+                    <th class="px-8 py-5">
+                        <a href="?sort=name&order=<%= typeof currentSort !== 'undefined' && currentSort === 'name' && currentOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>" class="hover:text-indigo-600 transition-colors flex items-center gap-1 inline-flex">
+                            Category Name
+                            <% if (typeof currentSort !== 'undefined' && currentSort === 'name') { %>
+                                <span class="text-indigo-600"><%= currentOrder === 'desc' ? '↓' : '↑' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th class="px-6 py-5">Description</th>
+                    <th class="px-6 py-5">
+                        <a href="?sort=createdAt&order=<%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && currentOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>" class="hover:text-indigo-600 transition-colors flex items-center gap-1 inline-flex">
+                            Date Added
+                            <% if (typeof currentSort === 'undefined' || currentSort === 'createdAt') { %>
+                                <span class="text-indigo-600"><%= typeof currentOrder === 'undefined' || currentOrder === 'desc' ? '↓' : '↑' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th class="px-6 py-5 text-center">Status</th>
+                    <th class="px-8 py-5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+                    <% categories.forEach(category=> { %>
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-8 py-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-indigo-50 flex items-center justify-center shrink-0">
+                                        <span class="font-bold text-indigo-600">
+                                            <%= category.name.charAt(0).toUpperCase() %>
+                                        </span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 truncate max-w-[150px]">
+                                        <%= category.name %>
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-5 text-gray-500 font-medium text-sm truncate max-w-xs" title="<%= category.description %>">
+                                <%= category.description ? category.description : '<span class="italic text-gray-300">No description</span>' %>
+                            </td>
+
+                            <td class="px-6 py-5">
+                                <p class="text-sm text-slate-700 font-bold">
+                                    <%= new Date(category.createdAt).toLocaleDateString('en-GB', { day: '2-digit' ,
+                                        month: 'short' , year: 'numeric' }) %>
+                                </p>
+                                <p class="text-[10px] text-gray-400 font-medium">
+                                    <%= new Date(category.createdAt).toLocaleTimeString([], { hour: '2-digit' ,
+                                        minute: '2-digit' }) %>
+                                </p>
+                            </td>
+
+                            <td class="px-6 py-5 text-center">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block
+                                    <%= category.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' %>">
+                                    <%= category.isActive ? 'Active' : 'Hidden' %>
+                                </span>
+                            </td>
+
+                            <td class="px-8 py-5 text-right">
+                                <div class="flex justify-end items-center gap-2">
+                                    <a href="/admin/category/edit/<%= category._id %>" class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700">
+                                        Edit
+                                    </a>
+                                    <button onclick="toggleVisibility('<%= category._id %>', <%= category.isActive %>)"
+                                        class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase
+                                        <%= category.isActive ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' %>">
+                                        <%= category.isActive ? 'Hide' : 'Show' %>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="5" class="px-8 py-20 text-center">
+                            <p class="text-gray-400 font-medium">No categories found matching your criteria.</p>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-8 py-5 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/30">
+        <p class="text-xs text-gray-500 font-bold uppercase tracking-tighter">
+            Page <span class="text-indigo-600">
+                <%= typeof currentPage !== 'undefined' ? currentPage : 1 %>
+            </span> of <%= typeof totalPages !== 'undefined' && totalPages > 0 ? totalPages : 1 %>
+        </p>
+
+        <div class="flex items-center gap-1">
+            <% if (typeof currentPage !== 'undefined' && currentPage > 1) { %>
+                <a href="/admin/category?page=<%= currentPage - 1 %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                    class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+            <% } %>
+
+            <div class="flex gap-1 px-2">
+                <% if (typeof totalPages !== 'undefined' && totalPages > 0) { %>
+                    <% for(let i=1; i <=totalPages; i++) { %>
+                        <a href="/admin/category?page=<%= i %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition <%= i === currentPage ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600' %>">
+                            <%= i %>
+                        </a>
+                    <% } %>
+                <% } %>
+            </div>
+
+            <% if (typeof currentPage !== 'undefined' && typeof totalPages !== 'undefined' && currentPage < totalPages) { %>
+                <a href="/admin/category?page=<%= currentPage + 1 %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                    class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function toggleVisibility(categoryId, currentStatus) {
+        const action = currentStatus ? 'hide' : 'show';
+        const { value: proceed } = await Swal.fire({
+            title: 'Category Visibility',
+            text: `Are you sure you want to ${action} this category?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: currentStatus ? '#f43f5e' : '#10b981',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: `Yes, ${action} it!`,
+            borderRadius: '1.25rem',
+            customClass: {
+                title: 'font-black text-slate-900',
+                popup: 'rounded-3xl'
+            }
+        });
+
+        if (proceed) {
+            try {
+                const response = await fetch(`/admin/category/toggle/${categoryId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid JSON response');
+                }
+
+                if (result.success || response.ok) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: `Category has been ${action === 'hide' ? 'hidden' : 'shown'}.`,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        borderRadius: '1.25rem'
+                    }).then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error!', result.message || 'Update failed.', 'error');
+                }
+            } catch (error) {
+                console.error('Toggle status error:', error);
+                Swal.fire('Error!', 'Something went wrong while toggling category status.', 'error');
+            }
+        }
+    }
+</script>
