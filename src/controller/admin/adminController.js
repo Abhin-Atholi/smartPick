@@ -24,11 +24,11 @@ export const postLogin = async (req, res) => {
 };
 
 export const getLogin = (req, res) => {
-    res.render("admin/login", { msg: req.query.msg || null, title: "Admin Login" });
+    res.render("admin/login", { msg: req.query.msg || null, title: "Admin Login", layout: "layout/layout" });
 };
 
 export const getDashboard = (req, res) => {
-    res.render("admin/dashboard", { title: "Admin Dashboard",layout: "layouts/adminLayout" });
+    res.render("admin/dashboard", { title: "Admin Dashboard" });
 };
 
 /**
@@ -76,7 +76,6 @@ export const getCustomers = async (req, res) => {
             .limit(limit);
 
         res.render("admin/customers", {
-            layout: "layouts/adminLayout",
             customers,
             title: "Customer Management",
             currentSearch: search || "",

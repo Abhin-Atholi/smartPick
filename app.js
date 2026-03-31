@@ -21,7 +21,7 @@ connectDB();
 app.set("views", path.join(__dirname, "src/views"));
 app.set("view engine", "ejs");
 app.use(layouts);
-app.set("layout", "layout");
+app.set("layout", "layout/layout");
 app.use(express.static(path.join(__dirname, "public")));
 
 // Body Parsing

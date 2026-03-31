@@ -1,11 +1,11 @@
-<%- include("../partials/navbar") %>
+<%- include("partials/navbar") %>
 
   <section class="max-w-6xl mx-auto px-4 py-8">
-    <%- include("../partials/accountHeader", { breadcrumb: 'Account Security' }) %>
+    <%- include("partials/accountHeader", { breadcrumb: 'Account Security' }) %>
 
       <div class="grid lg:grid-cols-[280px_1fr] gap-6">
         <aside>
-          <%- include("../partials/accountSidebar", { active: "security" }) %>
+          <%- include("partials/accountSidebar", { active: "security" }) %>
         </aside>
 
         <main class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
@@ -116,4 +116,4 @@
     });
   </script>
 
-  <%- include("../partials/footer") %>
+  <%- include("partials/footer") %>
