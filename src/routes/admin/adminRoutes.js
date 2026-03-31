@@ -17,6 +17,7 @@ import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.j
 // Import module routes
 import categoryRoutes from "./categoryRoutes.js";
 import subcategoryRoutes from "./subcategoryRoutes.js";
+import productRoutes from "./productRoutes.js";
 
 // --- Auth Routes ---
 router.get("/login", redirectIfAdminAuth, getLogin);
@@ -37,5 +38,6 @@ router.get("/logout", isAdmin, adminLogout);
 // --- Category & Subcategory Modules ---
 router.use("/category", categoryRoutes);
 router.use("/subcategory", subcategoryRoutes);
+router.use("/products", productRoutes);
 
 export default router;

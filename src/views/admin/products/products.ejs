@@ -1,0 +1,251 @@
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">Total Products</p>
+            <h3 class="text-3xl font-black text-slate-800"><%= typeof totalProducts !== 'undefined' ? totalProducts : 0 %></h3>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl">📦</div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">Active</p>
+            <h3 class="text-3xl font-black text-emerald-600"><%= typeof activeProducts !== 'undefined' ? activeProducts : 0 %></h3>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xl">✅</div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">Hidden</p>
+            <h3 class="text-3xl font-black text-rose-600"><%= typeof hiddenProducts !== 'undefined' ? hiddenProducts : 0 %></h3>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-xl">🚫</div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">Featured</p>
+            <h3 class="text-3xl font-black text-amber-500"><%= typeof featuredProducts !== 'undefined' ? featuredProducts : 0 %></h3>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-xl">⭐</div>
+    </div>
+</div>
+
+<!-- Filters & Search Bar -->
+<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
+    <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+        <h2 class="text-xl font-black text-slate-800">Product Catalogue</h2>
+        <a href="/admin/products/add" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2 text-sm">
+            <span>+</span> Add Product
+        </a>
+    </div>
+
+    <form action="/admin/products" method="GET" class="flex flex-col md:flex-row gap-3">
+        <div class="relative flex-1">
+            <span class="absolute left-4 top-3 text-gray-400">🔍</span>
+            <input name="search" value="<%= currentSearch %>" type="text" placeholder="Search by product name..."
+                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm">
+        </div>
+        <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+            <select name="category" onchange="this.form.submit()"
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                <option value="All" <%= currentCategory === 'All' ? 'selected' : '' %>>All Categories</option>
+                <% categories.forEach(cat => { %>
+                    <option value="<%= cat._id %>" <%= currentCategory == cat._id ? 'selected' : '' %>><%= cat.name %></option>
+                <% }) %>
+            </select>
+            <select name="status" onchange="this.form.submit()"
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                <option value="All" <%= currentStatus === 'All' ? 'selected' : '' %>>All Statuses</option>
+                <option value="Active" <%= currentStatus === 'Active' ? 'selected' : '' %>>Active</option>
+                <option value="Hidden" <%= currentStatus === 'Hidden' ? 'selected' : '' %>>Hidden</option>
+            </select>
+            <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition text-sm">SEARCH</button>
+        </div>
+    </form>
+</div>
+
+<!-- Product Table -->
+<div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black">
+                    <th class="px-6 py-5">Product</th>
+                    <th class="px-4 py-5">Category</th>
+                    <th class="px-4 py-5">Variants</th>
+                    <th class="px-4 py-5">Price Range</th>
+                    <th class="px-4 py-5 text-center">Featured</th>
+                    <th class="px-4 py-5 text-center">Status</th>
+                    <th class="px-6 py-5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                <% if (typeof products !== 'undefined' && products.length > 0) { %>
+                    <% products.forEach(product => { %>
+                        <% const prices = product.variants.map(v => v.price); %>
+                        <% const minPrice = Math.min(...prices); %>
+                        <% const maxPrice = Math.max(...prices); %>
+                        <% const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0); %>
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-14 h-14 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 bg-gray-50">
+                                        <% if (product.images && product.images.length > 0) { %>
+                                            <img src="<%= product.images[0] %>" class="w-full h-full object-cover">
+                                        <% } else { %>
+                                            <div class="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                                        <% } %>
+                                    </div>
+                                    <div>
+                                        <p class="font-black text-slate-800 text-sm truncate max-w-[160px]"><%= product.name %></p>
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5"><%= product.brand || '—' %></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div>
+                                    <span class="text-xs font-black text-slate-700"><%= product.category ? product.category.name : '—' %></span>
+                                    <% if (product.subcategory) { %>
+                                        <p class="text-[10px] text-gray-400 font-bold mt-0.5"><%= product.subcategory.name %></p>
+                                    <% } %>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div>
+                                    <span class="text-xs font-black text-slate-700"><%= product.variants.length %> variant<%= product.variants.length !== 1 ? 's' : '' %></span>
+                                    <p class="text-[10px] font-bold mt-0.5 <%= totalStock === 0 ? 'text-rose-500' : totalStock < 10 ? 'text-amber-500' : 'text-emerald-600' %>">
+                                        <%= totalStock === 0 ? 'Out of Stock' : totalStock + ' in stock' %>
+                                    </p>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <% if (minPrice === maxPrice) { %>
+                                    <span class="text-sm font-black text-slate-800">₹<%= minPrice.toLocaleString() %></span>
+                                <% } else { %>
+                                    <span class="text-sm font-black text-slate-800">₹<%= minPrice.toLocaleString() %> – ₹<%= maxPrice.toLocaleString() %></span>
+                                <% } %>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <button onclick="toggleFeatured('<%= product._id %>', <%= product.isFeatured %>)"
+                                    class="text-xl transition hover:scale-110 <%= product.isFeatured ? 'opacity-100' : 'opacity-20 hover:opacity-60' %>" title="<%= product.isFeatured ? 'Remove from Featured' : 'Mark as Featured' %>">⭐</button>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
+                                    <%= product.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' %>">
+                                    <%= product.isActive ? 'Active' : 'Hidden' %>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end items-center gap-2">
+                                    <a href="/admin/products/edit/<%= product._id %>" class="px-3 py-1.5 rounded-lg font-black text-[10px] tracking-widest uppercase bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition">Edit</a>
+                                    <button onclick="toggleVisibility('<%= product._id %>', <%= product.isActive %>)"
+                                        class="px-3 py-1.5 rounded-lg font-black text-[10px] tracking-widest uppercase transition
+                                        <%= product.isActive ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' %>">
+                                        <%= product.isActive ? 'Hide' : 'Show' %>
+                                    </button>
+                                    <button onclick="softDelete('<%= product._id %>')" class="px-3 py-1.5 rounded-lg font-black text-[10px] tracking-widest uppercase bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="7" class="px-8 py-20 text-center">
+                            <div class="text-5xl mb-4">📦</div>
+                            <p class="text-gray-400 font-bold">No products found. <a href="/admin/products/add" class="text-indigo-600 hover:underline">Add your first product →</a></p>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/30">
+        <p class="text-xs text-gray-500 font-bold uppercase tracking-tighter">
+            Page <span class="text-indigo-600"><%= currentPage %></span> of <%= totalPages %>
+        </p>
+        <div class="flex items-center gap-1">
+            <% if (currentPage > 1) { %>
+                <a href="/admin/products?page=<%= currentPage-1 %>&sort=<%= currentSort %>&order=<%= currentOrder %>&search=<%= currentSearch %>&status=<%= currentStatus %>&category=<%= currentCategory %>"
+                    class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
+            <% } %>
+            <div class="flex gap-1 px-2">
+                <% for(let i=1; i<=totalPages; i++) { %>
+                    <a href="/admin/products?page=<%= i %>&sort=<%= currentSort %>&order=<%= currentOrder %>&search=<%= currentSearch %>&status=<%= currentStatus %>&category=<%= currentCategory %>"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition <%= i === currentPage ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-indigo-600' %>">
+                        <%= i %>
+                    </a>
+                <% } %>
+            </div>
+            <% if (currentPage < totalPages) { %>
+                <a href="/admin/products?page=<%= currentPage+1 %>&sort=<%= currentSort %>&order=<%= currentOrder %>&search=<%= currentSearch %>&status=<%= currentStatus %>&category=<%= currentCategory %>"
+                    class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function toggleVisibility(productId, currentStatus) {
+        const action = currentStatus ? 'hide' : 'show';
+        const { isConfirmed } = await Swal.fire({
+            title: 'Change Visibility?',
+            text: `Are you sure you want to ${action} this product?`,
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: currentStatus ? '#f43f5e' : '#10b981',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: `Yes, ${action} it!`
+        });
+        if (!isConfirmed) return;
+        try {
+            const res = await axios.patch(`/admin/products/toggle/${productId}`);
+            if (res.data.success) {
+                Swal.fire({ title: 'Done!', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => location.reload());
+            }
+        } catch (err) {
+            Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
+        }
+    }
+
+    async function toggleFeatured(productId, currentFeatured) {
+        const action = currentFeatured ? 'remove from' : 'add to';
+        const { isConfirmed } = await Swal.fire({
+            title: 'Toggle Featured?', text: `${action.charAt(0).toUpperCase() + action.slice(1)} featured products?`,
+            icon: 'question', showCancelButton: true, confirmButtonColor: '#f59e0b', cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes!'
+        });
+        if (!isConfirmed) return;
+        try {
+            const res = await axios.patch(`/admin/products/featured/${productId}`);
+            if (res.data.success) {
+                Swal.fire({ title: 'Done!', icon: 'success', timer: 1200, showConfirmButton: false }).then(() => location.reload());
+            }
+        } catch (err) {
+            Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
+        }
+    }
+
+    async function softDelete(productId) {
+        const { isConfirmed } = await Swal.fire({
+            title: 'Remove Product?',
+            text: 'This will hide the product from the storefront. It can be restored by toggling visibility.',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, remove it!'
+        });
+        if (!isConfirmed) return;
+        try {
+            const res = await axios.patch(`/admin/products/delete/${productId}`);
+            if (res.data.success) {
+                Swal.fire({ title: 'Removed!', text: res.data.message, icon: 'success', timer: 1800, showConfirmButton: false }).then(() => location.reload());
+            }
+        } catch (err) {
+            Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
+        }
+    }
+</script>

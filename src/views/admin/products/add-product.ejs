@@ -1,0 +1,373 @@
+<!-- Cropper.js CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
+
+<div class="max-w-5xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-2xl font-black text-slate-800">Add New Product</h2>
+            <p class="text-sm text-gray-400 font-bold mt-0.5">Fill in all fields. Minimum 3 cropped images required.</p>
+        </div>
+        <a href="/admin/products" class="px-5 py-2 rounded-xl text-sm font-black text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2">
+            ← Back to Products
+        </a>
+    </div>
+
+    <form id="addProductForm">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left: Main Info -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Basic Details Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest">Product Details</h3>
+                    
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Product Name *</label>
+                        <input type="text" id="productName" name="name" placeholder="e.g. Classic Polo Shirt"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Brand</label>
+                            <input type="text" id="productBrand" name="brand" placeholder="e.g. Nike"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Category *</label>
+                            <select id="productCategory" name="category"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm cursor-pointer">
+                                <option value="">Select category...</option>
+                                <% categories.forEach(cat => { %>
+                                    <option value="<%= cat._id %>"><%= cat.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Subcategory</label>
+                        <select id="productSubcategory" name="subcategory"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm cursor-pointer">
+                            <option value="">Select category first...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Description</label>
+                        <textarea id="productDesc" name="description" rows="4" placeholder="Describe the product..."
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700 resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Variants Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest">Product Variants *</h3>
+                        <button type="button" onclick="addVariantRow()" class="px-4 py-2 bg-indigo-50 text-indigo-600 font-black text-xs rounded-xl hover:bg-indigo-100 transition">+ Add Variant</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left" id="variantsTable">
+                            <thead>
+                                <tr class="text-[10px] uppercase tracking-widest text-gray-400 font-black border-b border-gray-100">
+                                    <th class="pb-3 pr-3">Size</th>
+                                    <th class="pb-3 pr-3">Color</th>
+                                    <th class="pb-3 pr-3">Price (₹)</th>
+                                    <th class="pb-3 pr-3">Stock</th>
+                                    <th class="pb-3 pr-3">SKU</th>
+                                    <th class="pb-3"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="variantsBody">
+                                <!-- Rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="variantError" class="text-rose-500 text-xs font-bold mt-2 hidden">At least one variant is required.</p>
+                </div>
+
+            </div>
+
+            <!-- Right: Images & Settings -->
+            <div class="space-y-6">
+
+                <!-- Image Upload Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Product Images * <span class="text-indigo-600">(min 3)</span></h3>
+
+                    <!-- Drop Zone -->
+                    <div id="imageDropZone" class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-indigo-300 hover:bg-indigo-50/30 transition cursor-pointer" onclick="document.getElementById('imageFilePicker').click()">
+                        <div class="text-4xl mb-2">🖼️</div>
+                        <p class="text-sm font-black text-slate-600">Click to upload images</p>
+                        <p class="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">PNG, JPG, WebP — each photo will be cropped</p>
+                        <input type="file" id="imageFilePicker" accept="image/*" multiple class="hidden">
+                    </div>
+
+                    <!-- Image Previews Grid -->
+                    <div id="imagePreviewGrid" class="grid grid-cols-3 gap-2 mt-4"></div>
+                    <p id="imageCountMsg" class="text-xs font-bold mt-2 text-gray-400">0 images added</p>
+                    <p id="imageError" class="text-rose-500 text-xs font-bold mt-1 hidden">Minimum 3 images required.</p>
+                </div>
+
+                <!-- Settings Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest">Settings</h3>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-black text-slate-700">Active</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Visible in storefront</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="productActive" name="isActive" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                        <div>
+                            <p class="text-sm font-black text-slate-700">Featured ⭐</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show on homepage</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="productFeatured" name="isFeatured" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="button" onclick="submitProductForm()" id="submitProductBtn"
+                    class="w-full py-3.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 text-sm">
+                    Create Product
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Cropper Modal -->
+<div id="cropperModal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-black text-slate-800">Crop Image</h3>
+            <span class="text-xs text-gray-400 font-bold">Drag to reposition • Scroll to zoom</span>
+        </div>
+        <div class="p-4 bg-gray-900 flex items-center justify-center" style="height:360px">
+            <img id="cropperImage" src="" style="max-height:100%;max-width:100%;">
+        </div>
+        <div class="px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+            <button onclick="cancelCrop()" class="px-5 py-2 rounded-xl font-black text-sm text-gray-500 hover:bg-gray-100 transition">Cancel</button>
+            <button onclick="confirmCrop()" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition text-sm">✓ Use This Crop</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── Variant Management ──────────────────────────────────────────────────
+    let variantCount = 0;
+
+    function addVariantRow(data = {}) {
+        variantCount++;
+        const row = document.createElement('tr');
+        row.id = `variant-row-${variantCount}`;
+        row.className = 'border-b border-gray-50 group';
+        row.innerHTML = `
+            <td class="py-2 pr-3"><input type="text" value="${data.size || ''}" placeholder="XL" class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="size"></td>
+            <td class="py-2 pr-3"><input type="text" value="${data.color || ''}" placeholder="Red" class="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="color"></td>
+            <td class="py-2 pr-3"><input type="number" value="${data.price || ''}" placeholder="999" min="0" class="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="price"></td>
+            <td class="py-2 pr-3"><input type="number" value="${data.stock || ''}" placeholder="50" min="0" class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="stock"></td>
+            <td class="py-2 pr-3"><input type="text" value="${data.sku || ''}" placeholder="SKU-001" class="w-24 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="sku"></td>
+            <td class="py-2"><button type="button" onclick="removeVariantRow('variant-row-${variantCount}')" class="text-gray-300 hover:text-rose-500 transition font-black text-lg leading-none">✕</button></td>
+        `;
+        document.getElementById('variantsBody').appendChild(row);
+    }
+
+    function removeVariantRow(rowId) {
+        document.getElementById(rowId)?.remove();
+    }
+
+    function collectVariants() {
+        const rows = document.querySelectorAll('#variantsBody tr');
+        const variants = [];
+        for (const row of rows) {
+            const size = row.querySelector('[data-field="size"]')?.value.trim();
+            const color = row.querySelector('[data-field="color"]')?.value.trim();
+            const price = parseFloat(row.querySelector('[data-field="price"]')?.value);
+            const stock = parseInt(row.querySelector('[data-field="stock"]')?.value);
+            const sku = row.querySelector('[data-field="sku"]')?.value.trim();
+            if (!size || !color || isNaN(price) || isNaN(stock) || !sku) return null;
+            variants.push({ size, color, price, stock, sku });
+        }
+        return variants;
+    }
+
+    // ── Image & Cropper ─────────────────────────────────────────────────────
+    let croppedBlobs = []; // Final cropped File blobs
+    let cropperInstance = null;
+    let currentCropResolve = null;
+    let pendingFiles = [];
+    let pendingIndex = 0;
+
+    document.getElementById('imageFilePicker').addEventListener('change', async (e) => {
+        pendingFiles = Array.from(e.target.files);
+        pendingIndex = 0;
+        e.target.value = ''; // Reset so same file can be re-picked
+        processNextPendingFile();
+    });
+
+    function processNextPendingFile() {
+        if (pendingIndex >= pendingFiles.length) return;
+        const file = pendingFiles[pendingIndex];
+        pendingIndex++;
+        openCropper(file);
+    }
+
+    function openCropper(file) {
+        const url = URL.createObjectURL(file);
+        const img = document.getElementById('cropperImage');
+        img.src = url;
+        document.getElementById('cropperModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+
+        img.onload = () => {
+            if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+            cropperInstance = new Cropper(img, {
+                aspectRatio: NaN, // Free crop
+                viewMode: 1,
+                autoCropArea: 0.9,
+                movable: true, zoomable: true, rotatable: false, scalable: false,
+            });
+        };
+    }
+
+    function cancelCrop() {
+        cleanupCropper();
+        processNextPendingFile();
+    }
+
+    function confirmCrop() {
+        if (!cropperInstance) return;
+        cropperInstance.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200, fillColor: '#fff' }).toBlob((blob) => {
+            const uniqueName = `product-img-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+            const file = new File([blob], uniqueName, { type: 'image/jpeg' });
+            croppedBlobs.push(file);
+            addImagePreview(URL.createObjectURL(blob), croppedBlobs.length - 1);
+            updateImageCount();
+            cleanupCropper();
+            processNextPendingFile();
+        }, 'image/jpeg', 0.9);
+    }
+
+    function cleanupCropper() {
+        if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+        document.getElementById('cropperModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function addImagePreview(src, index) {
+        const grid = document.getElementById('imagePreviewGrid');
+        const div = document.createElement('div');
+        div.id = `img-preview-${index}`;
+        div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group';
+        div.innerHTML = `
+            <img src="${src}" class="w-full h-full object-cover">
+            <button type="button" onclick="removeImage(${index})"
+                class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+        `;
+        grid.appendChild(div);
+    }
+
+    function removeImage(index) {
+        croppedBlobs.splice(index, 1);
+        document.getElementById(`img-preview-${index}`)?.remove();
+        // Re-index remaining previews
+        const grid = document.getElementById('imagePreviewGrid');
+        Array.from(grid.children).forEach((div, i) => {
+            div.id = `img-preview-${i}`;
+            div.querySelector('button').setAttribute('onclick', `removeImage(${i})`);
+        });
+        updateImageCount();
+    }
+
+    function updateImageCount() {
+        const count = croppedBlobs.length;
+        const msg = document.getElementById('imageCountMsg');
+        msg.textContent = `${count} image${count !== 1 ? 's' : ''} added`;
+        msg.className = `text-xs font-bold mt-2 ${count < 3 ? 'text-rose-500' : 'text-emerald-600'}`;
+    }
+
+    // ── Category → Subcategory AJAX ─────────────────────────────────────────
+    document.getElementById('productCategory').addEventListener('change', async function () {
+        const catId = this.value;
+        const subSelect = document.getElementById('productSubcategory');
+        subSelect.innerHTML = '<option value="">Loading...</option>';
+        if (!catId) { subSelect.innerHTML = '<option value="">Select category first...</option>'; return; }
+        try {
+            const res = await axios.get(`/admin/products/subcategories/${catId}`);
+            if (res.data.success && res.data.subcategories.length > 0) {
+                subSelect.innerHTML = '<option value="">None (optional)</option>' +
+                    res.data.subcategories.map(s => `<option value="${s._id}">${s.name}</option>`).join('');
+            } else {
+                subSelect.innerHTML = '<option value="">No subcategories available</option>';
+            }
+        } catch {
+            subSelect.innerHTML = '<option value="">Error loading subcategories</option>';
+        }
+    });
+
+    // ── Form Submit ──────────────────────────────────────────────────────────
+    async function submitProductForm() {
+        const name = document.getElementById('productName').value.trim();
+        const category = document.getElementById('productCategory').value;
+        const variants = collectVariants();
+
+        let valid = true;
+        if (name.length < 2) { Swal.fire('Validation Error', 'Product name must be at least 2 characters.', 'warning'); return; }
+        if (!category) { Swal.fire('Validation Error', 'Please select a category.', 'warning'); return; }
+        if (croppedBlobs.length < 3) {
+            document.getElementById('imageError').classList.remove('hidden');
+            Swal.fire('Validation Error', 'Please upload and crop at least 3 product images.', 'warning'); return;
+        }
+        document.getElementById('imageError').classList.add('hidden');
+        if (variants === null || variants.length === 0) {
+            document.getElementById('variantError').classList.remove('hidden');
+            Swal.fire('Validation Error', 'Please add at least one complete variant (all fields required).', 'warning'); return;
+        }
+        document.getElementById('variantError').classList.add('hidden');
+
+        const btn = document.getElementById('submitProductBtn');
+        btn.innerHTML = '⏳ Saving...'; btn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('brand', document.getElementById('productBrand').value.trim());
+            formData.append('category', category);
+            formData.append('subcategory', document.getElementById('productSubcategory').value);
+            formData.append('description', document.getElementById('productDesc').value.trim());
+            formData.append('isActive', document.getElementById('productActive').checked ? 'on' : 'false');
+            formData.append('isFeatured', document.getElementById('productFeatured').checked ? 'on' : 'false');
+            formData.append('variants', JSON.stringify(variants));
+            croppedBlobs.forEach(blob => formData.append('images', blob));
+
+            const res = await axios.post('/admin/products/add', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            if (res.data.success) {
+                Swal.fire({ title: 'Created!', text: 'Product successfully added!', icon: 'success', timer: 2000, showConfirmButton: false })
+                    .then(() => window.location.href = '/admin/products');
+            }
+        } catch (err) {
+            Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
+        } finally {
+            btn.innerHTML = 'Create Product'; btn.disabled = false;
+        }
+    }
+
+    // Add one empty variant row on page load
+    addVariantRow();
+</script>
