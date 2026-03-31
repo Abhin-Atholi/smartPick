@@ -4,16 +4,19 @@ const router = express.Router();
 import { isAdmin } from "../../middleware/admin/adminAuth.js";
 import * as subcategoryController from "../../controller/admin/subcategoryController.js";
 
+import { createCloudinaryUpload } from "../../config/multer.js";
+
+const uploadSubcategory = createCloudinaryUpload('smartpick/subcategories');
+
 // Protect all routes in this file
 router.use(isAdmin);
 
-// All routes are implicitly prefixed with "/admin/subcategories"
-// router.get("/", subcategoryController.getSubcategories);
-router.get("/add", subcategoryController.getAddSubcategory);
-router.post("/add", subcategoryController.addSubcategory);
-router.get("/edit/:id", subcategoryController.getEditSubcategory);
-router.put("/edit/:id", subcategoryController.updateSubcategory);
-router.delete("/delete/:id", subcategoryController.deleteSubcategory);
-router.get("/", (req,res)=>res.render("admin/category/subcategory",{title: 'Sub-Category Management'}));
+// All routes are implicitly prefixed with "/admin/subcategory"
+router.get("/", subcategoryController.getSubcategories);
+
+router.post("/add", uploadSubcategory.single("image"), subcategoryController.addSubcategory);
+
+router.put("/edit/:id", uploadSubcategory.single("image"), subcategoryController.updateSubcategory);
+router.patch("/toggle/:id", subcategoryController.toggleSubcategory);
 
 export default router;

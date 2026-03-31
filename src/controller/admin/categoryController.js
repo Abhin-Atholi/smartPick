@@ -35,11 +35,6 @@ export const getCategories = async (req, res) => {
     }
 };
 
-export const getAddCategory = async (req, res) => {
-    // Optional standalone page fallback, but we will mostly use the modal injection over AJAX
-    res.render("admin/category/category", { title: "Add Category" });
-};
-
 export const addCategory = async (req, res) => {
     try {
         const { name, description, isActive } = req.body;
@@ -96,10 +91,6 @@ export const toggleCategory = async (req, res) => {
     }
 };
 
-export const getEditCategory = async (req, res) => {
-  res.send("Edit category form coming soon");
-};
-
 export const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
@@ -109,12 +100,9 @@ export const updateCategory = async (req, res) => {
         if (!name || name.trim().length < 3) {
             return res.status(400).json({ success: false, message: "Category name must be at least 3 characters long." });
         }
-        console.log("categoryController/line112")
-        
         if (!description || description.trim().length < 10) {
             return res.status(400).json({ success: false, message: "Description must be at least 10 characters long." });
         }
-        console.log("categoryController/line117")
 
 
         // Uniqueness check, excluding THIS specific category from the check
@@ -122,17 +110,14 @@ export const updateCategory = async (req, res) => {
         if (existingCategory && existingCategory._id.toString() !== id) {
             return res.status(400).json({ success: false, message: "Another Category with this name already exists." });
         }
-        console.log("categoryController/line125")
 
         const updateData = {
             name: name.trim(),
             description: description.trim(),
             isActive: isActive === 'true' || isActive === 'on'
         };
-        console.log("categoryController/line132")
 
         const updatedCategory = await categoryService.updateCategory(id, updateData, req.file);
-        console.log("categoryController/line135")
         
         if (!updatedCategory) {
             return res.status(404).json({ success: false, message: "Category not found." });
@@ -145,6 +130,4 @@ export const updateCategory = async (req, res) => {
     }
 };
 
-export const deleteCategory = async (req, res) => {
-  res.send("Category deleted");
-};
+

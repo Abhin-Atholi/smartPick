@@ -13,9 +13,7 @@ router.use(isAdmin);
 router.get("/", categoryController.getCategories);
 router.post("/add", uploadCategory.single("image"), categoryController.addCategory);
 
-router.get("/edit/:id", categoryController.getEditCategory);
 router.put("/edit/:id", uploadCategory.single("image"), categoryController.updateCategory);
 router.patch("/toggle/:id", categoryController.toggleCategory);
-router.delete("/delete/:id", categoryController.deleteCategory);
 
 export default router;

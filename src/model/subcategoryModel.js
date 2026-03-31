@@ -19,6 +19,10 @@ const subcategorySchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  image: {
+    type: String,
+    required: true,
   }
 }, { timestamps: true });
 
