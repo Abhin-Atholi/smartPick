@@ -35,7 +35,7 @@ router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
 router.get("/logout", isAdmin, adminLogout);
 
 // --- Category & Subcategory Modules ---
-router.use("/categories", categoryRoutes);
-router.use("/subcategories", subcategoryRoutes);
+router.use("/category", categoryRoutes);
+router.use("/subcategory", subcategoryRoutes);
 
 export default router;

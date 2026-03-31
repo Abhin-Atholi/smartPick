@@ -8,11 +8,12 @@ import * as subcategoryController from "../../controller/admin/subcategoryContro
 router.use(isAdmin);
 
 // All routes are implicitly prefixed with "/admin/subcategories"
-router.get("/", subcategoryController.getSubcategories);
+// router.get("/", subcategoryController.getSubcategories);
 router.get("/add", subcategoryController.getAddSubcategory);
 router.post("/add", subcategoryController.addSubcategory);
 router.get("/edit/:id", subcategoryController.getEditSubcategory);
 router.put("/edit/:id", subcategoryController.updateSubcategory);
 router.delete("/delete/:id", subcategoryController.deleteSubcategory);
+router.get("/", (req,res)=>res.render("admin/category/subcategory",{title: 'Sub-Category Management'}));
 
 export default router;
