@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 
-export const productSchema= new mongoose.model({
+export const productSchema = new mongoose.Schema({
     productName:{
         type:String,
         required:true,
@@ -9,6 +9,15 @@ export const productSchema= new mongoose.model({
     description:{
         type:String,
         required:true,
+    },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        required: true,
+    },
+    subcategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subcategory"
     },
     status:{
         type:String,
@@ -22,4 +31,6 @@ export const productSchema= new mongoose.model({
     currentPrice:{
         type:Number,
     }
-})
+});
+
+export default mongoose.model("Product", productSchema);

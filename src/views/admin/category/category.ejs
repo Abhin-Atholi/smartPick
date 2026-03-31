@@ -1,5 +1,5 @@
 <!-- Stats Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Total Categories</p>
@@ -10,15 +10,7 @@
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-            <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Subcategories</p>
-            <h3 class="text-3xl font-black text-slate-800"><%= typeof totalSubcategories !== 'undefined' ? totalSubcategories : 0 %></h3>
-        </div>
-        <div class="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-xl text-blue-600">
-            📑
-        </div>
-    </div>
+    
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
@@ -44,9 +36,9 @@
 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
     <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
         <h2 class="text-xl font-black text-slate-800">Category Management</h2>
-        <a href="/admin/category/new" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2">
+        <button onclick="openAddModal()" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2">
             <span>+</span> Add Category
-        </a>
+        </button>
     </div>
 
     <form action="/admin/category" method="GET" class="flex flex-col md:flex-row gap-4">
@@ -115,9 +107,13 @@
                             <td class="px-8 py-5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-indigo-50 flex items-center justify-center shrink-0">
-                                        <span class="font-bold text-indigo-600">
-                                            <%= category.name.charAt(0).toUpperCase() %>
-                                        </span>
+                                        <% if (category.image) { %>
+                                            <img src="<%= category.image %>" alt="<%= category.name %>" class="w-full h-full object-cover">
+                                        <% } else { %>
+                                            <span class="font-bold text-indigo-600">
+                                                <%= category.name.charAt(0).toUpperCase() %>
+                                            </span>
+                                        <% } %>
                                     </div>
                                     <span class="font-bold text-slate-800 truncate max-w-[150px]">
                                         <%= category.name %>
@@ -149,9 +145,9 @@
 
                             <td class="px-8 py-5 text-right">
                                 <div class="flex justify-end items-center gap-2">
-                                    <a href="/admin/category/edit/<%= category._id %>" class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700">
+                                    <button onclick='openEditModal(<%- JSON.stringify({id: category._id, name: category.name, description: category.description, isActive: category.isActive, image: category.image || ""}) %>)' class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700">
                                         Edit
-                                    </a>
+                                    </button>
                                     <button onclick="toggleVisibility('<%= category._id %>', <%= category.isActive %>)"
                                         class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase
                                         <%= category.isActive ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' %>">
@@ -213,6 +209,157 @@
     </div>
 </div>
 
+
+
+<!-- Add Category Modal -->
+<div id="addCategoryModal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden p-4">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
+
+    <!-- Modal Content -->
+    <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="text-xl font-black text-slate-800">Create New Category</h3>
+            <button onclick="closeAddModal()" class="text-gray-400 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">
+                ✕
+            </button>
+        </div>
+
+        <form id="addCategoryForm" class="p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Name</label>
+                        <input type="text" name="name"  placeholder="e.g. Shirts"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                        <textarea name="description" rows="4" placeholder="Brief description..."
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="isActive" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                        <div>
+                            <p class="text-sm font-black text-slate-700">Active Visibility</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show in storefront</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (Image Upload) -->
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Image Banner</label>
+                    <div class="w-full flex-1 min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-100 hover:border-indigo-300 transition-all flex flex-col items-center justify-center p-6 cursor-pointer relative group">
+                        
+                        <input type="file" name="image" id="categoryImage" accept="image/jpeg, image/png, image/webp"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
+                        <div id="uploadPrompt" class="text-center group-hover:scale-105 transition-transform">
+                            <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-indigo-500">
+                                📸
+                            </div>
+                            <p class="text-sm font-black text-slate-700">Click to upload image</p>
+                            <p class="text-xs text-gray-400 mt-1">JPEG, PNG, WEBP (Max 2MB)</p>
+                        </div>
+
+                        <div id="imagePreviewContainer" class="hidden absolute inset-0 z-20 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                            <img id="imagePreview" src="" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Change Image</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-50">
+                <button type="button" onclick="closeAddModal()"
+                    class="px-6 py-2.5 rounded-xl font-black text-sm text-gray-500 hover:bg-gray-100 transition">
+                    Cancel
+                </button>
+                <button type="submit" id="submitAddBtn"
+                    class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 pointer-events-auto">
+                    Save Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div id="editCategoryModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4">
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal()"></div>
+    <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="text-xl font-black text-slate-800">Edit Category</h3>
+            <button onclick="closeEditModal()" class="text-gray-400 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">✕</button>
+        </div>
+
+        <form id="editCategoryForm" class="p-8">
+            <input type="hidden" id="editCategoryId" name="categoryId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Name</label>
+                        <input type="text" id="editCategoryName" name="name" placeholder="e.g. Shirts" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                        <textarea id="editCategoryDesc" name="description" rows="4" placeholder="Brief description..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                    </div>
+                    <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="editCategoryActive" name="isActive" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                        <div>
+                            <p class="text-sm font-black text-slate-700">Active Visibility</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show in storefront</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (Image Upload) -->
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Update Image Banner</label>
+                    <div class="w-full flex-1 min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-100 hover:border-indigo-300 transition-all flex flex-col items-center justify-center p-6 cursor-pointer relative group overflow-hidden">
+                        
+                        <input type="file" name="image" id="editCategoryImage" accept="image/jpeg, image/png, image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+
+                        <div id="editUploadPrompt" class="text-center group-hover:scale-105 transition-transform z-10 hidden">
+                            <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-indigo-500">📸</div>
+                            <p class="text-sm font-black text-slate-700">Upload New</p>
+                        </div>
+
+                        <div id="editImagePreviewContainer" class="absolute inset-0 z-10 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                            <img id="editImagePreview" src="" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <span class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Replace Image</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-50">
+                <button type="button" onclick="closeEditModal()" class="px-6 py-2.5 rounded-xl font-black text-sm text-gray-500 hover:bg-gray-100 transition">Cancel</button>
+                <button type="submit" id="submitEditBtn" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 pointer-events-auto">Update Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     async function toggleVisibility(categoryId, currentStatus) {
         const action = currentStatus ? 'hide' : 'show';
@@ -263,4 +410,183 @@
             }
         }
     }
+
+    // Modal state functions
+    function openAddModal() {
+        document.getElementById('addCategoryModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+    
+    function closeAddModal() {
+        document.getElementById('addCategoryModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        document.getElementById('addCategoryForm').reset();
+        document.getElementById('imagePreviewContainer').classList.add('hidden');
+        document.getElementById('uploadPrompt').classList.remove('hidden');
+    }
+
+    function openEditModal(category) {
+        document.getElementById('editCategoryId').value = category.id;
+        document.getElementById('editCategoryName').value = category.name;
+        document.getElementById('editCategoryDesc').value = category.description;
+        document.getElementById('editCategoryActive').checked = category.isActive;
+        
+        if (category.image) {
+            document.getElementById('editImagePreview').src = category.image;
+            document.getElementById('editImagePreviewContainer').classList.remove('hidden');
+            document.getElementById('editUploadPrompt').classList.add('hidden');
+        } else {
+            document.getElementById('editImagePreviewContainer').classList.add('hidden');
+            document.getElementById('editUploadPrompt').classList.remove('hidden');
+        }
+
+        document.getElementById('editCategoryModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editCategoryModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        document.getElementById('editCategoryForm').reset();
+        document.getElementById('editImagePreviewContainer').classList.add('hidden');
+        document.getElementById('editUploadPrompt').classList.remove('hidden');
+    }
+
+    // Modal Image Previews
+    document.getElementById('categoryImage').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPrompt').classList.add('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('editCategoryImage').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('editImagePreview').src = e.target.result;
+                document.getElementById('editImagePreviewContainer').classList.remove('hidden');
+                document.getElementById('editUploadPrompt').classList.add('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Form Submissions
+    document.getElementById('addCategoryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const nameInput = form.name.value.trim();
+        const descInput = form.description.value.trim();
+        const imageFile = document.getElementById('categoryImage').files[0];
+
+        // --- Frontend Validation ---
+        if (nameInput.length < 3) {
+            return Swal.fire('Validation Error', 'Category name must be at least 3 characters long.', 'warning');
+        }
+        if (descInput.length < 10) {
+            return Swal.fire('Validation Error', 'Please provide a description of at least 10 characters.', 'warning');
+        }
+        if (!imageFile) {
+            return Swal.fire('Validation Error', 'Please select a banner image for the category.', 'warning');
+        }
+
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(imageFile.type)) {
+            return Swal.fire('Validation Error', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
+        }
+        
+        if (imageFile.size > 2 * 1024 * 1024) {
+            return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
+        }
+
+        const submitBtn = document.getElementById('submitAddBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⏳</span> Saving...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(this);
+
+        try {
+            const response = await axios.post('/admin/category/add', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (response.data.success) {
+                closeAddModal();
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Category successfully added!',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    borderRadius: '1.25rem'
+                }).then(() => window.location.reload());
+            }
+        } catch (error) {
+            console.error('Add Category Error:', error);
+            const errorMsg = error.response?.data?.message || 'Something went wrong while saving the category.';
+            Swal.fire('Error!', errorMsg, 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    });
+
+    document.getElementById('editCategoryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('editCategoryId').value;
+        const nameInput = document.getElementById('editCategoryName').value.trim();
+        const descInput = document.getElementById('editCategoryDesc').value.trim();
+        const imageFile = document.getElementById('editCategoryImage').files[0];
+
+        if (nameInput.length < 3) return Swal.fire('Validation Error', 'Category name must be at least 3 characters long.', 'warning');
+        if (descInput.length < 10) return Swal.fire('Validation Error', 'Description must be at least 10 characters long.', 'warning');
+
+        if (imageFile) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+            if (!validTypes.includes(imageFile.type)) return Swal.fire('Validation Error', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
+            if (imageFile.size > 2 * 1024 * 1024) return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
+        }
+
+        const submitBtn = document.getElementById('submitEditBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⏳</span> Updating...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(this);
+
+        try {
+            const response = await axios.put(`/admin/category/edit/${id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (response.data.success) {
+                closeEditModal();
+                Swal.fire({
+                    title: 'Updated!', text: 'Category successfully updated!', icon: 'success', timer: 2000, showConfirmButton: false, borderRadius: '1.25rem'
+                }).then(() => window.location.reload());
+            }
+        } catch (error) {
+            console.error('Edit Category Error:', error);
+            const errorMsg = error.response?.data?.message || 'Something went wrong while updating the category.';
+            Swal.fire('Error!', errorMsg, 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    });
 </script>
