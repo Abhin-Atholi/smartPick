@@ -72,14 +72,17 @@ export const toggleCategoryStatus = async (id) => {
     category.isActive = !category.isActive;
     await category.save();
 
-    if (!category.isActive) {
-        // Cascading unlist: Hide all child components seamlessly!
-        await Subcategory.updateMany({ parentCategory: category._id }, { isActive: false });
-        await Product.updateMany({ category: category._id }, { status: "inactive" });
-    }
+    // Cascading logic
+    const status = category.isActive;
+    await Subcategory.updateMany({ parentCategory: category._id }, { isActive: status });
+    
+    // When hiding (false), also set isFeatured to false for all products in this category
+    const updateData = status ? { isActive: true } : { isActive: false, isFeatured: false };
+    await Product.updateMany({ category: category._id }, updateData);
 
     return category;
 };
+
 
 /**
  * Updates a category and natively handles Cloudinary file replacement logic if necessary

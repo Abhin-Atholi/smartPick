@@ -72,24 +72,21 @@ export const toggleSubcategoryStatus = async (id) => {
     const subcategory = await Subcategory.findById(id).populate("parentCategory", "isActive");
     if (!subcategory) return null;
 
-    // If trying to make it visible, check parent category first
-    if (!subcategory.isActive) {
-        const parentIsHidden = subcategory.parentCategory && !subcategory.parentCategory.isActive;
-        if (parentIsHidden) {
-            return { blocked: true, message: "Cannot show this subcategory because its parent category is hidden. Unhide the parent category first." };
-        }
+    if (!subcategory.isActive && subcategory.parentCategory && !subcategory.parentCategory.isActive) {
+        return { blocked: true, message: "Cannot show this subcategory because its parent category is hidden." };
     }
 
     subcategory.isActive = !subcategory.isActive;
     await subcategory.save();
 
-    if (!subcategory.isActive) {
-        // Cascading unlist: Hide all child products seamlessly
-        await Product.updateMany({ subcategory: subcategory._id }, { status: "inactive" });
-    }
+    const status = subcategory.isActive;
+    // When hiding, also strip the 'isFeatured' status from products in this subcategory
+    const updateData = status ? { isActive: true } : { isActive: false, isFeatured: false };
+    await Product.updateMany({ subcategory: subcategory._id }, updateData);
 
     return subcategory;
 };
+
 
 /**
  * Updates a subcategory and natively handles Cloudinary file replacement logic if necessary

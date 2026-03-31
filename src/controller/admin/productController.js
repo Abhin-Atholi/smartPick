@@ -9,24 +9,33 @@ export const getProducts = async (req, res) => {
         const search = req.query.search;
         const status = req.query.status;
         const categoryId = req.query.category;
+        const subcategoryId = req.query.subcategory;
         const page = parseInt(req.query.page) || 1;
         const sortField = req.query.sort || 'createdAt';
         const sortOrder = req.query.order === 'asc' ? 1 : -1;
         const limit = 10;
 
         const result = await productService.getProducts({
-            search, status, categoryId, page, sortField, sortOrder, limit
+            search, status, categoryId, subcategoryId, page, sortField, sortOrder, limit
         });
 
         const allCategories = await Category.find({ isActive: true }).select('name _id').sort({ name: 1 });
+
+        // Load subcategories for the currently selected category (for filter dropdown)
+        let allSubcategories = [];
+        if (categoryId && categoryId !== 'All') {
+            allSubcategories = await Subcategory.find({ parentCategory: categoryId, isActive: true }).select('name _id').sort({ name: 1 });
+        }
 
         res.render("admin/products/products", {
             title: "Product Management",
             products: result.products,
             categories: allCategories,
+            subcategories: allSubcategories,
             currentSearch: search || "",
             currentStatus: status || "All",
             currentCategory: categoryId || "All",
+            currentSubcategory: subcategoryId || "All",
             currentSort: sortField,
             currentOrder: req.query.order || 'desc',
             currentPage: page,
@@ -190,25 +199,59 @@ export const updateProduct = async (req, res) => {
 
 export const toggleProduct = async (req, res) => {
     try {
-        const product = await productService.toggleProductStatus(req.params.id);
-        if (!product) return res.status(404).json({ success: false, message: "Product not found." });
-        res.json({ success: true, newStatus: product.isActive });
+        const result = await productService.toggleProductStatus(req.params.id);
+
+        // 1. Check if product exists
+        if (!result) {
+            return res.status(404).json({ success: false, message: "Product not found." });
+        }
+
+        // 2. Check if the service blocked the action (Parent Category/Sub-category hidden)
+        if (result.blocked) {
+            return res.status(400).json({ 
+                success: false, 
+                message: result.message 
+            });
+        }
+
+        // 3. Success case
+        res.json({ 
+            success: true, 
+            message: `Product is now ${result.isActive ? 'active' : 'hidden'}.`,
+            newStatus: result.isActive 
+        });
+
     } catch (error) {
         console.error("Toggle product error:", error);
         res.status(500).json({ success: false, message: "Server error toggling product." });
     }
 };
 
+
 export const toggleFeatured = async (req, res) => {
     try {
-        const product = await productService.toggleProductFeatured(req.params.id);
-        if (!product) return res.status(404).json({ success: false, message: "Product not found." });
-        res.json({ success: true, isFeatured: product.isFeatured });
+        const result = await productService.toggleProductFeatured(req.params.id);
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: "Product not found." });
+        }
+
+        // Handle blocked case (if product is hidden)
+        if (result.blocked) {
+            return res.status(400).json({ success: false, message: result.message });
+        }
+
+        res.json({ 
+            success: true, 
+            isFeatured: result.isFeatured,
+            message: `Product is now ${result.isFeatured ? 'featured' : 'not featured'}.`
+        });
     } catch (error) {
         console.error("Toggle featured error:", error);
         res.status(500).json({ success: false, message: "Server error toggling featured." });
     }
 };
+
 
 export const softDeleteProduct = async (req, res) => {
     try {

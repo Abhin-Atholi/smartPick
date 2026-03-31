@@ -15,7 +15,7 @@ const extractPublicId = (url) => {
 /**
  * Fetch products with pagination, search, sorting, and category filtering
  */
-export const getProducts = async ({ search, status, categoryId, page, sortField, sortOrder, limit }) => {
+export const getProducts = async ({ search, status, categoryId, subcategoryId, page, sortField, sortOrder, limit }) => {
     const skip = (page - 1) * limit;
     let query = {};
 
@@ -28,6 +28,10 @@ export const getProducts = async ({ search, status, categoryId, page, sortField,
 
     if (categoryId && categoryId !== "All") {
         query.category = categoryId;
+    }
+
+    if (subcategoryId && subcategoryId !== "All") {
+        query.subcategory = subcategoryId;
     }
 
     const totalDocuments = await Product.countDocuments(query);
@@ -128,12 +132,35 @@ export const softDeleteProduct = async (id) => {
 /**
  * Toggle product visibility
  */
+
+
 export const toggleProductStatus = async (id) => {
-    const product = await Product.findById(id);
+    const product = await Product.findById(id)
+        .populate("category", "isActive")
+        .populate("subcategory", "isActive");
+
     if (!product) return null;
+
+    if (!product.isActive) {
+        const categoryIsHidden = product.category && !product.category.isActive;
+        const subCategoryIsHidden = product.subcategory && !product.subcategory.isActive;
+
+        if (categoryIsHidden || subCategoryIsHidden) {
+            return { blocked: true, message: "Cannot activate product because its parent category/subcategory is hidden." };
+        }
+    }
+
     product.isActive = !product.isActive;
+
+    // Logic: If hiding the product, it MUST not be featured
+    if (!product.isActive) {
+        product.isFeatured = false;
+    }
+
     return await product.save();
 };
+
+
 
 /**
  * Toggle product featured status
@@ -141,6 +168,16 @@ export const toggleProductStatus = async (id) => {
 export const toggleProductFeatured = async (id) => {
     const product = await Product.findById(id);
     if (!product) return null;
+
+    // Logic: If product is hidden (isActive: false), it cannot be featured (isFeatured: true)
+    if (!product.isActive && !product.isFeatured) {
+        return { 
+            blocked: true, 
+            message: "Cannot feature a hidden product. Activate the product first." 
+        };
+    }
+
     product.isFeatured = !product.isFeatured;
     return await product.save();
 };
+

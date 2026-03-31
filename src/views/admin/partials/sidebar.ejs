@@ -25,14 +25,15 @@
       <div>
         <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2">Management</p>
         <div class="space-y-0.5">
-          <a href="/admin/products" class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= currentTitle.includes('Products') ? activeClass : inactiveClass %>">
-            <span class="text-base">📦</span> <span class="text-sm">Products</span>
-          </a>
+          
           <a href="/admin/category" class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= currentTitle.includes('Categories') ? activeClass : inactiveClass %>">
             <span class="text-base">📁</span> <span class="text-sm">Categories</span>
           </a>
           <a href="/admin/subcategory" class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= currentTitle.includes('Subcategories') ? activeClass : inactiveClass %>">
             <span class="text-base">📑</span> <span class="text-sm">Subcategories</span>
+          </a>
+          <a href="/admin/products" class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= currentTitle.includes('Products') ? activeClass : inactiveClass %>">
+            <span class="text-base">📦</span> <span class="text-sm">Products</span>
           </a>
           <a href="/admin/customers" class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= currentTitle.includes('Customer') ? activeClass : inactiveClass %>">
             <span class="text-base">👤</span> <span class="text-sm">Customers</span>

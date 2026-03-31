@@ -3,21 +3,27 @@
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Total Categories</p>
-            <h3 class="text-3xl font-black text-slate-800"><%= typeof totalCategories !== 'undefined' ? totalCategories : 0 %></h3>
+            <h3 class="text-3xl font-black text-slate-800">
+                <%= typeof totalCategories !=='undefined' ? totalCategories : 0 %>
+            </h3>
         </div>
-        <div class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl text-indigo-600">
+        <div
+            class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl text-indigo-600">
             📁
         </div>
     </div>
 
-    
+
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Active</p>
-            <h3 class="text-3xl font-black text-slate-800"><%= typeof activeCategories !== 'undefined' ? activeCategories : 0 %></h3>
+            <h3 class="text-3xl font-black text-slate-800">
+                <%= typeof activeCategories !=='undefined' ? activeCategories : 0 %>
+            </h3>
         </div>
-        <div class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xl text-emerald-600">
+        <div
+            class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xl text-emerald-600">
             ✅
         </div>
     </div>
@@ -25,9 +31,12 @@
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Hidden</p>
-            <h3 class="text-3xl font-black text-slate-800"><%= typeof hiddenCategories !== 'undefined' ? hiddenCategories : 0 %></h3>
+            <h3 class="text-3xl font-black text-slate-800">
+                <%= typeof hiddenCategories !=='undefined' ? hiddenCategories : 0 %>
+            </h3>
         </div>
-        <div class="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-xl text-rose-600">
+        <div
+            class="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-xl text-rose-600">
             🚫
         </div>
     </div>
@@ -36,7 +45,8 @@
 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
     <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
         <h2 class="text-xl font-black text-slate-800">Category Management</h2>
-        <button onclick="openAddModal()" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2">
+        <button onclick="openAddModal()"
+            class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center gap-2">
             <span>+</span> Add Category
         </button>
     </div>
@@ -45,25 +55,29 @@
         <div class="relative flex-1 group">
             <span class="absolute left-4 top-3 text-gray-400">🔍</span>
 
-            <input name="search" id="searchInput" value="<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>" type="text"
+            <input name="search" id="searchInput"
+                value="<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>" type="text"
                 placeholder="Search categories..."
                 class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all">
 
-            <% if (typeof currentSearch !== 'undefined' && currentSearch && currentSearch.length > 0) { %>
+            <% if (typeof currentSearch !=='undefined' && currentSearch && currentSearch.length> 0) { %>
                 <a href="/admin/category?status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>"
                     class="absolute right-4 top-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold"
                     title="Clear search">
                     ✕
                 </a>
-            <% } %>
+                <% } %>
         </div>
 
         <div class="flex gap-2">
             <select name="status" onchange="this.form.submit()"
                 class="bg-gray-50 border border-gray-200 rounded-xl px-6 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors">
-                <option value="All" <%= typeof currentStatus !== 'undefined' && currentStatus === 'All' ? 'selected' : '' %>>All Statuses</option>
-                <option value="Active" <%= typeof currentStatus !== 'undefined' && currentStatus === 'Active' ? 'selected' : '' %>>Active</option>
-                <option value="Hidden" <%= typeof currentStatus !== 'undefined' && currentStatus === 'Hidden' ? 'selected' : '' %>>Hidden</option>
+                <option value="All" <%=typeof currentStatus !=='undefined' && currentStatus==='All' ? 'selected' : '' %>
+                    >All Statuses</option>
+                <option value="Active" <%=typeof currentStatus !=='undefined' && currentStatus==='Active' ? 'selected'
+                    : '' %>>Active</option>
+                <option value="Hidden" <%=typeof currentStatus !=='undefined' && currentStatus==='Hidden' ? 'selected'
+                    : '' %>>Hidden</option>
             </select>
 
             <button type="submit"
@@ -80,20 +94,26 @@
             <thead>
                 <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black">
                     <th class="px-8 py-5">
-                        <a href="?sort=name&order=<%= typeof currentSort !== 'undefined' && currentSort === 'name' && currentOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>" class="hover:text-indigo-600 transition-colors flex items-center gap-1 inline-flex">
+                        <a href="?sort=name&order=<%= typeof currentSort !== 'undefined' && currentSort === 'name' && currentOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                            class="hover:text-indigo-600 transition-colors flex items-center gap-1 inline-flex">
                             Category Name
-                            <% if (typeof currentSort !== 'undefined' && currentSort === 'name') { %>
-                                <span class="text-indigo-600"><%= currentOrder === 'desc' ? '↓' : '↑' %></span>
-                            <% } %>
+                            <% if (typeof currentSort !=='undefined' && currentSort==='name' ) { %>
+                                <span class="text-indigo-600">
+                                    <%= currentOrder==='desc' ? '↓' : '↑' %>
+                                </span>
+                                <% } %>
                         </a>
                     </th>
                     <th class="px-6 py-5">Description</th>
                     <th class="px-6 py-5">
-                        <a href="?sort=createdAt&order=<%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && currentOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>" class="hover:text-indigo-600 transition-colors flex items-center gap-1 inline-flex">
+                        <a href="?sort=createdAt&order=<%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && currentOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                            class="hover:text-indigo-600 transition-colors flex items-center gap-1 inline-flex">
                             Date Added
-                            <% if (typeof currentSort === 'undefined' || currentSort === 'createdAt') { %>
-                                <span class="text-indigo-600"><%= typeof currentOrder === 'undefined' || currentOrder === 'desc' ? '↓' : '↑' %></span>
-                            <% } %>
+                            <% if (typeof currentSort==='undefined' || currentSort==='createdAt' ) { %>
+                                <span class="text-indigo-600">
+                                    <%= typeof currentOrder==='undefined' || currentOrder==='desc' ? '↓' : '↑' %>
+                                </span>
+                                <% } %>
                         </a>
                     </th>
                     <th class="px-6 py-5 text-center">Status</th>
@@ -101,19 +121,21 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+                <% if (typeof categories !=='undefined' && categories.length> 0) { %>
                     <% categories.forEach(category=> { %>
                         <tr class="hover:bg-gray-50/50 transition-colors">
                             <td class="px-8 py-5">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-indigo-50 flex items-center justify-center shrink-0">
+                                    <div
+                                        class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-indigo-50 flex items-center justify-center shrink-0">
                                         <% if (category.image) { %>
-                                            <img src="<%= category.image %>" alt="<%= category.name %>" class="w-full h-full object-cover">
-                                        <% } else { %>
-                                            <span class="font-bold text-indigo-600">
-                                                <%= category.name.charAt(0).toUpperCase() %>
-                                            </span>
-                                        <% } %>
+                                            <img src="<%= category.image %>" alt="<%= category.name %>"
+                                                class="w-full h-full object-cover">
+                                            <% } else { %>
+                                                <span class="font-bold text-indigo-600">
+                                                    <%= category.name.charAt(0).toUpperCase() %>
+                                                </span>
+                                                <% } %>
                                     </div>
                                     <span class="font-bold text-slate-800 truncate max-w-[150px]">
                                         <%= category.name %>
@@ -121,8 +143,10 @@
                                 </div>
                             </td>
 
-                            <td class="px-6 py-5 text-gray-500 font-medium text-sm truncate max-w-xs" title="<%= category.description %>">
-                                <%= category.description ? category.description : '<span class="italic text-gray-300">No description</span>' %>
+                            <td class="px-6 py-5 text-gray-500 font-medium text-sm truncate max-w-xs"
+                                title="<%= category.description %>">
+                                <%= category.description ? category.description
+                                    : '<span class="italic text-gray-300">No description</span>' %>
                             </td>
 
                             <td class="px-6 py-5">
@@ -137,7 +161,8 @@
                             </td>
 
                             <td class="px-6 py-5 text-center">
-                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block
+                                <span
+                                    class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block
                                     <%= category.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' %>">
                                     <%= category.isActive ? 'Active' : 'Hidden' %>
                                 </span>
@@ -145,7 +170,9 @@
 
                             <td class="px-8 py-5 text-right">
                                 <div class="flex justify-end items-center gap-2">
-                                    <button onclick='openEditModal(<%- JSON.stringify({id: category._id, name: category.name, description: category.description, isActive: category.isActive, image: category.image || ""}) %>)' class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700">
+                                    <button
+                                        onclick='openEditModal(<%- JSON.stringify({id: category._id, name: category.name, description: category.description, isActive: category.isActive, image: category.image || ""}) %>)'
+                                        class="px-4 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700">
                                         Edit
                                     </button>
                                     <button onclick="toggleVisibility('<%= category._id %>', <%= category.isActive %>)"
@@ -156,55 +183,60 @@
                                 </div>
                             </td>
                         </tr>
-                    <% }) %>
-                <% } else { %>
-                    <tr>
-                        <td colspan="5" class="px-8 py-20 text-center">
-                            <p class="text-gray-400 font-medium">No categories found matching your criteria.</p>
-                        </td>
-                    </tr>
-                <% } %>
+                        <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="px-8 py-20 text-center">
+                                        <p class="text-gray-400 font-medium">No categories found matching your criteria.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <% } %>
             </tbody>
         </table>
     </div>
 
     <!-- Pagination -->
-    <div class="px-8 py-5 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/30">
+    <div
+        class="px-8 py-5 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/30">
         <p class="text-xs text-gray-500 font-bold uppercase tracking-tighter">
             Page <span class="text-indigo-600">
-                <%= typeof currentPage !== 'undefined' ? currentPage : 1 %>
-            </span> of <%= typeof totalPages !== 'undefined' && totalPages > 0 ? totalPages : 1 %>
+                <%= typeof currentPage !=='undefined' ? currentPage : 1 %>
+            </span> of <%= typeof totalPages !=='undefined' && totalPages> 0 ? totalPages : 1 %>
         </p>
 
         <div class="flex items-center gap-1">
-            <% if (typeof currentPage !== 'undefined' && currentPage > 1) { %>
+            <% if (typeof currentPage !=='undefined' && currentPage> 1) { %>
                 <a href="/admin/category?page=<%= currentPage - 1 %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
                     class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
                     </svg>
                 </a>
-            <% } %>
-
-            <div class="flex gap-1 px-2">
-                <% if (typeof totalPages !== 'undefined' && totalPages > 0) { %>
-                    <% for(let i=1; i <=totalPages; i++) { %>
-                        <a href="/admin/category?page=<%= i %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition <%= i === currentPage ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600' %>">
-                            <%= i %>
-                        </a>
-                    <% } %>
                 <% } %>
-            </div>
 
-            <% if (typeof currentPage !== 'undefined' && typeof totalPages !== 'undefined' && currentPage < totalPages) { %>
-                <a href="/admin/category?page=<%= currentPage + 1 %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
-                    class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </a>
-            <% } %>
+                    <div class="flex gap-1 px-2">
+                        <% if (typeof totalPages !=='undefined' && totalPages> 0) { %>
+                            <% for(let i=1; i <=totalPages; i++) { %>
+                                <a href="/admin/category?page=<%= i %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition <%= i === currentPage ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600' %>">
+                                    <%= i %>
+                                </a>
+                                <% } %>
+                                    <% } %>
+                    </div>
+
+                    <% if (typeof currentPage !=='undefined' && typeof totalPages !=='undefined' && currentPage <
+                        totalPages) { %>
+                        <a href="/admin/category?page=<%= currentPage + 1 %>&sort=<%= typeof currentSort !== 'undefined' ? currentSort : 'createdAt' %>&order=<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>&search=<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>&status=<%= typeof currentStatus !== 'undefined' ? currentStatus : 'All' %>"
+                            class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                                </path>
+                            </svg>
+                        </a>
+                        <% } %>
         </div>
     </div>
 </div>
@@ -212,7 +244,8 @@
 
 
 <!-- Add Category Modal -->
-<div id="addCategoryModal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden p-4">
+<div id="addCategoryModal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden p-4">
     <!-- Backdrop -->
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
 
@@ -220,24 +253,27 @@
     <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all">
         <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <h3 class="text-xl font-black text-slate-800">Create New Category</h3>
-            <button onclick="closeAddModal()" class="text-gray-400 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">
+            <button onclick="closeAddModal()"
+                class="text-gray-400 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">
                 ✕
             </button>
         </div>
 
         <form id="addCategoryForm" class="p-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 <!-- Left Column -->
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Name</label>
-                        <input type="text" name="name"  placeholder="e.g. Shirts"
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category
+                            Name</label>
+                        <input type="text" name="name" placeholder="e.g. Shirts"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                        <label
+                            class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
                         <textarea name="description" rows="4" placeholder="Brief description..."
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
                     </div>
@@ -245,35 +281,45 @@
                     <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" name="isActive" class="sr-only peer" checked>
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                            </div>
                         </label>
                         <div>
                             <p class="text-sm font-black text-slate-700">Active Visibility</p>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show in storefront</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show in storefront
+                            </p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Right Column (Image Upload) -->
                 <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Image Banner</label>
-                    <div class="w-full flex-1 min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-100 hover:border-indigo-300 transition-all flex flex-col items-center justify-center p-6 cursor-pointer relative group">
-                        
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Image
+                        Banner</label>
+                    <div
+                        class="w-full flex-1 min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-100 hover:border-indigo-300 transition-all flex flex-col items-center justify-center p-6 cursor-pointer relative group">
+
                         <input type="file" name="image" id="categoryImage" accept="image/jpeg, image/png, image/webp"
                             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
 
                         <div id="uploadPrompt" class="text-center group-hover:scale-105 transition-transform">
-                            <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-indigo-500">
+                            <div
+                                class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-indigo-500">
                                 📸
                             </div>
                             <p class="text-sm font-black text-slate-700">Click to upload image</p>
                             <p class="text-xs text-gray-400 mt-1">JPEG, PNG, WEBP (Max 2MB)</p>
                         </div>
 
-                        <div id="imagePreviewContainer" class="hidden absolute inset-0 z-20 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                        <div id="imagePreviewContainer"
+                            class="hidden absolute inset-0 z-20 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
                             <img id="imagePreview" src="" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Change Image</span>
+                            <div
+                                class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span
+                                    class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Change
+                                    Image</span>
                             </div>
                         </div>
 
@@ -296,12 +342,14 @@
 </div>
 
 <!-- Edit Category Modal -->
-<div id="editCategoryModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4">
+<div id="editCategoryModal"
+    class="hidden fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal()"></div>
     <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all">
         <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <h3 class="text-xl font-black text-slate-800">Edit Category</h3>
-            <button onclick="closeEditModal()" class="text-gray-400 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">✕</button>
+            <button onclick="closeEditModal()"
+                class="text-gray-400 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">✕</button>
         </div>
 
         <form id="editCategoryForm" class="p-8">
@@ -310,41 +358,59 @@
                 <!-- Left Column -->
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category Name</label>
-                        <input type="text" id="editCategoryName" name="name" placeholder="e.g. Shirts" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category
+                            Name</label>
+                        <input type="text" id="editCategoryName" name="name" placeholder="e.g. Shirts"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
                     </div>
                     <div>
-                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
-                        <textarea id="editCategoryDesc" name="description" rows="4" placeholder="Brief description..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                        <label
+                            class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                        <textarea id="editCategoryDesc" name="description" rows="4" placeholder="Brief description..."
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
                     </div>
                     <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="editCategoryActive" name="isActive" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                            </div>
                         </label>
                         <div>
                             <p class="text-sm font-black text-slate-700">Active Visibility</p>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show in storefront</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Show in storefront
+                            </p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Right Column (Image Upload) -->
                 <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Update Image Banner</label>
-                    <div class="w-full flex-1 min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-100 hover:border-indigo-300 transition-all flex flex-col items-center justify-center p-6 cursor-pointer relative group overflow-hidden">
-                        
-                        <input type="file" name="image" id="editCategoryImage" accept="image/jpeg, image/png, image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Update Image
+                        Banner</label>
+                    <div
+                        class="w-full flex-1 min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-100 hover:border-indigo-300 transition-all flex flex-col items-center justify-center p-6 cursor-pointer relative group overflow-hidden">
 
-                        <div id="editUploadPrompt" class="text-center group-hover:scale-105 transition-transform z-10 hidden">
-                            <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-indigo-500">📸</div>
+                        <input type="file" name="image" id="editCategoryImage"
+                            accept="image/jpeg, image/png, image/webp"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+
+                        <div id="editUploadPrompt"
+                            class="text-center group-hover:scale-105 transition-transform z-10 hidden">
+                            <div
+                                class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-indigo-500">
+                                📸</div>
                             <p class="text-sm font-black text-slate-700">Upload New</p>
                         </div>
 
-                        <div id="editImagePreviewContainer" class="absolute inset-0 z-10 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                        <div id="editImagePreviewContainer"
+                            class="absolute inset-0 z-10 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
                             <img id="editImagePreview" src="" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                <span class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Replace Image</span>
+                            <div
+                                class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <span
+                                    class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Replace
+                                    Image</span>
                             </div>
                         </div>
 
@@ -353,8 +419,11 @@
             </div>
 
             <div class="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-50">
-                <button type="button" onclick="closeEditModal()" class="px-6 py-2.5 rounded-xl font-black text-sm text-gray-500 hover:bg-gray-100 transition">Cancel</button>
-                <button type="submit" id="submitEditBtn" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 pointer-events-auto">Update Category</button>
+                <button type="button" onclick="closeEditModal()"
+                    class="px-6 py-2.5 rounded-xl font-black text-sm text-gray-500 hover:bg-gray-100 transition">Cancel</button>
+                <button type="submit" id="submitEditBtn"
+                    class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 pointer-events-auto">Update
+                    Category</button>
             </div>
         </form>
     </div>
@@ -416,7 +485,7 @@
         document.getElementById('addCategoryModal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
     }
-    
+
     function closeAddModal() {
         document.getElementById('addCategoryModal').classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
@@ -430,7 +499,7 @@
         document.getElementById('editCategoryName').value = category.name;
         document.getElementById('editCategoryDesc').value = category.description;
         document.getElementById('editCategoryActive').checked = category.isActive;
-        
+
         if (category.image) {
             document.getElementById('editImagePreview').src = category.image;
             document.getElementById('editImagePreviewContainer').classList.remove('hidden');
@@ -453,11 +522,11 @@
     }
 
     // Modal Image Previews
-    document.getElementById('categoryImage').addEventListener('change', function(e) {
+    document.getElementById('categoryImage').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 document.getElementById('imagePreview').src = e.target.result;
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
                 document.getElementById('uploadPrompt').classList.add('hidden');
@@ -466,11 +535,11 @@
         }
     });
 
-    document.getElementById('editCategoryImage').addEventListener('change', function(e) {
+    document.getElementById('editCategoryImage').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 document.getElementById('editImagePreview').src = e.target.result;
                 document.getElementById('editImagePreviewContainer').classList.remove('hidden');
                 document.getElementById('editUploadPrompt').classList.add('hidden');
@@ -480,9 +549,9 @@
     });
 
     // Form Submissions
-    document.getElementById('addCategoryForm').addEventListener('submit', async function(e) {
+    document.getElementById('addCategoryForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+
         const form = e.target;
         const nameInput = form.name.value.trim();
         const descInput = form.description.value.trim();
@@ -503,7 +572,7 @@
         if (!validTypes.includes(imageFile.type)) {
             return Swal.fire('Validation Error', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
         }
-        
+
         if (imageFile.size > 2 * 1024 * 1024) {
             return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
         }
@@ -543,9 +612,9 @@
         }
     });
 
-    document.getElementById('editCategoryForm').addEventListener('submit', async function(e) {
+    document.getElementById('editCategoryForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+
         const id = document.getElementById('editCategoryId').value;
         const nameInput = document.getElementById('editCategoryName').value.trim();
         const descInput = document.getElementById('editCategoryDesc').value.trim();

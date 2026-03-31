@@ -43,9 +43,7 @@ export const getSubcategories = async (req, res) => {
     }
 };
 
-export const getAddSubcategory = async (req, res) => {
-    res.redirect("/admin/subcategory"); // Render logic handled centrally by getSubcategories
-};
+
 
 export const addSubcategory = async (req, res) => {
     try {
@@ -113,9 +111,6 @@ export const toggleSubcategory = async (req, res) => {
     }
 };
 
-export const getEditSubcategory = async (req, res) => {
-    res.redirect("/admin/subcategory");
-};
 
 export const updateSubcategory = async (req, res) => {
     try {
@@ -159,8 +154,4 @@ export const updateSubcategory = async (req, res) => {
         console.error("Update subcategory processing error:", error);
         res.status(500).json({ success: false, message: "Internal server error while updating subcategory." });
     }
-};
-
-export const deleteSubcategory = async (req, res) => {
-  res.send("Routing stub intact, not implemented by application flow");
 };
