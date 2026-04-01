@@ -8,7 +8,7 @@ export const getCategories = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const sortField = req.query.sort || 'createdAt';
         const sortOrder = req.query.order === 'asc' ? 1 : -1;
-        const limit = 10;
+        const limit = 5;
 
         const result = await categoryService.getCategories({
             search, status, page, sortField, sortOrder, limit

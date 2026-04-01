@@ -19,12 +19,12 @@ export const getProducts = async (req, res) => {
             search, status, categoryId, subcategoryId, page, sortField, sortOrder, limit
         });
 
-        const allCategories = await Category.find({ isActive: true }).select('name _id').sort({ name: 1 });
+        const allCategories = await Category.find({}).select('name _id').sort({ name: 1 });
 
         // Load subcategories for the currently selected category (for filter dropdown)
         let allSubcategories = [];
         if (categoryId && categoryId !== 'All') {
-            allSubcategories = await Subcategory.find({ parentCategory: categoryId, isActive: true }).select('name _id').sort({ name: 1 });
+            allSubcategories = await Subcategory.find({ parentCategory: categoryId }).select('name _id').sort({ name: 1 });
         }
 
         res.render("admin/products/products", {

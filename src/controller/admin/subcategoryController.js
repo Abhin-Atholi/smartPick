@@ -11,14 +11,14 @@ export const getSubcategories = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const sortField = req.query.sort || 'createdAt';
         const sortOrder = req.query.order === 'asc' ? 1 : -1;
-        const limit = 10;
+        const limit = 5 ;
 
         const result = await subcategoryService.getSubcategories({
             search, status, parentCategory, page, sortField, sortOrder, limit
         });
 
         // Also fetch active Categories precisely for the Dropdown Population inside Modals and Table Filters!
-        const activeCategories = await Category.find({ isActive: true }).select('name _id').sort({ name: 1 });
+        const activeCategories = await Category.find({}).select('name _id').sort({ name: 1 });
 
         res.render("admin/category/subcategory", {
             subcategories: result.subcategories,
