@@ -1,9 +1,52 @@
 
 
 <%- include("partials/navbar") %>
-<%- include("partials/heroBanner") %><br><br>
+<%- include("partials/heroBanner") %>
 
-<!-- ========== PRODUCT GRID (No filters, no sort) ========== -->
+<!-- ========== SHOP BY CATEGORY ========== -->
+<% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+<section class="max-w-6xl mx-auto px-4 py-12">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-black text-gray-900">Shop by Category</h2>
+    <p class="text-sm text-gray-500 mt-1">Browse our handpicked collections</p>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <% categories.forEach(cat => { %>
+      <a href="/products?category=<%= encodeURIComponent(cat.name) %>"
+         class="group relative overflow-hidden rounded-2xl aspect-square shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+
+        <!-- Background image -->
+        <% if (cat.image) { %>
+          <img
+            src="<%= cat.image %>"
+            alt="<%= cat.name %>"
+            class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          >
+        <% } else { %>
+          <!-- Fallback gradient if no image -->
+          <div class="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-600"></div>
+        <% } %>
+
+        <!-- Dark overlay -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent"></div>
+
+        <!-- Category name -->
+        <div class="absolute inset-0 flex items-end p-4">
+          <span class="text-white font-black text-sm sm:text-base leading-tight drop-shadow-sm">
+            <%= cat.name %>
+          </span>
+        </div>
+
+      </a>
+    <% }) %>
+  </div>
+
+</section>
+<% } %>
+
+<!-- ========== TRENDING NOW ========== -->
 <section class="max-w-6xl mx-auto px-4 pb-12">
   <div class="flex items-center justify-between mb-6">
     <div>

@@ -10,6 +10,7 @@ import nocache from "nocache";
 import passport from "passport";
 import "./src/config/passport.js";
 import mountRoutes from "./src/routes/index.js";
+import Category from "./src/model/categoryModel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,10 +45,21 @@ app.use(passport.session()); // Essential for Google OAuth persistence
 // Locals
 app.use((req, res, next) => {
     res.locals.title = "SmartPick";
+    res.locals.currentPath = req.path; // used for active-state styling in navbar & drawer
     next();
 });
 
 app.use(setAuthLocals);
+
+// Inject active categories into every view (used by navbar)
+app.use(async (req, res, next) => {
+  try {
+    res.locals.categories = await Category.find({ isActive: true }).select("name image").lean();
+  } catch (err) {
+    res.locals.categories = [];
+  }
+  next();
+});
 
 mountRoutes(app);
 
