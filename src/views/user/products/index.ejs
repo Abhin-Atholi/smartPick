@@ -63,7 +63,7 @@
                   <input type="hidden" name="sub" value="<%= sub %>">
                   <% }) %>
                     <div class="flex items-center gap-2">
-                      <div class="relative flex-1">
+                      <div class="relative flex-1 group">
                         <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-gray-400">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -73,7 +73,18 @@
                         </span>
                         <input type="text" name="search" id="searchInput" value="<%= activeSearch %>"
                           placeholder="Search products..."
-                          class="w-full pl-10 pr-24 py-2.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-indigo-500">
+                          oninput="this.nextElementSibling.classList.toggle('hidden', !this.value)"
+                          class="w-full pl-10 pr-32 py-2.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-indigo-500 transition-all">
+                        
+                        <!-- Clear Button -->
+                        <button type="button" onclick="clearSearch()" id="clearBtn"
+                          class="<%= activeSearch ? '' : 'hidden' %> absolute inset-y-0 right-20 flex items-center px-2 text-gray-400 hover:text-indigo-600 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+
                         <button type="submit"
                           class="absolute inset-y-0 right-0 m-1 px-4 rounded-xl bg-indigo-600 text-white font-black text-xs hover:bg-indigo-700 transition-colors">Search</button>
                       </div>
@@ -95,8 +106,8 @@
               <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold
                          px-3 py-1 rounded-full border border-indigo-200">
                 "<%= activeSearch %>"
-                  <a href="/products?<%= catName ? 'category=' + catSlug + '&' : '' %>sort=<%= sortVal %><%= activeSubId ? '&sub=' + activeSubId : '' %>"
-                    class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</a>
+                  <button type="button" onclick="clearSearch()"
+                    class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</button>
               </span>
             </div>
             <% } %>
@@ -358,6 +369,17 @@
       <%- include("../partials/drawer") %>
 
         <script>
+          /* ── Clear Search ── */
+          function clearSearch() {
+            const input = document.getElementById('searchInput');
+            if (input) {
+              input.value = '';
+              const clearBtn = document.getElementById('clearBtn');
+              if (clearBtn) clearBtn.classList.add('hidden');
+              handleFilterChange();
+            }
+          }
+
           /* ── Sidebar section collapse ── */
           function toggleSection(id) {
             const section = document.getElementById(id);

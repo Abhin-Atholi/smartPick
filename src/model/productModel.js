@@ -89,6 +89,11 @@ const productSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+// Static for building the standard "User-Visible" query
+productSchema.statics.visibleOnly = function() {
+    return this.find({ isActive: true, isDeleted: false });
+};
+
 // Indexing for performance
 productSchema.index({ name: 1 });
 productSchema.index({ category: 1 });
@@ -96,5 +101,31 @@ productSchema.index({ subcategory: 1 });
 productSchema.index({ isDeleted: 1, isActive: 1 });
 productSchema.index({ "variants.sku": 1 });
 productSchema.index({ createdAt: -1 });
+
+/**
+ * VIRTUAL: Comprehensive Availability Check
+ * Returns true only if the product AND its parent category/subcategory are active.
+ * Requires category/subcategory to be populated.
+ */
+productSchema.virtual('isCurrentlyAvailable').get(function() {
+    // 1. Basic product status
+    if (!this.isActive || this.isDeleted) return false;
+    
+    // 2. Category status (if populated)
+    if (this.category && typeof this.category === 'object' && 'isActive' in this.category) {
+        if (!this.category.isActive) return false;
+    }
+    
+    // 3. Subcategory status (if populated and exists)
+    if (this.subcategory && typeof this.subcategory === 'object' && 'isActive' in this.subcategory) {
+        if (!this.subcategory.isActive) return false;
+    }
+    
+    return true;
+});
+
+// Ensure virtuals are included when converting to JSON/Object (crucial for EJS)
+productSchema.set('toObject', { virtuals: true });
+productSchema.set('toJSON', { virtuals: true });
 
 export default mongoose.model("Product", productSchema);

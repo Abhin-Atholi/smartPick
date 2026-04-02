@@ -33,10 +33,7 @@
                 <% } else { %>
                 <% 
                     cart.items.forEach(item => { 
-                        const isProductHidden = item.product.isDeleted || !item.product.isActive;
-                        const isCategoryHidden = !item.product.category || !item.product.category.isActive;
-                        const isSubcategoryHidden = item.product.subcategory && !item.product.subcategory.isActive;
-                        const isUnavailable = isProductHidden || isCategoryHidden || isSubcategoryHidden;
+                        const isUnavailable = !item.product.isCurrentlyAvailable;
 
                         if (!isUnavailable) {
                             activeSubtotal += item.totalPrice;

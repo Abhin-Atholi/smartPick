@@ -67,13 +67,10 @@
                                                 </button>
 
                                                 <!-- Availability Overlays -->
-                                                <% const isProductHidden=product.isDeleted || !product.isActive; const
-                                                    isCategoryHidden=!product.category || !product.category.isActive;
-                                                    const isSubcategoryHidden=product.subcategory &&
-                                                    !product.subcategory.isActive; const isUnavailable=isProductHidden
-                                                    || isCategoryHidden || isSubcategoryHidden; const
-                                                    outOfStock=product.variants && product.variants.length> 0 &&
-                                                    product.variants[0].stock <= 0; %>
+                                                <% 
+                                                    const isUnavailable = !product.isCurrentlyAvailable;
+                                                    const outOfStock = product.variants && product.variants.length > 0 && product.variants[0].stock <= 0; 
+                                                %>
 
                                                         <% if (isUnavailable) { %>
                                                             <div
