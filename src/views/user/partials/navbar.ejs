@@ -1,8 +1,23 @@
 <%
-  /* Helper: returns underline active classes when path matches */
-  function navActive(path) {
+  /*
+   * navActive(href)
+   * Returns Tailwind classes that underline / highlight the matching nav link.
+   * Works with both plain paths ('/')  AND query-string hrefs
+   * ('/products?category=Top') because currentPath is now req.originalUrl.
+   */
+  function navActive(href) {
     const cp = typeof currentPath !== 'undefined' ? currentPath : '';
-    const isActive = (path === '/') ? (cp === '/' || cp === '/home') : cp.startsWith(path);
+    let isActive;
+    if (href === '/') {
+      // Home: exact match on path portion only
+      const pathOnly = cp.split('?')[0];
+      isActive = pathOnly === '/' || pathOnly === '/home';
+    } else if (href.includes('?')) {
+      // Category link: full URL must start with this href
+      isActive = cp === href || cp.startsWith(href + '&') || cp.startsWith(href + '#');
+    } else {
+      isActive = cp.startsWith(href);
+    }
     return isActive
       ? 'text-indigo-600 border-b-2 border-indigo-600'
       : 'text-gray-500 hover:text-gray-900 border-b-2 border-transparent';

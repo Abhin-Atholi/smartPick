@@ -2,7 +2,8 @@
 <%
   function drawerActive(path) {
     const cp = typeof currentPath !== 'undefined' ? currentPath : '';
-    const isActive = (path === '/') ? (cp === '/' || cp === '/home') : cp.startsWith(path);
+    const pathOnly = cp.split('?')[0];
+    const isActive = (path === '/') ? (pathOnly === '/' || pathOnly === '/home') : pathOnly.startsWith(path);
     return isActive ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100';
   }
 %>

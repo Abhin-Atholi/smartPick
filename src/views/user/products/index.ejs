@@ -1,0 +1,635 @@
+<%- include("../partials/navbar") %>
+
+<%
+  /*
+   * Variables injected by productsController.loadProducts:
+   *   currentCategory  – Category document (lean) or null
+   *   subcategories    – array of Subcategory docs for this category
+   *   products         – array of Product docs (lean, category & subcategory populated)
+   *   totalProducts    – total matching count
+   *   currentPage      – active page number
+   *   totalPages       – total page count
+   *   selectedSizes    – array of size strings from query
+   *   selectedSubId    – selected subcategory _id string (or '')
+   *   minPrice, maxPrice – price range strings (or '')
+   *   sortBy           – sort key string
+   *   searchQuery      – current search string (or '')
+   */
+
+  const catName      = currentCategory ? currentCategory.name : '';
+  const catSlug      = currentCategory ? encodeURIComponent(currentCategory.name) : '';
+  const activePage   = typeof currentPage    !== 'undefined' ? currentPage    : 1;
+  const pages        = typeof totalPages     !== 'undefined' ? totalPages     : 1;
+  const total        = typeof totalProducts  !== 'undefined' ? totalProducts  : 0;
+  const perPage      = 9;
+  const startItem    = total === 0 ? 0 : (activePage - 1) * perPage + 1;
+  const endItem      = Math.min(activePage * perPage, total);
+  const sortVal      = typeof sortBy         !== 'undefined' ? sortBy         : 'newest';
+  const activeMin    = typeof minPrice       !== 'undefined' ? minPrice       : '';
+  const activeMax    = typeof maxPrice       !== 'undefined' ? maxPrice       : '';
+  const activeSizes  = typeof selectedSizes  !== 'undefined' ? selectedSizes  : [];
+  const activeSubId  = typeof selectedSubId  !== 'undefined' ? selectedSubId  : '';
+  const subCats      = typeof subcategories  !== 'undefined' ? subcategories  : [];
+  const activeSearch = typeof searchQuery    !== 'undefined' ? searchQuery    : '';
+
+  const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+  /* Helper: build a query-string preserving all active filters */
+  function buildPageUrl(pageNum) {
+    const params = new URLSearchParams();
+    if (catName)      params.set('category', catName);
+    if (activeSubId)  params.set('sub', activeSubId);
+    if (activeSearch) params.set('search', activeSearch);
+    if (activeMin)    params.set('minPrice', activeMin);
+    if (activeMax)    params.set('maxPrice', activeMax);
+    activeSizes.forEach(s => params.append('size', s));
+    params.set('sort', sortVal);
+    params.set('page', pageNum);
+    return '/products?' + params.toString();
+  }
+%>
+
+<main class="bg-gray-50 min-h-screen">
+
+  <!-- ── PAGE HEADER ──────────────────────────────────── -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-6">
+
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-1.5 text-xs text-gray-400 font-semibold mb-3">
+        <a href="/" class="hover:text-indigo-600 transition-colors">Home</a>
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        <span class="text-gray-800"><%= catName || 'All Products' %></span>
+      </nav>
+
+      <!-- Title -->
+      <div class="mb-4">
+        <h1 class="text-3xl font-black text-gray-900">
+          <%= catName ? catName + "'s Collection" : 'All Products' %>
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Premium quality clothing designed for the modern lifestyle.
+        </p>
+      </div>
+
+      <!-- ── SEARCH + SORT ROW (one combined form) ── -->
+      <form method="GET" action="/products" id="searchForm">
+        <% if (catName)     { %><input type="hidden" name="category" value="<%= catName %>"><% } %>
+        <% if (activeSubId) { %><input type="hidden" name="sub"      value="<%= activeSubId %>"><% } %>
+        <% if (activeMin)   { %><input type="hidden" name="minPrice" value="<%= activeMin %>"><% } %>
+        <% if (activeMax)   { %><input type="hidden" name="maxPrice" value="<%= activeMax %>"><% } %>
+        <% activeSizes.forEach(s => { %>
+          <input type="hidden" name="size" value="<%= s %>">
+        <% }) %>
+
+        <div class="flex items-center gap-2">
+
+          <!-- Search input (flex-1) -->
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </span>
+
+            <input
+              type="text"
+              name="search"
+              id="searchInput"
+              value="<%= activeSearch %>"
+              placeholder="Search products by name, brand…"
+              autocomplete="off"
+              class="w-full pl-10 pr-24 py-2.5 border border-gray-200 rounded-2xl text-sm font-semibold
+                     text-gray-800 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500
+                     placeholder:font-normal placeholder:text-gray-400"
+            >
+
+            <!-- Clear ✕ (only when search is active) -->
+            <% if (activeSearch) { %>
+              <a href="/products?<%= catName ? 'category=' + catSlug + '&' : '' %>sort=<%= sortVal %><%= activeSubId ? '&sub=' + activeSubId : '' %>"
+                 class="absolute inset-y-0 right-16 flex items-center px-2 text-gray-400 hover:text-red-500 transition-colors"
+                 title="Clear search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </a>
+            <% } %>
+
+            <button type="submit"
+              class="absolute inset-y-0 right-0 m-1 px-4 rounded-xl bg-indigo-600 text-white font-black text-xs
+                     hover:bg-indigo-700 transition-colors">
+              Search
+            </button>
+          </div>
+
+          <!-- Sort dropdown (shrink-0, same height) -->
+          <div class="shrink-0 flex items-center gap-2">
+            <span class="text-sm text-gray-500 font-semibold whitespace-nowrap hidden sm:block">Sort by:</span>
+            <select name="sort" onchange="this.form.submit()"
+              class="border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-800
+                     bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer h-full">
+              <option value="newest"     <%= sortVal === 'newest'     ? 'selected' : '' %>>Newest</option>
+              <option value="price_asc"  <%= sortVal === 'price_asc'  ? 'selected' : '' %>>Price ↑</option>
+              <option value="price_desc" <%= sortVal === 'price_desc' ? 'selected' : '' %>>Price ↓</option>
+              <option value="name_asc"   <%= sortVal === 'name_asc'   ? 'selected' : '' %>>A → Z</option>
+              <option value="name_desc"  <%= sortVal === 'name_desc'  ? 'selected' : '' %>>Z → A</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Active search chip -->
+        <% if (activeSearch) { %>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-xs text-gray-500">Results for:</span>
+            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold
+                         px-3 py-1 rounded-full border border-indigo-200">
+              "<%= activeSearch %>"
+              <a href="/products?<%= catName ? 'category=' + catSlug + '&' : '' %>sort=<%= sortVal %><%= activeSubId ? '&sub=' + activeSubId : '' %>"
+                 class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</a>
+            </span>
+          </div>
+        <% } %>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ── BODY: SIDEBAR + GRID ──────────────────────────── -->
+  <div class="max-w-6xl mx-auto px-4 py-6 flex gap-6 items-start">
+
+    <!-- ════ SIDEBAR ════ -->
+    <aside class="hidden lg:block w-56 shrink-0">
+      <form method="GET" action="/products" id="filterForm">
+        <% if (catName)      { %><input type="hidden" name="category" value="<%= catName %>"><% } %>
+        <% if (activeSearch) { %><input type="hidden" name="search"   value="<%= activeSearch %>"><% } %>
+        <input type="hidden" name="sort" value="<%= sortVal %>">
+
+        <!-- ── SUBCATEGORIES ── -->
+        <% if (subCats.length > 0) { %>
+        <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm">
+          <button type="button" class="w-full flex items-center justify-between mb-3"
+                  onclick="toggleSection('catSection')">
+            <span class="font-black text-sm text-gray-800">Sub-Categories</span>
+            <svg id="catChevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                 class="text-gray-400 transition-transform duration-200">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+          </button>
+          <div id="catSection" class="space-y-2">
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" name="sub" value=""
+                class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                <%= activeSubId === '' ? 'checked' : '' %>
+                onchange="handleAllCheck(this)">
+              <span class="text-sm font-bold text-gray-800">All</span>
+            </label>
+            <% subCats.forEach(sc => { %>
+              <label class="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" name="sub" value="<%= sc._id %>"
+                  class="sub-check w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  <%= activeSubId === sc._id.toString() ? 'checked' : '' %>
+                  onchange="document.getElementById('filterForm').submit()">
+                <span class="text-sm text-gray-600"><%= sc.name %></span>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- ── PRICE RANGE ── -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm">
+          <button type="button" class="w-full flex items-center justify-between mb-4"
+                  onclick="toggleSection('priceSection')">
+            <span class="font-black text-sm text-gray-800">Price Range</span>
+            <svg id="priceChevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                 class="text-gray-400 transition-transform duration-200">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+          </button>
+          <div id="priceSection">
+            <div class="relative h-1.5 bg-gray-200 rounded-full mb-4">
+              <div class="absolute h-full bg-indigo-600 rounded-full" id="priceRange"></div>
+              <input type="range" min="0" max="10000" step="100"
+                     value="<%= activeMin || 0 %>"
+                     class="absolute inset-0 w-full opacity-0 cursor-pointer h-full" id="rangeMin"
+                     oninput="updateRange()">
+              <input type="range" min="0" max="10000" step="100"
+                     value="<%= activeMax || 10000 %>"
+                     class="absolute inset-0 w-full opacity-0 cursor-pointer h-full" id="rangeMax"
+                     oninput="updateRange()">
+            </div>
+            <div class="flex justify-between text-xs text-gray-400 font-semibold mb-3">
+              <span>₹0</span><span>₹10,000+</span>
+            </div>
+            <div class="flex gap-2 mb-3">
+              <input id="minDisplay" type="number" name="minPrice" placeholder="Min"
+                     value="<%= activeMin %>"
+                     class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs font-semibold text-center
+                            focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <input id="maxDisplay" type="number" name="maxPrice" placeholder="Max"
+                     value="<%= activeMax %>"
+                     class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs font-semibold text-center
+                            focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <button type="submit"
+              class="w-full rounded-full bg-indigo-600 text-white font-black text-xs py-2
+                     hover:bg-indigo-700 transition-colors">
+              Apply Price
+            </button>
+          </div>
+        </div>
+
+        <!-- ── SIZE ── -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+          <button type="button" class="w-full flex items-center justify-between mb-3"
+                  onclick="toggleSection('sizeSection')">
+            <span class="font-black text-sm text-gray-800">Size</span>
+            <svg id="sizeChevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                 class="text-gray-400 transition-transform duration-200">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+          </button>
+          <div id="sizeSection" class="grid grid-cols-3 gap-2">
+            <% ALL_SIZES.forEach(size => {
+              const isActive = activeSizes.includes(size);
+            %>
+              <label class="cursor-pointer">
+                <input type="checkbox" name="size" value="<%= size %>"
+                  class="sr-only"
+                  <%= isActive ? 'checked' : '' %>
+                  onchange="document.getElementById('filterForm').submit()">
+                <span class="block text-center text-xs font-bold py-1.5 rounded-xl border-2 transition-colors
+                  <%= isActive
+                      ? 'border-indigo-600 bg-indigo-600 text-white'
+                      : 'border-gray-200 text-gray-600 hover:border-indigo-400' %>">
+                  <%= size %>
+                </span>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+
+        <!-- ── CLEAR ALL FILTERS ── -->
+        <% if (activeSubId || activeMin || activeMax || activeSizes.length > 0 || activeSearch) { %>
+          <a href="/products<%= catName ? '?category=' + catSlug : '' %>"
+             class="mt-4 flex items-center justify-center gap-1.5 w-full rounded-full border border-red-200
+                    text-red-500 font-black text-xs py-2 hover:bg-red-50 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Clear All Filters
+          </a>
+        <% } %>
+
+      </form>
+    </aside>
+
+    <!-- ════ MAIN CONTENT ════ -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Count + Mobile Filters -->
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-gray-500">
+          Showing <span class="font-bold text-gray-800"><%= startItem %>–<%= endItem %></span> of
+          <span class="font-bold text-gray-800"><%= total %></span> products
+        </p>
+
+        <button onclick="document.getElementById('mobileFilters').classList.toggle('hidden')"
+          class="lg:hidden flex items-center gap-1.5 text-sm font-bold text-indigo-600
+                 border border-indigo-200 rounded-full px-3 py-1.5 hover:bg-indigo-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="11" y1="18" x2="13" y2="18"/>
+          </svg>
+          Filters
+        </button>
+      </div>
+
+      <!-- Mobile filter panel -->
+      <div id="mobileFilters" class="hidden lg:hidden mb-4 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+        <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Filter by Size</p>
+        <form method="GET" action="/products" class="flex flex-wrap gap-2">
+          <% if (catName)      { %><input type="hidden" name="category" value="<%= catName %>"><% } %>
+          <% if (activeSearch) { %><input type="hidden" name="search"   value="<%= activeSearch %>"><% } %>
+          <input type="hidden" name="sort" value="<%= sortVal %>">
+          <% ALL_SIZES.forEach(size => {
+            const isActive = activeSizes.includes(size);
+          %>
+            <label class="cursor-pointer">
+              <input type="checkbox" name="size" value="<%= size %>"
+                class="sr-only" <%= isActive ? 'checked' : '' %>
+                onchange="this.form.submit()">
+              <span class="block px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-colors
+                <%= isActive ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 text-gray-600' %>">
+                <%= size %>
+              </span>
+            </label>
+          <% }) %>
+        </form>
+      </div>
+
+      <!-- ── PRODUCT GRID ── -->
+      <% if (typeof products !== 'undefined' && products.length > 0) { %>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <% products.forEach((p, i) => {
+            const firstVariant = p.variants && p.variants.length > 0 ? p.variants[0] : null;
+            const displayPrice = firstVariant ? firstVariant.price : null;
+            const allSizes     = p.variants ? [...new Set(p.variants.map(v => v.size))] : [];
+            const allColors    = p.variants ? [...new Set(p.variants.map(v => v.color))] : [];
+            const displayImage = p.images && p.images.length > 0 ? p.images[0] : null;
+          %>
+            <article class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm
+                            hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
+              <!-- Image -->
+              <div class="relative bg-gray-100">
+                <% if (p.isFeatured) { %>
+                  <span class="absolute left-3 top-3 z-10 text-xs font-black bg-indigo-600 text-white
+                               px-3 py-1 rounded-full shadow-sm">Featured</span>
+                <% } %>
+
+                <button class="absolute right-3 top-3 z-10 w-8 h-8 rounded-full bg-white border border-gray-200
+                               grid place-items-center text-gray-400 hover:text-red-500 hover:border-red-200
+                               transition-colors shadow-sm"
+                        title="Add to Wishlist"
+                        onclick="toggleWishlist(this, '<%= p._id %>')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+
+                <a href="/product/<%= p._id %>">
+                  <% if (displayImage) { %>
+                    <img src="<%= displayImage %>" alt="<%= p.name %>"
+                         class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
+                         loading="lazy">
+                  <% } else { %>
+                    <div class="w-full h-64 bg-gradient-to-br from-indigo-100 to-purple-100
+                                flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                           fill="none" stroke="#a5b4fc" stroke-width="1"
+                           stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                    </div>
+                  <% } %>
+                </a>
+              </div>
+
+              <!-- Info -->
+              <div class="p-4">
+                <div class="flex justify-between items-start gap-2 mb-2">
+                  <div class="min-w-0">
+                    <a href="/product/<%= p._id %>"
+                       class="font-black text-sm text-gray-900 hover:text-indigo-600 transition-colors line-clamp-1">
+                      <%= p.name %>
+                    </a>
+                    <div class="text-xs text-gray-500 mt-0.5">
+                      <%= p.brand || (p.subcategory && p.subcategory.name ? p.subcategory.name : (p.category && p.category.name ? p.category.name : 'Apparel')) %>
+                    </div>
+                  </div>
+                  <% if (allColors.length > 0) { %>
+                    <div class="flex gap-1 shrink-0 mt-0.5">
+                      <% allColors.slice(0, 3).forEach(c => { %>
+                        <span class="w-3 h-3 rounded-full border border-gray-300" style="background:<%= c %>"></span>
+                      <% }) %>
+                    </div>
+                  <% } %>
+                </div>
+
+                <div class="flex items-center justify-between mb-3">
+                  <div class="font-black text-gray-900">
+                    <% if (displayPrice !== null) { %>
+                      ₹<%= displayPrice.toLocaleString('en-IN') %>
+                    <% } else { %>
+                      <span class="text-gray-400 text-xs">—</span>
+                    <% } %>
+                  </div>
+                  <div class="text-xs text-gray-400 font-semibold truncate max-w-[7rem]"
+                       title="<%= allSizes.join(', ') %>">
+                    <%= allSizes.join(', ') %>
+                  </div>
+                </div>
+
+                <button onclick="addToCart('<%= p._id %>', this)"
+                  class="w-full rounded-full bg-indigo-600 text-white font-black py-2 text-sm
+                         hover:bg-indigo-700 active:scale-95 transition-all duration-150">
+                  Add to Cart
+                </button>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+
+      <% } else { %>
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-50 grid place-items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+                 fill="none" stroke="#6366f1" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <h3 class="font-black text-lg text-gray-800 mb-1">
+            <%= activeSearch ? 'No results for "' + activeSearch + '"' : 'No products found' %>
+          </h3>
+          <p class="text-sm text-gray-500 mb-4">Try adjusting your filters or clearing the search.</p>
+          <a href="/products<%= catName ? '?category=' + catSlug : '' %>"
+             class="rounded-full bg-indigo-600 text-white font-black px-6 py-2 text-sm
+                    hover:bg-indigo-700 transition-colors">
+            Clear Filters
+          </a>
+        </div>
+      <% } %>
+
+      <!-- ── PAGINATION ── -->
+      <% if (pages > 1) { %>
+        <div class="flex items-center justify-center gap-1.5 pb-4">
+
+          <% if (activePage > 1) { %>
+            <a href="<%= buildPageUrl(activePage - 1) %>"
+               class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-500
+                      hover:bg-white hover:text-indigo-600 border border-transparent hover:border-gray-200 transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Previous
+            </a>
+          <% } else { %>
+            <span class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-300 cursor-not-allowed">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Previous
+            </span>
+          <% } %>
+
+          <%
+            let pagesShown = [];
+            if (pages <= 5) {
+              for (let k = 1; k <= pages; k++) pagesShown.push(k);
+            } else {
+              pagesShown = [1, 2];
+              if (activePage > 3) pagesShown.push('...');
+              if (activePage > 2 && activePage < pages - 1) pagesShown.push(activePage);
+              if (activePage < pages - 2) pagesShown.push('...');
+              pagesShown.push(pages - 1, pages);
+              pagesShown = [...new Set(pagesShown)];
+            }
+          %>
+          <% pagesShown.forEach(pg => { %>
+            <% if (pg === '...') { %>
+              <span class="px-2 py-2 text-gray-400 text-sm">···</span>
+            <% } else { %>
+              <a href="<%= buildPageUrl(pg) %>"
+                 class="w-9 h-9 rounded-xl text-sm font-black grid place-items-center transition-all
+                   <%= pg == activePage
+                     ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                     : 'text-gray-500 hover:bg-white hover:text-indigo-600 border border-transparent hover:border-gray-200' %>">
+                <%= pg %>
+              </a>
+            <% } %>
+          <% }) %>
+
+          <% if (activePage < pages) { %>
+            <a href="<%= buildPageUrl(activePage + 1) %>"
+               class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-500
+                      hover:bg-white hover:text-indigo-600 border border-transparent hover:border-gray-200 transition-all">
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          <% } else { %>
+            <span class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-300 cursor-not-allowed">
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </span>
+          <% } %>
+
+        </div>
+      <% } %>
+
+    </div><!-- /main content -->
+  </div><!-- /body row -->
+</main>
+
+<%- include("../partials/footer") %>
+<%- include("../partials/drawer") %>
+
+<script>
+  /* ── Sidebar section collapse ── */
+  function toggleSection(id) {
+    const section   = document.getElementById(id);
+    const chevronId = id.replace('Section', 'Chevron');
+    const chevron   = document.getElementById(chevronId);
+    const hidden    = section.style.display === 'none';
+    section.style.display = hidden ? '' : 'none';
+    if (chevron) chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+  }
+
+  /* ── "All" sub-category checkbox ── */
+  function handleAllCheck(el) {
+    document.querySelectorAll('.sub-check').forEach(c => c.checked = false);
+    document.getElementById('filterForm').submit();
+  }
+
+  /* ── Dual price-range slider ── */
+  function updateRange() {
+    const minSlider = document.getElementById('rangeMin');
+    const maxSlider = document.getElementById('rangeMax');
+    const minDisp   = document.getElementById('minDisplay');
+    const maxDisp   = document.getElementById('maxDisplay');
+    const track     = document.getElementById('priceRange');
+    if (!minSlider || !maxSlider) return;
+
+    let minVal = parseInt(minSlider.value);
+    let maxVal = parseInt(maxSlider.value);
+    if (minVal > maxVal) { [minVal, maxVal] = [maxVal, minVal]; minSlider.value = minVal; maxSlider.value = maxVal; }
+
+    const pct = v => (v / 10000) * 100;
+    track.style.left  = pct(minVal) + '%';
+    track.style.width = (pct(maxVal) - pct(minVal)) + '%';
+    if (minDisp) minDisp.value = minVal;
+    if (maxDisp) maxDisp.value = maxVal;
+  }
+  updateRange();
+
+  document.getElementById('minDisplay')?.addEventListener('input', function () {
+    document.getElementById('rangeMin').value = this.value; updateRange();
+  });
+  document.getElementById('maxDisplay')?.addEventListener('input', function () {
+    document.getElementById('rangeMax').value = this.value; updateRange();
+  });
+
+  /* ── Live clear on empty search (pressing backspace to empty → submit) ── */
+  document.getElementById('searchInput')?.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      this.value = '';
+      this.form.submit();
+    }
+  });
+
+  /* ── Add to Cart ── */
+  async function addToCart(productId, btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML  = '✓ Added!';
+    btn.classList.replace('bg-indigo-600', 'bg-green-600');
+    btn.disabled   = true;
+    try {
+      await fetch('/cart/add', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: 1 }),
+      });
+    } catch (e) { console.error(e); }
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.replace('bg-green-600', 'bg-indigo-600');
+      btn.disabled  = false;
+    }, 1500);
+  }
+
+  /* ── Wishlist toggle ── */
+  async function toggleWishlist(btn, productId) {
+    const svg      = btn.querySelector('svg');
+    const isFilled = svg.getAttribute('fill') === 'currentColor';
+    svg.setAttribute('fill', isFilled ? 'none' : 'currentColor');
+    btn.classList.toggle('text-red-500',   !isFilled);
+    btn.classList.toggle('border-red-200', !isFilled);
+    try {
+      await fetch('/wishlist/toggle', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+    } catch (e) { console.error(e); }
+  }
+</script>

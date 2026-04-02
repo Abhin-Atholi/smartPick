@@ -2,7 +2,7 @@ import express from "express"
 const router = express.Router();
 import * as userController from "../../controller/user/userController.js";
 import * as authController from "../../controller/user/authController.js";
-import * as accountController from "../../controller/user/accountController.js";
+import * as accountController  from "../../controller/user/accountController.js";
 import { redirectIfVerified, protectRoute, redirectIfAuth, checkBlocked } from "../../middleware/user/isAuth.js";
 import { profileUploadMiddleware } from "../../middleware/user/profileUpload.js";
 
