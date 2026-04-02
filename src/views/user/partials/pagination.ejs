@@ -1,10 +1,68 @@
-<!-- PARTIAL: pagination -->
+<% if (pages > 1) { %>
+<div class="flex items-center justify-center gap-1.5 pb-4">
 
-<div class="flex items-center justify-center gap-2 text-sm text-gray-600 mt-6">
-  <button class="px-3 py-2 rounded-xl hover:bg-gray-100">‹ Previous</button>
-  <button class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-600 font-black">1</button>
-  <button class="px-3 py-2 rounded-xl hover:bg-gray-100">2</button>
-  <button class="px-3 py-2 rounded-xl hover:bg-gray-100">3</button>
-  <button class="px-3 py-2 rounded-xl hover:bg-gray-100">Next ›</button>
-  <span class="text-gray-400 hidden sm:inline">… More pages</span>
+  <% if (activePage > 1) { %>
+    <button onclick="handleFilterChange(undefined, <%= activePage - 1 %>)"
+       class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-500
+              hover:bg-white hover:text-indigo-600 border border-transparent hover:border-gray-200 transition-all">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Previous
+    </button>
+  <% } else { %>
+    <span class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-300 cursor-not-allowed">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Previous
+    </span>
+  <% } %>
+
+  <%
+    let pagesShown = [];
+    if (pages <= 5) {
+      for (let k = 1; k <= pages; k++) pagesShown.push(k);
+    } else {
+      pagesShown = [1, 2];
+      if (activePage > 3) pagesShown.push('...');
+      if (activePage > 2 && activePage < pages - 1) pagesShown.push(activePage);
+      if (activePage < pages - 2) pagesShown.push('...');
+      pagesShown.push(pages - 1, pages);
+      pagesShown = [...new Set(pagesShown)];
+    }
+  %>
+  <% pagesShown.forEach(pg => { %>
+    <% if (pg === '...') { %>
+      <span class="px-2 py-2 text-gray-400 text-sm">···</span>
+    <% } else { %>
+      <button onclick="handleFilterChange(undefined, <%= pg %>)"
+         class="w-9 h-9 rounded-xl text-sm font-black grid place-items-center transition-all
+           <%= pg == activePage
+             ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+             : 'text-gray-500 hover:bg-white hover:text-indigo-600 border border-transparent hover:border-gray-200' %>">
+        <%= pg %>
+      </button>
+    <% } %>
+  <% }) %>
+
+  <% if (activePage < pages) { %>
+    <button onclick="handleFilterChange(undefined, <%= activePage + 1 %>)"
+       class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-500
+              hover:bg-white hover:text-indigo-600 border border-transparent hover:border-gray-200 transition-all">
+      Next
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  <% } else { %>
+    <span class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-gray-300 cursor-not-allowed">
+      Next
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  <% } %>
+
 </div>
+<% } %>

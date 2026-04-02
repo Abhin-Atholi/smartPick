@@ -96,17 +96,17 @@ export const addProduct = async (req, res) => {
 
         const imageUrls = req.files.map(f => f.path);
 
-        await productService.createProduct({
-            name: name.trim(),
-            description: description?.trim(),
-            brand: brand?.trim(),
-            category,
-            subcategory: subcategory || null,
-            images: imageUrls,
-            variants: parsedVariants,
-            isActive: isActive === 'true' || isActive === 'on' || isActive === true,
-            isFeatured: isFeatured === 'true' || isFeatured === 'on'
-        });
+    await productService.createProductFixed({
+      name: name.trim(),
+      description: description?.trim(),
+      brand: brand?.trim(),
+      category,
+      subcategory: subcategory || null,
+      images: imageUrls,
+      variants: parsedVariants,
+      isActive: isActive === 'true' || isActive === 'on' || isActive === true,
+      isFeatured: isFeatured === 'true' || isFeatured === 'on'
+    });
 
         res.status(201).json({ success: true, message: "Product created successfully!" });
     } catch (error) {

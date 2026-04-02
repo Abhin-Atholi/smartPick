@@ -46,17 +46,17 @@
 </section>
 <% } %>
 
-<!-- ========== TRENDING NOW ========== -->
-<section class="max-w-6xl mx-auto px-4 pb-12">
-  <div class="flex items-center justify-between mb-6">
+<!-- ========== LATEST COLLECTIONS (New Arrivals) ========== -->
+<section class="max-w-6xl mx-auto px-4 py-20">
+  <div class="flex items-center justify-between mb-10">
     <div>
-      <h2 class="text-2xl font-black">Trending Now</h2>
-      <p class="text-sm text-gray-500 mt-1">Handpicked styles you'll love</p>
+      <h2 class="text-3xl font-black text-slate-800">Latest Collections</h2>
+      <p class="text-sm text-gray-500 mt-2 lowercase font-bold tracking-widest uppercase">The very best of SmartPick</p>
     </div>
-    <a href="/products" class="text-sm font-bold text-indigo-600 hover:underline">View All →</a>
+    <a href="/products?sort=newest" class="text-xs font-black text-indigo-600 bg-indigo-50 px-6 py-3 rounded-full hover:bg-indigo-100 transition tracking-widest uppercase shadow-sm">Explore All</a>
   </div>
 
-  <%- include("partials/productsGrid") %>
+  <%- include("partials/productsGrid", { products: latestProducts }) %>
 </section>
 
 <%- include("partials/footer") %>

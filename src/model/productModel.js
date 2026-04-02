@@ -4,12 +4,12 @@ const variantSchema = new mongoose.Schema({
   size: {
     type: String,
     required: true,
+    enum: ["S", "M", "L", "XL"],
     trim: true,
   },
   color: {
-    type: String,
-    required: true,
-    trim: true,
+    name: { type: String, required: true },
+    code: { type: String, required: true }
   },
   price: {
     type: Number,
@@ -24,7 +24,6 @@ const variantSchema = new mongoose.Schema({
   sku: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
   }
 }, { _id: false });
@@ -34,7 +33,6 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    index: true,
   },
 
   description: {
@@ -82,8 +80,21 @@ const productSchema = new mongoose.Schema({
   isFeatured: {
     type: Boolean,
     default: false,
+  },
+
+  isDeleted: {
+    type: Boolean,
+    default: false,
   }
 
 }, { timestamps: true });
+
+// Indexing for performance
+productSchema.index({ name: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ subcategory: 1 });
+productSchema.index({ isDeleted: 1, isActive: 1 });
+productSchema.index({ "variants.sku": 1 });
+productSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Product", productSchema);

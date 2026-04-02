@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import "dotenv/config";
 import connectDB from "./src/config/db.js";
 import layouts from "express-ejs-layouts";
-import { setAuthLocals } from "./src/middleware/user/isAuth.js";
+import { setAuthLocals, setCartAndWishlistLocals } from "./src/middleware/user/isAuth.js";
 import nocache from "nocache";
 import passport from "passport";
 import "./src/config/passport.js";
@@ -50,6 +50,7 @@ app.use((req, res, next) => {
 });
 
 app.use(setAuthLocals);
+app.use(setCartAndWishlistLocals);
 
 // Inject active categories into every view (used by navbar)
 app.use(async (req, res, next) => {

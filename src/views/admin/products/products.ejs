@@ -104,7 +104,7 @@
                 <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black">
                     <th class="px-6 py-5">Product</th>
                     <th class="px-4 py-5">Category</th>
-                    <th class="px-4 py-5">Variants</th>
+                    <th class="px-4 py-5">Variants & SKUs</th>
                     <th class="px-4 py-5">Price Range</th>
                     <th class="px-4 py-5 text-center">Featured</th>
                     <th class="px-4 py-5 text-center">Status</th>
@@ -157,15 +157,17 @@
                                                 </div>
                                             </td>
                                             <td class="px-4 py-4">
-                                                <div>
-                                                    <span class="text-xs font-black text-slate-700">
-                                                        <%= product.variants.length %> variant<%=
-                                                                product.variants.length !==1 ? 's' : '' %>
+                                                <div class="space-y-1">
+                                                    <span class="text-xs font-black text-slate-700 block">
+                                                        <%= product.variants.length %> variant<%= product.variants.length !==1 ? 's' : '' %>
                                                     </span>
-                                                    <p
-                                                        class="text-[10px] font-bold mt-0.5 <%= totalStock === 0 ? 'text-rose-500' : totalStock < 10 ? 'text-amber-500' : 'text-emerald-600' %>">
-                                                        <%= totalStock===0 ? 'Out of Stock' : totalStock + ' in stock'
-                                                            %>
+                                                    <% if (product.variants.length > 0) { %>
+                                                      <div class="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[120px]" title="<%= product.variants.map(v => v.sku).join(', ') %>">
+                                                        SKU: <%= product.variants[0].sku %><%= product.variants.length > 1 ? '...' : '' %>
+                                                      </div>
+                                                    <% } %>
+                                                    <p class="text-[10px] font-bold mt-0.5 <%= totalStock === 0 ? 'text-rose-500' : totalStock < 10 ? 'text-amber-500' : 'text-emerald-600' %>">
+                                                        <%= totalStock===0 ? 'Out of Stock' : totalStock + ' in stock' %>
                                                     </p>
                                                 </div>
                                             </td>

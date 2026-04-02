@@ -78,23 +78,25 @@
         </button>
 
         <!-- Wishlist -->
-        <button class="w-10 h-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-500 grid place-items-center transition-colors" title="Wishlist">
+        <a href="/wishlist" class="w-10 h-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-500 grid place-items-center transition-colors" title="Wishlist">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
-        </button>
+        </a>
 
         <!-- Cart with badge -->
-        <button class="w-10 h-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-500 grid place-items-center relative transition-colors" title="Cart">
+        <a href="/cart" class="w-10 h-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-500 grid place-items-center relative transition-colors" title="Cart">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
             <path d="M16 10a4 4 0 0 1-8 0"/>
           </svg>
-          <span class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full leading-none py-0.5">2</span>
-        </button>
+          <span class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full leading-none py-0.5">
+            <%= (typeof cart !== 'undefined' && cart.items) ? cart.items.length : 0 %>
+          </span>
+        </a>
 
         <!-- Logout -->
         <a href="/logout" onclick="confirmLogout(event, this.href)"
