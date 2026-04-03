@@ -236,6 +236,8 @@
                         itemEl.remove();
                         updateSummary(response.data.cartTotal);
                         document.getElementById('cartItemCount').innerText = response.data.itemCount;
+                        const badge = document.getElementById('cartBadge');
+                        if (badge) badge.innerText = response.data.itemCount;
                         if (response.data.itemCount === 0) location.reload();
                     }, 300);
                 }

@@ -93,8 +93,8 @@
             <line x1="3" y1="6" x2="21" y2="6"/>
             <path d="M16 10a4 4 0 0 1-8 0"/>
           </svg>
-          <span class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full leading-none py-0.5">
-            <%= (typeof cart !== 'undefined' && cart.items) ? cart.items.length : 0 %>
+          <span id="cartBadge" class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full leading-none py-0.5">
+            <%= (typeof cart !== 'undefined' && cart.totalItems !== undefined) ? cart.totalItems : (typeof cart !== 'undefined' && cart.items ? cart.items.length : 0) %>
           </span>
         </a>
 

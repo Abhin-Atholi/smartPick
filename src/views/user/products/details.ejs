@@ -319,6 +319,8 @@
             if (response.data.success) {
                 label.innerText = 'SUCCESS!';
                 btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+                const badge = document.getElementById('cartBadge');
+                if (badge) badge.innerText = response.data.itemCount;
                 Swal.fire({ icon: 'success', title: 'Added to Bag', text: response.data.message || 'Item added successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
             }
         } catch (err) {

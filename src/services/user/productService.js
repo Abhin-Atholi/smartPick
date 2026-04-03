@@ -58,13 +58,13 @@ export const getStorefrontProducts = async (queryParams) => {
 
   if (currentCategory) filter.category = currentCategory._id;
 
-  const subIdArr = subId ? (Array.isArray(subId) ? subId : [subId]) : [];
+  const subIdArr = (Array.isArray(subId) ? subId : [subId]).filter(id => id && id.trim() !== "");
   if (subIdArr.length > 0) {
     filter.subcategory = { $in: subIdArr };
     delete filter.$or;
   }
 
-  const sizeArr = size ? (Array.isArray(size) ? size : [size]) : [];
+  const sizeArr = (Array.isArray(size) ? size : [size]).filter(s => s && s.trim() !== "");
   if (sizeArr.length > 0) filter["variants.size"] = { $in: sizeArr };
 
   if (minPrice || maxPrice) {

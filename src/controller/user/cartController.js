@@ -28,9 +28,8 @@ export const addToCart = async (req, res, next) => {
         }
 
         const { productId, quantity, size, color } = req.body;
-        await cartService.addToCart(userId, productId, parseInt(quantity) || 1, size, color);
-
-        res.json({ success: true, message: "Added to cart successfully!" });
+        const cart = await cartService.addToCart(userId, productId, parseInt(quantity) || 1, size, color);
+        res.json({ success: true, message: "Added to cart successfully!", itemCount: cart.items.length });
     } catch (err) {
         console.error("addToCart error:", err);
         res.status(400).json({ success: false, message: err.message });

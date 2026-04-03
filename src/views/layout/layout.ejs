@@ -129,6 +129,8 @@
             const original = btn.innerHTML;
             btn.innerHTML = 'Added! ✅';
             btn.classList.add('bg-green-600', 'text-white');
+            const badge = document.getElementById('cartBadge');
+            if (badge) badge.innerText = response.data.itemCount;
             setTimeout(() => {
               btn.innerHTML = original;
               btn.classList.remove('bg-green-600', 'text-white');
