@@ -139,11 +139,11 @@ export const getProductById = async (id) => {
  */
 export const getRelatedProducts = async (categoryId, excludeId, limit = 4) => {
   return await Product.find({
-      category: categoryId,
-      _id: { $ne: excludeId },
-      isActive: true,
-      isDeleted: false
-    })
+    category: categoryId,
+    _id: { $ne: excludeId },
+    isActive: true,
+    isDeleted: false
+  })
     .populate('category', 'name')
     .limit(limit)
     .lean();

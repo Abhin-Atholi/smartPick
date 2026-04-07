@@ -82,7 +82,7 @@ export const loadProductDetails = async (req, res) => {
     const product = await userProductService.getProductById(id);
 
     if (!product) {
-      return res.status(404).render('user/404', { title: 'Product Not Found' });
+      return res.redirect("/?msg=The item is currently unavailable")
     }
 
     // Fetch Related Products (same category, excluding current)
