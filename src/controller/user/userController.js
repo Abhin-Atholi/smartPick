@@ -1,21 +1,10 @@
 import * as userService from "../../services/user/userService.js"; // Ensure this filename is correct
 
-import Category from "../../model/categoryModel.js";
-import Product from "../../model/productModel.js";
+import * as productService from "../../services/user/productService.js";
 
 export const loadHome = async (req, res) => {
   try {
-    const categories = await Category.find({ isActive: true }).lean();
-    
-    // Latest Products (limit 12)
-    const latestProducts = await Product.find({
-      isActive: true,
-      isDeleted: false
-    })
-    .populate('category', 'name')
-    .sort({ createdAt: -1 })
-    .limit(12)
-    .lean();
+    const { categories, latestProducts } = await productService.getHomeData();
 
     res.render("user/home", { 
       title: "SmartPick | Premium Fashion", 

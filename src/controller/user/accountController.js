@@ -1,13 +1,11 @@
-import User from "../../model/userModel.js";
 import * as userService from "../../services/user/userService.js";
-import Address from "../../model/addressModel.js";
 
 /**
  * GET: Load Account Overview
  */
 export const loadAccount = async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId);
+    const user = await userService.getUserById(req.session.userId);
     res.render("user/account", { title: "My Account", user, msg: req.query.msg || null });
   } catch (err) {
     res.status(500).send("Server Error");
@@ -26,7 +24,7 @@ export const updateProfile = async (req, res) => {
     );
 
     // Update Session Data (Controller Concern)
-    const user = result.user || await User.findById(req.session.userId);
+    const user = result.user || await userService.getUserById(req.session.userId);
     req.session.user.fullName = user.fullName;
     req.session.user.profileImage = user.profileImage;
 
@@ -61,7 +59,7 @@ export const removeProfileImage = async (req, res) => {
  */
 export const loadAddresses = async (req, res) => {
   try {
-    const addresses = await Address.find({ userId: req.session.userId });
+    const addresses = await userService.getAddressesByUserId(req.session.userId);
 
     // Read and immediately clear any flash data set by POST error handlers (PRG pattern)
     const flash = req.session.flash || {};
@@ -98,7 +96,7 @@ export const addAddress = async (req, res) => {
  */
 export const loadEditAddress = async (req, res) => {
   try {
-    const address = await Address.findOne({ _id: req.params.id, userId: req.session.userId });
+    const address = await userService.getAddressById(req.params.id, req.session.userId);
 
     if (!address) return res.redirect("/account/addresses");
 
@@ -137,7 +135,7 @@ export const deleteAddress = async (req, res) => {
  */
 export const loadSecurity = async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId);
+    const user = await userService.getUserById(req.session.userId);
     res.render("user/security", { 
       title: "Account Security", 
       user, 

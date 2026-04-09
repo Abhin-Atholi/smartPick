@@ -1,6 +1,6 @@
 import * as productService from "../../services/admin/productService.js";
-import Category from "../../model/categoryModel.js";
-import Subcategory from "../../model/subcategoryModel.js";
+import * as categoryService from "../../services/admin/categoryService.js";
+import * as subcategoryService from "../../services/admin/subcategoryService.js";
 
 // ─── Listing ─────────────────────────────────────────────────────────────────
 
@@ -19,12 +19,12 @@ export const getProducts = async (req, res) => {
             search, status, categoryId, subcategoryId, page, sortField, sortOrder, limit
         });
 
-        const allCategories = await Category.find({}).select('name _id').sort({ name: 1 });
+        const allCategories = await categoryService.getAllCategories();
 
         // Load subcategories for the currently selected category (for filter dropdown)
         let allSubcategories = [];
         if (categoryId && categoryId !== 'All') {
-            allSubcategories = await Subcategory.find({ parentCategory: categoryId }).select('name _id').sort({ name: 1 });
+            allSubcategories = await subcategoryService.getSubcategoriesByParent(categoryId);
         }
 
         res.render("admin/products/products", {
@@ -52,7 +52,7 @@ export const getProducts = async (req, res) => {
 
 export const getAddProduct = async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true }).select('name _id').sort({ name: 1 });
+        const categories = await categoryService.getAllActiveCategories();
         res.render("admin/products/add-product", {
             title: "Add Product",
             categories
@@ -122,9 +122,9 @@ export const getEditProduct = async (req, res) => {
         const product = await productService.getProductById(req.params.id);
         if (!product) return res.status(404).send("Product not found");
 
-        const categories = await Category.find({ isActive: true }).select('name _id').sort({ name: 1 });
+        const categories = await categoryService.getAllActiveCategories();
         const subcategories = product.category
-            ? await Subcategory.find({ parentCategory: product.category._id, isActive: true }).select('name _id')
+            ? await subcategoryService.getSubcategoriesByParent(product.category._id)
             : [];
 
         res.render("admin/products/edit-product", {
@@ -268,10 +268,7 @@ export const softDeleteProduct = async (req, res) => {
 
 export const getSubcategoriesByCategory = async (req, res) => {
     try {
-        const subcategories = await Subcategory.find({
-            parentCategory: req.params.categoryId,
-            isActive: true
-        }).select('name _id').sort({ name: 1 });
+        const subcategories = await subcategoryService.getSubcategoriesByParent(req.params.categoryId);
 
         res.json({ success: true, subcategories });
     } catch (error) {

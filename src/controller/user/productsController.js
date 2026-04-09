@@ -1,5 +1,5 @@
 import * as userProductService from "../../services/user/productService.js";
-import Wishlist from "../../model/wishlistModel.js";
+import * as wishlistService from "../../services/user/wishlistService.js";
 
 const PER_PAGE = 9;
 
@@ -10,8 +10,7 @@ export const loadProducts = async (req, res) => {
     /* ── Wishlist status (if logged in) ── */
     let wishlistProductIds = [];
     if (req.session.user) {
-      const wl = await Wishlist.findOne({ user: req.session.user._id }).lean();
-      if (wl) wishlistProductIds = wl.products.map(id => id.toString());
+      wishlistProductIds = await wishlistService.getWishlistProductIds(req.session.user._id);
     }
 
     const { 
@@ -95,8 +94,7 @@ export const loadProductDetails = async (req, res) => {
     // Wishlist status
     let isInWishlist = false;
     if (req.session.user) {
-      const wl = await Wishlist.findOne({ user: req.session.user._id, products: product._id }).lean();
-      isInWishlist = !!wl;
+      isInWishlist = await wishlistService.isInWishlist(req.session.user._id, product._id);
     }
 
     res.render('user/products/details', {

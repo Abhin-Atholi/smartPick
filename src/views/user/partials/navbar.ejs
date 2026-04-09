@@ -12,6 +12,10 @@
       // Home: exact match on path portion only
       const pathOnly = cp.split('?')[0];
       isActive = pathOnly === '/' || pathOnly === '/home';
+    } else if (href === '/products') {
+      // All Products: must be /products but NOT have a specific category so it doesn't collide with category links
+      const pathOnly = cp.split('?')[0];
+      isActive = pathOnly === '/products' && !cp.includes('category=');
     } else if (href.includes('?')) {
       // Category link: full URL must start with this href
       isActive = cp === href || cp.startsWith(href + '&') || cp.startsWith(href + '#');
@@ -49,6 +53,11 @@
       <!-- Home -->
       <a href="/" class="pb-1 transition-colors <%= navActive('/') %>">
         Home
+      </a>
+
+      <!-- All Products -->
+      <a href="/products" class="pb-1 transition-colors <%= navActive('/products') %>">
+        All Products
       </a>
 
       <!-- Dynamic categories from DB -->

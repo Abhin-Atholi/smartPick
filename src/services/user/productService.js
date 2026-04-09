@@ -148,3 +148,19 @@ export const getRelatedProducts = async (categoryId, excludeId, limit = 4) => {
     .limit(limit)
     .lean();
 };
+
+export const getHomeData = async () => {
+    const categories = await Category.find({ isActive: true }).lean();
+    
+    // Latest Products (limit 12)
+    const latestProducts = await Product.find({
+      isActive: true,
+      isDeleted: false
+    })
+    .populate('category', 'name')
+    .sort({ createdAt: -1 })
+    .limit(12)
+    .lean();
+
+    return { categories, latestProducts };
+};

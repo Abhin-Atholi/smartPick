@@ -1,5 +1,5 @@
 import * as subcategoryService from "../../services/admin/subcategoryService.js";
-import Category from "../../model/categoryModel.js";
+import * as categoryService from "../../services/admin/categoryService.js";
 
 // --- Subcategory Management Controllers ---
 
@@ -18,7 +18,7 @@ export const getSubcategories = async (req, res) => {
         });
 
         // Also fetch active Categories precisely for the Dropdown Population inside Modals and Table Filters!
-        const activeCategories = await Category.find({}).select('name _id').sort({ name: 1 });
+        const activeCategories = await categoryService.getAllCategories();
 
         res.render("admin/category/subcategory", {
             subcategories: result.subcategories,

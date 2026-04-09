@@ -148,3 +148,15 @@ export const changePassword = async (userId, { currentPassword, newPassword, con
   user.password = await bcrypt.hash(newPassword, 12);
   await user.save();
 };
+
+export const getUserById = async (userId) => {
+    return await User.findById(userId);
+};
+
+export const getAddressesByUserId = async (userId) => {
+    return await Address.find({ userId });
+};
+
+export const getAddressById = async (addressId, userId) => {
+    return await Address.findOne({ _id: addressId, userId });
+};

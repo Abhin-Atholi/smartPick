@@ -263,10 +263,26 @@
     let pendingIndex = 0;
 
     document.getElementById('imageFilePicker').addEventListener('change', async (e) => {
-        pendingFiles = Array.from(e.target.files);
+        const files = Array.from(e.target.files);
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        
+        let validFiles = [];
+        for (const file of files) {
+            if (!validTypes.includes(file.type)) {
+                await Swal.fire('Invalid File', `File "${file.name}" is not a valid image format.`, 'warning');
+                continue;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                await Swal.fire('File Too Large', `Image "${file.name}" exceeds the 2MB limit.`, 'warning');
+                continue;
+            }
+            validFiles.push(file);
+        }
+
+        pendingFiles = validFiles;
         pendingIndex = 0;
         e.target.value = ''; // Reset so same file can be re-picked
-        processNextPendingFile();
+        if (pendingFiles.length > 0) processNextPendingFile();
     });
 
     function processNextPendingFile() {

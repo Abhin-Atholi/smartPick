@@ -3,7 +3,7 @@ const router = express.Router();
 
 import { isAdmin } from "../../middleware/admin/adminAuth.js";
 import * as categoryController from "../../controller/admin/categoryController.js";
-import { createCloudinaryUpload } from "../../config/multer.js";
+import { createCloudinaryUpload, handleUploadError } from "../../config/multer.js";
 
 const uploadCategory = createCloudinaryUpload('smartpick/categories');
 
@@ -11,9 +11,9 @@ const uploadCategory = createCloudinaryUpload('smartpick/categories');
 router.use(isAdmin); 
 
 router.get("/", categoryController.getCategories);
-router.post("/add", uploadCategory.single("image"), categoryController.addCategory);
+router.post("/add", uploadCategory.single("image"), handleUploadError, categoryController.addCategory);
 
-router.put("/edit/:id", uploadCategory.single("image"), categoryController.updateCategory);
+router.put("/edit/:id", uploadCategory.single("image"), handleUploadError, categoryController.updateCategory);
 router.patch("/toggle/:id", categoryController.toggleCategory);
 
 export default router;

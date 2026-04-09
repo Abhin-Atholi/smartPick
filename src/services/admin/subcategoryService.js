@@ -121,3 +121,11 @@ export const updateSubcategory = async (id, updateData, newImageFile) => {
 
     return await subcategory.save();
 };
+
+export const getSubcategoriesByParent = async (categoryId) => {
+    return await Subcategory.find({ parentCategory: categoryId, isActive: true }).select('name _id').sort({ name: 1 });
+};
+
+export const getAllActiveSubcategories = async () => {
+    return await Subcategory.find({ isActive: true }).select('name _id').sort({ name: 1 });
+};

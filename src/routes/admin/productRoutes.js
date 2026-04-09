@@ -3,7 +3,7 @@ const router = express.Router();
 
 import { isAdmin } from "../../middleware/admin/adminAuth.js";
 import * as productController from "../../controller/admin/productController.js";
-import { createCloudinaryUpload } from "../../config/multer.js";
+import { createCloudinaryUpload, handleUploadError } from "../../config/multer.js";
 
 const uploadProduct = createCloudinaryUpload('smartpick/products');
 
@@ -14,11 +14,11 @@ router.get("/", productController.getProducts);
 
 // Add product
 router.get("/add", productController.getAddProduct);
-router.post("/add", uploadProduct.array("images", 10), productController.addProduct);
+router.post("/add", uploadProduct.array("images", 10), handleUploadError, productController.addProduct);
 
 // Edit product
 router.get("/edit/:id", productController.getEditProduct);
-router.put("/edit/:id", uploadProduct.array("images", 10), productController.updateProduct);
+router.put("/edit/:id", uploadProduct.array("images", 10), handleUploadError, productController.updateProduct);
 
 // AJAX: fetch subcategories for a picked category
 router.get("/subcategories/:categoryId", productController.getSubcategoriesByCategory);

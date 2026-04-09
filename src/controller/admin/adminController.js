@@ -1,4 +1,4 @@
-import User from "../../model/userModel.js";
+
 import * as adminService from "../../services/admin/adminService.js";
 
 export const postLogin = async (req, res) => {
@@ -52,28 +52,8 @@ export const getCustomers = async (req, res) => {
         const { search, status } = req.query;
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
-        const skip = (page - 1) * limit;
 
-        let query = { role: "user" };
-
-        if (search) {
-            query.$or = [
-                { fullName: { $regex: search, $options: "i" } },
-                { email: { $regex: search, $options: "i" } }
-            ];
-        }
-
-        if (status && status !== "All") {
-            query.status = status.toLowerCase();
-        }
-
-        const totalUsers = await User.countDocuments(query);
-        const totalPages = Math.ceil(totalUsers / limit);
-
-        const customers = await User.find(query)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
+        const { customers, totalPages } = await adminService.getCustomers(search, status, page, limit);
 
         res.render("admin/customers", {
             customers,
@@ -94,16 +74,12 @@ export const getCustomers = async (req, res) => {
 export const toggleCustomerStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findById(id);
-        
-        // Ensure we don't block an admin by mistake via this route
-        if (user.role === 'admin') return res.status(403).json({ success: false });
-
-        user.status = user.status === "active" ? "blocked" : "active";
-        await user.save();
-        
+        const user = await adminService.toggleCustomerStatus(id);
         res.json({ success: true, newStatus: user.status });
     } catch (error) {
+        if (error.message === "Permission denied.") {
+            return res.status(403).json({ success: false });
+        }
         res.status(500).json({ success: false });
     }
 };

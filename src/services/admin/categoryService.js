@@ -117,3 +117,11 @@ export const updateCategory = async (id, updateData, newImageFile) => {
 
     return await category.save();
 };
+
+export const getAllActiveCategories = async () => {
+    return await Category.find({ isActive: true }).select('name _id').sort({ name: 1 });
+};
+
+export const getAllCategories = async () => {
+    return await Category.find({}).select('name _id').sort({ name: 1 });
+};

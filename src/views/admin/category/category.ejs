@@ -525,6 +525,16 @@
     document.getElementById('categoryImage').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                e.target.value = '';
+                return Swal.fire('Invalid File', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                e.target.value = '';
+                return Swal.fire('File Too Large', 'Image size must be strictly under 2MB.', 'warning');
+            }
+
             const reader = new FileReader();
             reader.onload = function (e) {
                 document.getElementById('imagePreview').src = e.target.result;
@@ -538,6 +548,16 @@
     document.getElementById('editCategoryImage').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                e.target.value = '';
+                return Swal.fire('Invalid File', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                e.target.value = '';
+                return Swal.fire('File Too Large', 'Image size must be strictly under 2MB.', 'warning');
+            }
+
             const reader = new FileReader();
             reader.onload = function (e) {
                 document.getElementById('editImagePreview').src = e.target.result;

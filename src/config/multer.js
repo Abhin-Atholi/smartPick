@@ -42,4 +42,19 @@ export const createCloudinaryUpload = (folderName) => {
 // You should slowly migrate them to use `createCloudinaryUpload('folder_name')`
 const upload = createCloudinaryUpload('smartpick/profiles');
 
+export const handleUploadError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ success: false, message: 'Image size exceeds the 2MB limit.' });
+    }
+    return res.status(400).json({ success: false, message: err.message });
+  } else if (err) {
+    if (err.message === "Only images are allowed!") {
+      return res.status(400).json({ success: false, message: 'Only valid image formats (JPEG, PNG, WEBP) are allowed.' });
+    }
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next();
+};
+
 export default upload;
