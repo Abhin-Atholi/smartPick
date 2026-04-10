@@ -299,18 +299,21 @@
                                     <% }) %>
                                         <% } %>
                         </select>
+                        <p id="addSubcategoryParentError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Subcategory
                             Name</label>
                         <input type="text" name="name" placeholder="e.g. Graphic Tees"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                        <p id="addSubcategoryNameError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div>
                         <label
                             class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
                         <textarea name="description" rows="3" placeholder="Brief description..."
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                        <p id="addSubcategoryDescError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
 
                     <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -359,6 +362,7 @@
                         </div>
 
                     </div>
+                    <p id="addSubcategoryImageError" class="error-text text-rose-500 text-xs font-bold mt-2 hidden"></p>
                 </div>
             </div>
 
@@ -403,18 +407,21 @@
                                     <% }) %>
                                         <% } %>
                         </select>
+                        <p id="editSubcategoryParentError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Subcategory
                             Name</label>
                         <input type="text" id="editSubcategoryName" name="name"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                        <p id="editSubcategoryNameError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div>
                         <label
                             class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
                         <textarea id="editSubcategoryDesc" name="description" rows="3"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                        <p id="editSubcategoryDescError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -462,6 +469,7 @@
                         </div>
 
                     </div>
+                    <p id="editSubcategoryImageError" class="error-text text-rose-500 text-xs font-bold mt-2 hidden"></p>
                 </div>
             </div>
 
@@ -624,12 +632,48 @@
         const descInput = form.description.value.trim();
         const imageFile = document.getElementById('subCategoryImage').files[0];
 
-        if (!parentInput) return Swal.fire('Validation Error', 'Please select a Parent Category.', 'warning');
-        if (nameInput.length < 3) return Swal.fire('Validation Error', 'Subcategory name must be at least 3 characters.', 'warning');
-        if (descInput.length < 10) return Swal.fire('Validation Error', 'Description must be at least 10 characters long.', 'warning');
-        if (!imageFile) return Swal.fire('Validation Error', 'Please upload an image banner.', 'warning');
+        document.querySelectorAll('#addSubcategoryForm .error-text').forEach(el => el.classList.add('hidden'));
+        let isValid = true;
 
-        if (imageFile.size > 2 * 1024 * 1024) return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
+        if (!parentInput) {
+            const err = document.getElementById('addSubcategoryParentError');
+            err.textContent = 'Please select a Parent Category.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+        if (nameInput.length < 3) {
+            const err = document.getElementById('addSubcategoryNameError');
+            err.textContent = 'Subcategory name must be at least 3 characters.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+        if (descInput.length < 10) {
+            const err = document.getElementById('addSubcategoryDescError');
+            err.textContent = 'Description must be at least 10 characters long.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+        if (!imageFile) {
+            const err = document.getElementById('addSubcategoryImageError');
+            err.textContent = 'Please upload an image banner.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (imageFile && !validTypes.includes(imageFile.type)) {
+            const err = document.getElementById('addSubcategoryImageError');
+            err.textContent = 'Only JPEG, PNG, and WebP images are allowed.';
+            err.classList.remove('hidden');
+            isValid = false;
+        } else if (imageFile && imageFile.size > 2 * 1024 * 1024) {
+            const err = document.getElementById('addSubcategoryImageError');
+            err.textContent = 'Image size must be strictly under 2MB.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+
+        if (!isValid) return;
 
         const submitBtn = document.getElementById('submitAddBtn');
         const originalText = submitBtn.innerHTML;
@@ -667,11 +711,44 @@
         const descInput = document.getElementById('editSubcategoryDesc').value.trim();
         const imageFile = document.getElementById('editSubcategoryImage').files[0];
 
-        if (!parentInput) return Swal.fire('Validation Error', 'Please select a Parent Category.', 'warning');
-        if (nameInput.length < 3) return Swal.fire('Validation Error', 'Subcategory name must be at least 3 characters.', 'warning');
-        if (descInput.length < 10) return Swal.fire('Validation Error', 'Description must be at least 10 characters long.', 'warning');
+        document.querySelectorAll('#editSubcategoryForm .error-text').forEach(el => el.classList.add('hidden'));
+        let isValid = true;
 
-        if (imageFile && imageFile.size > 2 * 1024 * 1024) return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
+        if (!parentInput) {
+            const err = document.getElementById('editSubcategoryParentError');
+            err.textContent = 'Please select a Parent Category.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+        if (nameInput.length < 3) {
+            const err = document.getElementById('editSubcategoryNameError');
+            err.textContent = 'Subcategory name must be at least 3 characters.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+        if (descInput.length < 10) {
+            const err = document.getElementById('editSubcategoryDescError');
+            err.textContent = 'Description must be at least 10 characters long.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+
+        if (imageFile) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+            if (!validTypes.includes(imageFile.type)) {
+                const err = document.getElementById('editSubcategoryImageError');
+                err.textContent = 'Only JPEG, PNG, and WebP images are allowed.';
+                err.classList.remove('hidden');
+                isValid = false;
+            } else if (imageFile.size > 2 * 1024 * 1024) {
+                const err = document.getElementById('editSubcategoryImageError');
+                err.textContent = 'Image size must be strictly under 2MB.';
+                err.classList.remove('hidden');
+                isValid = false;
+            }
+        }
+
+        if (!isValid) return;
 
         const submitBtn = document.getElementById('submitEditBtn');
         const originalText = submitBtn.innerHTML;

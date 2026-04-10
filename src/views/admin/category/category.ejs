@@ -269,6 +269,7 @@
                             Name</label>
                         <input type="text" name="name" placeholder="e.g. Shirts"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                        <p id="addCategoryNameError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
 
                     <div>
@@ -276,6 +277,7 @@
                             class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
                         <textarea name="description" rows="4" placeholder="Brief description..."
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                        <p id="addCategoryDescError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
 
                     <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -324,6 +326,7 @@
                         </div>
 
                     </div>
+                    <p id="addCategoryImageError" class="error-text text-rose-500 text-xs font-bold mt-2 hidden"></p>
                 </div>
             </div>
 
@@ -362,12 +365,14 @@
                             Name</label>
                         <input type="text" id="editCategoryName" name="name" placeholder="e.g. Shirts"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700">
+                        <p id="editCategoryNameError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div>
                         <label
                             class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
                         <textarea id="editCategoryDesc" name="description" rows="4" placeholder="Brief description..."
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-medium text-slate-700"></textarea>
+                        <p id="editCategoryDescError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
                     <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -415,6 +420,7 @@
                         </div>
 
                     </div>
+                    <p id="editCategoryImageError" class="error-text text-rose-500 text-xs font-bold mt-2 hidden"></p>
                 </div>
             </div>
 
@@ -578,24 +584,45 @@
         const imageFile = document.getElementById('categoryImage').files[0];
 
         // --- Frontend Validation ---
+        document.querySelectorAll('#addCategoryForm .error-text').forEach(el => el.classList.add('hidden'));
+        
+        let isValid = true;
+
         if (nameInput.length < 3) {
-            return Swal.fire('Validation Error', 'Category name must be at least 3 characters long.', 'warning');
+            const err = document.getElementById('addCategoryNameError');
+            err.textContent = 'Category name must be at least 3 characters long.';
+            err.classList.remove('hidden');
+            isValid = false;
         }
         if (descInput.length < 10) {
-            return Swal.fire('Validation Error', 'Please provide a description of at least 10 characters.', 'warning');
+            const err = document.getElementById('addCategoryDescError');
+            err.textContent = 'Please provide a description of at least 10 characters.';
+            err.classList.remove('hidden');
+            isValid = false;
         }
         if (!imageFile) {
-            return Swal.fire('Validation Error', 'Please select a banner image for the category.', 'warning');
+            const err = document.getElementById('addCategoryImageError');
+            err.textContent = 'Please select a banner image for the category.';
+            err.classList.remove('hidden');
+            isValid = false;
         }
 
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-        if (!validTypes.includes(imageFile.type)) {
-            return Swal.fire('Validation Error', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
+        if (imageFile && !validTypes.includes(imageFile.type)) {
+            const err = document.getElementById('addCategoryImageError');
+            err.textContent = 'Only JPEG, PNG, and WebP images are allowed.';
+            err.classList.remove('hidden');
+            isValid = false;
         }
 
-        if (imageFile.size > 2 * 1024 * 1024) {
-            return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
+        if (imageFile && imageFile.size > 2 * 1024 * 1024) {
+            const err = document.getElementById('addCategoryImageError');
+            err.textContent = 'Image size must be strictly under 2MB.';
+            err.classList.remove('hidden');
+            isValid = false;
         }
+
+        if (!isValid) return;
 
         const submitBtn = document.getElementById('submitAddBtn');
         const originalText = submitBtn.innerHTML;
@@ -640,14 +667,38 @@
         const descInput = document.getElementById('editCategoryDesc').value.trim();
         const imageFile = document.getElementById('editCategoryImage').files[0];
 
-        if (nameInput.length < 3) return Swal.fire('Validation Error', 'Category name must be at least 3 characters long.', 'warning');
-        if (descInput.length < 10) return Swal.fire('Validation Error', 'Description must be at least 10 characters long.', 'warning');
+        document.querySelectorAll('#editCategoryForm .error-text').forEach(el => el.classList.add('hidden'));
+        let isValid = true;
+
+        if (nameInput.length < 3) {
+            const err = document.getElementById('editCategoryNameError');
+            err.textContent = 'Category name must be at least 3 characters long.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
+        if (descInput.length < 10) {
+            const err = document.getElementById('editCategoryDescError');
+            err.textContent = 'Description must be at least 10 characters long.';
+            err.classList.remove('hidden');
+            isValid = false;
+        }
 
         if (imageFile) {
             const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-            if (!validTypes.includes(imageFile.type)) return Swal.fire('Validation Error', 'Only JPEG, PNG, and WebP images are allowed.', 'warning');
-            if (imageFile.size > 2 * 1024 * 1024) return Swal.fire('Validation Error', 'Image size must be strictly under 2MB.', 'warning');
+            if (!validTypes.includes(imageFile.type)) {
+                const err = document.getElementById('editCategoryImageError');
+                err.textContent = 'Only JPEG, PNG, and WebP images are allowed.';
+                err.classList.remove('hidden');
+                isValid = false;
+            } else if (imageFile.size > 2 * 1024 * 1024) {
+                const err = document.getElementById('editCategoryImageError');
+                err.textContent = 'Image size must be strictly under 2MB.';
+                err.classList.remove('hidden');
+                isValid = false;
+            }
         }
+        
+        if (!isValid) return;
 
         const submitBtn = document.getElementById('submitEditBtn');
         const originalText = submitBtn.innerHTML;

@@ -29,6 +29,7 @@
                         <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Product Name *</label>
                         <input type="text" id="productName" name="name" placeholder="e.g. Classic Polo Shirt"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm">
+                        <p id="productNameError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -46,6 +47,7 @@
                                     <option value="<%= cat._id %>"><%= cat.name %></option>
                                 <% }) %>
                             </select>
+                            <p id="productCategoryError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
                         </div>
                     </div>
 
@@ -391,19 +393,33 @@
         const category = document.getElementById('productCategory').value;
         const variants = collectVariants();
 
+        document.querySelectorAll('#addProductForm .error-text').forEach(el => el.classList.add('hidden'));
+        document.getElementById('imageError').classList.add('hidden');
+        document.getElementById('variantError').classList.add('hidden');
+
         let valid = true;
-        if (name.length < 2) { Swal.fire('Validation Error', 'Product name must be at least 2 characters.', 'warning'); return; }
-        if (!category) { Swal.fire('Validation Error', 'Please select a category.', 'warning'); return; }
+        if (name.length < 2) { 
+            const err = document.getElementById('productNameError');
+            err.textContent = 'Product name must be at least 2 characters.';
+            err.classList.remove('hidden');
+            valid = false;
+        }
+        if (!category) { 
+            const err = document.getElementById('productCategoryError');
+            err.textContent = 'Please select a category.';
+            err.classList.remove('hidden');
+            valid = false;
+        }
         if (croppedBlobs.length < 3) {
             document.getElementById('imageError').classList.remove('hidden');
-            Swal.fire('Validation Error', 'Please upload and crop at least 3 product images.', 'warning'); return;
+            valid = false;
         }
-        document.getElementById('imageError').classList.add('hidden');
         if (variants === null || variants.length === 0) {
             document.getElementById('variantError').classList.remove('hidden');
-            Swal.fire('Validation Error', 'Please add at least one complete variant (all fields required).', 'warning'); return;
+            valid = false;
         }
-        document.getElementById('variantError').classList.add('hidden');
+
+        if (!valid) return;
 
         const btn = document.getElementById('submitProductBtn');
         btn.innerHTML = '⏳ Saving...'; btn.disabled = true;
