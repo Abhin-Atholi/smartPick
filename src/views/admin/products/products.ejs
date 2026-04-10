@@ -66,6 +66,14 @@
                 <% } %>
         </div>
         <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+            <select name="sort" onchange="document.getElementById('productOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                <option value="createdAt" data-order="desc" <%= currentSort === 'createdAt' && currentOrder === 'desc' ? 'selected' : '' %>>Newest First</option>
+                <option value="createdAt" data-order="asc" <%= currentSort === 'createdAt' && currentOrder === 'asc' ? 'selected' : '' %>>Oldest First</option>
+                <option value="name" data-order="asc" <%= currentSort === 'name' && currentOrder === 'asc' ? 'selected' : '' %>>Name (A-Z)</option>
+                <option value="name" data-order="desc" <%= currentSort === 'name' && currentOrder === 'desc' ? 'selected' : '' %>>Name (Z-A)</option>
+            </select>
+            <input type="hidden" name="order" id="productOrderInput" value="<%= currentOrder || 'desc' %>">
+
             <select name="category" id="filterCategory"
                 class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="All" <%=currentCategory==='All' ? 'selected' : '' %>>All Categories</option>

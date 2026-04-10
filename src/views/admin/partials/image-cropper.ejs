@@ -1,0 +1,82 @@
+<!-- Cropper.js CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
+
+<!-- Generic Cropper Modal -->
+<div id="genericCropperModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="_cancelGenericCrop()"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="font-black text-slate-800">Crop Image</h3>
+            <button onclick="_cancelGenericCrop()" class="text-gray-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50">✕</button>
+        </div>
+        <div class="p-4 bg-gray-900 flex items-center justify-center shadow-inner" style="height:360px">
+            <img id="genericCropperImage" src="" style="max-height:100%;max-width:100%;">
+        </div>
+        <div class="px-6 py-4 flex justify-between items-center border-t border-gray-100">
+            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Drag & Scroll to reposition</span>
+            <div class="flex gap-3">
+                <button onclick="_cancelGenericCrop()" class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition shadow-sm border border-transparent">Cancel</button>
+                <button onclick="_confirmGenericCrop()" class="px-6 py-2.5 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">✓ Apply Crop</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let globalCropperInstance = null;
+    let globalCropResolve = null;
+    let globalCropReject = null;
+
+    /**
+     * Reusable image crop API based on Promises.
+     * @param {File} file - The image file to crop
+     * @param {Object} options - Cropper.js options (e.g. {aspectRatio: 16/9})
+     * @returns {Promise<File>} - Resolves with the cropped File blob
+     */
+    window.cropImage = function(file, options = { aspectRatio: NaN }) {
+        return new Promise((resolve, reject) => {
+            globalCropResolve = resolve;
+            globalCropReject = reject;
+            const img = document.getElementById('genericCropperImage');
+            img.src = URL.createObjectURL(file);
+            document.getElementById('genericCropperModal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            
+            img.onload = () => {
+                if (globalCropperInstance) { globalCropperInstance.destroy(); }
+                globalCropperInstance = new Cropper(img, { 
+                    ...options, 
+                    viewMode: 1, 
+                    autoCropArea: 0.9,
+                    movable: true, 
+                    zoomable: true, 
+                    rotatable: false, 
+                    scalable: false
+                });
+            };
+        });
+    }
+
+    function _confirmGenericCrop() {
+        if (!globalCropperInstance) return;
+        globalCropperInstance.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200, fillColor: '#fff' }).toBlob((blob) => {
+            const file = new File([blob], `cropped-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`, { type: 'image/jpeg' });
+            if (globalCropResolve) globalCropResolve(file);
+            _cleanupGenericCropper();
+        }, 'image/jpeg', 0.9);
+    }
+
+    function _cancelGenericCrop() {
+        if (globalCropReject) globalCropReject(new Error("Crop cancelled by user"));
+        _cleanupGenericCropper();
+    }
+
+    function _cleanupGenericCropper() {
+        if (globalCropperInstance) { globalCropperInstance.destroy(); globalCropperInstance = null; }
+        document.getElementById('genericCropperModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        globalCropResolve = null;
+        globalCropReject = null;
+    }
+</script>

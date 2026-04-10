@@ -70,6 +70,14 @@
         </div>
 
         <div class="flex gap-2">
+            <select name="sort" onchange="document.getElementById('categoryOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto hidden md:block">
+                <option value="createdAt" data-order="desc" <%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && typeof currentOrder !== 'undefined' && currentOrder === 'desc' ? 'selected' : '' %>>Newest First</option>
+                <option value="createdAt" data-order="asc" <%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && typeof currentOrder !== 'undefined' && currentOrder === 'asc' ? 'selected' : '' %>>Oldest First</option>
+                <option value="name" data-order="asc" <%= typeof currentSort !== 'undefined' && currentSort === 'name' && typeof currentOrder !== 'undefined' && currentOrder === 'asc' ? 'selected' : '' %>>Name (A-Z)</option>
+                <option value="name" data-order="desc" <%= typeof currentSort !== 'undefined' && currentSort === 'name' && typeof currentOrder !== 'undefined' && currentOrder === 'desc' ? 'selected' : '' %>>Name (Z-A)</option>
+            </select>
+            <input type="hidden" name="order" id="categoryOrderInput" value="<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>">
+
             <select name="status" onchange="this.form.submit()"
                 class="bg-gray-50 border border-gray-200 rounded-xl px-6 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors">
                 <option value="All" <%=typeof currentStatus !=='undefined' && currentStatus==='All' ? 'selected' : '' %>
@@ -527,8 +535,8 @@
         document.getElementById('editUploadPrompt').classList.remove('hidden');
     }
 
-    // Modal Image Previews
-    document.getElementById('categoryImage').addEventListener('change', function (e) {
+    // Modal Image Previews & Cropping
+    document.getElementById('categoryImage').addEventListener('change', async function (e) {
         const file = e.target.files[0];
         if (file) {
             const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
@@ -541,17 +549,19 @@
                 return Swal.fire('File Too Large', 'Image size must be strictly under 2MB.', 'warning');
             }
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                document.getElementById('imagePreview').src = e.target.result;
+            try {
+                const croppedFile = await cropImage(file);
+                currentAddCropBlob = croppedFile;
+                document.getElementById('imagePreview').src = URL.createObjectURL(croppedFile);
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
                 document.getElementById('uploadPrompt').classList.add('hidden');
+            } catch (err) {
+                e.target.value = ''; // They cancelled
             }
-            reader.readAsDataURL(file);
         }
     });
 
-    document.getElementById('editCategoryImage').addEventListener('change', function (e) {
+    document.getElementById('editCategoryImage').addEventListener('change', async function (e) {
         const file = e.target.files[0];
         if (file) {
             const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
@@ -564,13 +574,15 @@
                 return Swal.fire('File Too Large', 'Image size must be strictly under 2MB.', 'warning');
             }
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                document.getElementById('editImagePreview').src = e.target.result;
+            try {
+                const croppedFile = await cropImage(file);
+                currentEditCropBlob = croppedFile;
+                document.getElementById('editImagePreview').src = URL.createObjectURL(croppedFile);
                 document.getElementById('editImagePreviewContainer').classList.remove('hidden');
                 document.getElementById('editUploadPrompt').classList.add('hidden');
+            } catch (err) {
+                e.target.value = '';
             }
-            reader.readAsDataURL(file);
         }
     });
 
@@ -581,7 +593,7 @@
         const form = e.target;
         const nameInput = form.name.value.trim();
         const descInput = form.description.value.trim();
-        const imageFile = document.getElementById('categoryImage').files[0];
+        const imageFile = currentAddCropBlob || document.getElementById('categoryImage').files[0];
 
         // --- Frontend Validation ---
         document.querySelectorAll('#addCategoryForm .error-text').forEach(el => el.classList.add('hidden'));
@@ -630,6 +642,9 @@
         submitBtn.disabled = true;
 
         const formData = new FormData(this);
+        if (currentAddCropBlob) {
+            formData.set('image', currentAddCropBlob);
+        }
 
         try {
             const response = await axios.post('/admin/category/add', formData, {
@@ -706,6 +721,9 @@
         submitBtn.disabled = true;
 
         const formData = new FormData(this);
+        if (currentEditCropBlob) {
+            formData.set('image', currentEditCropBlob);
+        }
 
         try {
             const response = await axios.put(`/admin/category/edit/${id}`, formData, {

@@ -158,23 +158,7 @@
     </form>
 </div>
 
-<!-- Cropper Modal -->
-<div id="cropperModal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
-    <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
-    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="font-black text-slate-800">Crop Image</h3>
-            <span class="text-xs text-gray-400 font-bold">Drag to reposition • Scroll to zoom</span>
-        </div>
-        <div class="p-4 bg-gray-900 flex items-center justify-center" style="height:360px">
-            <img id="cropperImage" src="" style="max-height:100%;max-width:100%;">
-        </div>
-        <div class="px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
-            <button onclick="cancelCrop()" class="px-5 py-2 rounded-xl font-black text-sm text-gray-500 hover:bg-gray-100 transition">Cancel</button>
-            <button onclick="confirmCrop()" class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition text-sm">✓ Use This Crop</button>
-        </div>
-    </div>
-</div>
+<%- include("../partials/image-cropper") %>
 
 <script>
     // Existing product data passed from EJS
@@ -226,7 +210,7 @@
                 <div class="w-5 h-5 rounded-md border border-gray-100 color-preview" style="background-color: transparent"></div>
               </div>
             </td>
-            <td class="py-2 pr-3"><input type="number" value="${data.price || ''}" placeholder="999" min="0" class="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="price"></td>
+            <td class="py-2 pr-3"><input type="number" value="${data.price || ''}" placeholder="999" min="1" class="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="price"></td>
             <td class="py-2 pr-3"><input type="number" value="${data.stock || ''}" placeholder="50" min="0" class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="stock"></td>
             <td class="py-2 pr-3">
                 <span class="text-[10px] font-black text-gray-400 block max-w-[80px] truncate" title="${data.sku || 'Pending'}">${data.sku || 'Pending'}</span>
@@ -256,7 +240,7 @@
             const stock = parseInt(row.querySelector('[data-field="stock"]')?.value);
             const sku = row.querySelector('[data-field="sku"]')?.value || '';
             
-            if (!size || !colorStr || isNaN(price) || isNaN(stock)) return null;
+            if (!size || !colorStr || isNaN(price) || price < 1 || isNaN(stock) || stock < 0) return null;
             
             try {
               const color = JSON.parse(colorStr);
@@ -282,7 +266,7 @@
     }
 
     // ── Cropper for New Images ───────────────────────────────────────────────
-    let cropperInstance = null;
+
     let pendingFiles = [];
     let pendingIndex = 0;
 
@@ -309,40 +293,28 @@
         if (pendingFiles.length > 0) processNextPendingFile();
     });
 
-    function processNextPendingFile() {
+    async function processNextPendingFile() {
         if (pendingIndex >= pendingFiles.length) return;
-        openCropper(pendingFiles[pendingIndex++]);
-    }
-
-    function openCropper(file) {
-        const img = document.getElementById('cropperImage');
-        img.src = URL.createObjectURL(file);
-        document.getElementById('cropperModal').classList.remove('hidden');
-        document.body.classList.add('overflow-hidden');
-        img.onload = () => {
-            if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
-            cropperInstance = new Cropper(img, { aspectRatio: NaN, viewMode: 1, autoCropArea: 0.9 });
-        };
-    }
-
-    function cancelCrop() { cleanupCropper(); processNextPendingFile(); }
-
-    function confirmCrop() {
-        if (!cropperInstance) return;
-        cropperInstance.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200, fillColor: '#fff' }).toBlob((blob) => {
-            const file = new File([blob], `product-img-${Date.now()}.jpg`, { type: 'image/jpeg' });
-            newCroppedBlobs.push(file);
+        const file = pendingFiles[pendingIndex];
+        pendingIndex++;
+        
+        try {
+            const croppedFile = await cropImage(file);
+            newCroppedBlobs.push(croppedFile);
             const idx = newCroppedBlobs.length - 1;
-            const src = URL.createObjectURL(blob);
+            const src = URL.createObjectURL(croppedFile);
+            
             const grid = document.getElementById('newImagePreviewGrid');
             const div = document.createElement('div');
             div.id = `new-img-${idx}`;
             div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group';
             div.innerHTML = `<img src="${src}" class="w-full h-full object-cover"><button type="button" onclick="removeNewImage(${idx})" class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>`;
             grid.appendChild(div);
-            cleanupCropper();
-            processNextPendingFile();
-        }, 'image/jpeg', 0.9);
+        } catch (err) {
+            console.log('Skipped cropping for', file.name);
+        }
+        
+        processNextPendingFile();
     }
 
     function removeNewImage(index) {
@@ -353,12 +325,6 @@
             div.id = `new-img-${i}`;
             div.querySelector('button').setAttribute('onclick', `removeNewImage(${i})`);
         });
-    }
-
-    function cleanupCropper() {
-        if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
-        document.getElementById('cropperModal').classList.add('hidden');
-        document.body.classList.remove('overflow-hidden');
     }
 
     // ── Category AJAX ──────────────────────────────────────────────────────
