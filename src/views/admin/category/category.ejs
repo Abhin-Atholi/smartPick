@@ -494,6 +494,9 @@
         }
     }
 
+    let currentAddCropBlob = null;
+    let currentEditCropBlob = null;
+
     // Modal state functions
     function openAddModal() {
         document.getElementById('addCategoryModal').classList.remove('hidden');
@@ -506,6 +509,7 @@
         document.getElementById('addCategoryForm').reset();
         document.getElementById('imagePreviewContainer').classList.add('hidden');
         document.getElementById('uploadPrompt').classList.remove('hidden');
+        currentAddCropBlob = null;
     }
 
     function openEditModal(category) {
@@ -533,6 +537,7 @@
         document.getElementById('editCategoryForm').reset();
         document.getElementById('editImagePreviewContainer').classList.add('hidden');
         document.getElementById('editUploadPrompt').classList.remove('hidden');
+        currentEditCropBlob = null;
     }
 
     // Modal Image Previews & Cropping

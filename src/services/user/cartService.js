@@ -42,8 +42,8 @@ export const getCart = async (userId, page = 1, limit = 4) => {
 };
 
 export const addToCart = async (userId, productId, quantity, size, color) => {
-    const product = await Product.findById(productId);
-    if (!product) throw new Error("Product not found");
+    const product = await Product.findById(productId).populate('category subcategory');
+    if (!product || !product.isCurrentlyAvailable) throw new Error("This product is no longer available.");
 
     // Fallback logic: If size/color not specified (e.g. from a grid "Add to Cart"), 
     // pick the first variant that has stock.
@@ -124,8 +124,12 @@ export const updateQuantity = async (userId, productId, size, color, quantity) =
 
     if (itemIndex === -1) throw new Error("Item not found in cart");
 
-    // Check product stock again
-    const product = await Product.findById(productId);
+    // Check product status and stock again
+    const product = await Product.findById(productId).populate('category subcategory');
+    if (!product || !product.isCurrentlyAvailable) {
+        throw new Error("This product is no longer available.");
+    }
+
     const variant = product.variants.find(v => v.size === size && v.color.name === color);
     
     if (variant.stock < quantity) {
