@@ -164,7 +164,7 @@ export const createProductFixed = async (productData) => {
 /**
  * Update a product; deletes removed Cloudinary images
  */
-export const updateProduct = async (id, updateData, newImageUrls, removedImageUrls) => {
+export const updateProduct = async (id, updateData, removedImageUrls) => {
   const product = await Product.findById(id);
   if (!product || product.isDeleted) return null;
 
@@ -180,13 +180,6 @@ export const updateProduct = async (id, updateData, newImageUrls, removedImageUr
         }
       }
     }
-    // Remove from existing images array
-    product.images = product.images.filter(img => !removedImageUrls.includes(img));
-  }
-
-  // Append newly uploaded images
-  if (newImageUrls && newImageUrls.length > 0) {
-    product.images = [...product.images, ...newImageUrls];
   }
 
   // SKU Management for new variants or changed category/sub

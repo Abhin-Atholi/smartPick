@@ -20,9 +20,13 @@
       
       <!-- ── LEFT: IMAGE GALLERY (Reduced to 5/12) ── -->
       <div class="lg:col-span-5 flex flex-col gap-5">
+        <% 
+            let initialImages = product.variants && product.variants.length > 0 ? product.variants[0].images : []; 
+            if(initialImages.length === 0) initialImages = ['/placeholder.jpg'];
+        %>
         <!-- Main Image with Zoom -->
         <div id="zoomContainer" class="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gray-50 cursor-crosshair group shadow-sm">
-           <img id="mainProductImage" src="<%= product.images[0] %>" class="w-full h-full object-cover transition-all duration-300" alt="<%= product.name %>">
+           <img id="mainProductImage" src="<%= initialImages[0] %>" class="w-full h-full object-cover transition-all duration-300" alt="<%= product.name %>">
            <div id="zoomLens" class="absolute hidden w-32 h-32 border border-white/30 backdrop-blur-md pointer-events-none rounded-full shadow-2xl bg-white/5"></div>
            
            <!-- Overlay UI -->
@@ -30,8 +34,8 @@
         </div>
 
         <!-- Thumbnails -->
-        <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-          <% product.images.forEach((img, i) => { %>
+        <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar" id="thumbnailContainer">
+          <% initialImages.forEach((img, i) => { %>
             <button onclick="changeMainImage('<%= img %>', this)" 
                     class="thumb-btn flex-shrink-0 w-20 aspect-square rounded-xl overflow-hidden border-2 transition-all hover:opacity-80 active:scale-95 <%= i === 0 ? 'border-indigo-600' : 'border-transparent' %>">
               <img src="<%= img %>" class="w-full h-full object-cover">
@@ -253,6 +257,33 @@
     } else {
       updateStockStatus(null);
     }
+    
+    // Update Images based on the first variant of this color
+    if (sizes.length > 0 && sizes[0].images && sizes[0].images.length > 0) {
+       updateImageGallery(sizes[0].images);
+    }
+  }
+
+  function updateImageGallery(images) {
+      if (!images || images.length === 0) return;
+      
+      const thumbContainer = document.getElementById('thumbnailContainer');
+      thumbContainer.innerHTML = '';
+      
+      const mainImg = document.getElementById('mainProductImage');
+      mainImg.style.opacity = '0';
+      setTimeout(() => {
+        mainImg.src = images[0];
+        mainImg.style.opacity = '1';
+      }, 200);
+
+      images.forEach((img, i) => {
+          const btn = document.createElement('button');
+          btn.className = `thumb-btn flex-shrink-0 w-20 aspect-square rounded-xl overflow-hidden border-2 transition-all hover:opacity-80 active:scale-95 ${i === 0 ? 'border-indigo-600' : 'border-transparent'}`;
+          btn.onclick = function() { changeMainImage(img, this); };
+          btn.innerHTML = `<img src="${img}" class="w-full h-full object-cover">`;
+          thumbContainer.appendChild(btn);
+      });
   }
 
   function updateStockStatus(variant) {

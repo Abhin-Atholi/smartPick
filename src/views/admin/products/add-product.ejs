@@ -97,14 +97,17 @@
             <div class="space-y-6">
 
                 <!-- Image Upload Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Product Images * <span class="text-indigo-600">(min 3)</span></h3>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="imageUploadCard" style="display: none;">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-tight">Images for <br><span id="activeVariantName" class="text-indigo-600 text-sm">Selected Variant</span></h3>
+                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">Min 3</span>
+                    </div>
 
                     <!-- Drop Zone -->
                     <div id="imageDropZone" class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-indigo-300 hover:bg-indigo-50/30 transition cursor-pointer" onclick="document.getElementById('imageFilePicker').click()">
                         <div class="text-4xl mb-2">🖼️</div>
-                        <p class="text-sm font-black text-slate-600">Click to upload images</p>
-                        <p class="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">PNG, JPG, WebP — each photo will be cropped</p>
+                        <p class="text-sm font-black text-slate-600">Click to upload</p>
+                        <p class="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">PNG, JPG, WebP</p>
                         <input type="file" id="imageFilePicker" accept="image/*" multiple class="hidden">
                     </div>
 
@@ -112,6 +115,14 @@
                     <div id="imagePreviewGrid" class="grid grid-cols-3 gap-2 mt-4"></div>
                     <p id="imageCountMsg" class="text-xs font-bold mt-2 text-gray-400">0 images added</p>
                     <p id="imageError" class="text-rose-500 text-xs font-bold mt-1 hidden">Minimum 3 images required.</p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center" id="imageUploadPlaceholder">
+                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span class="text-2xl">👆</span>
+                    </div>
+                    <h3 class="text-sm font-black text-gray-800">Select a Variant</h3>
+                    <p class="text-[10px] text-gray-400 mt-1 font-bold tracking-wide uppercase">Click on any variant row<br>to upload its images.</p>
                 </div>
 
                 <!-- Settings Card -->
@@ -156,6 +167,9 @@
 <script>
     // ── Variant Management ──────────────────────────────────────────────────
     let variantCount = 0;
+    let variantBlobs = {}; // mapping rowId -> array of blobs
+    let activeRowId = null;
+
     const PREDEFINED_COLORS = [
       { name: 'Black', code: '#000000' },
       { name: 'White', code: '#FFFFFF' },
@@ -171,9 +185,17 @@
 
     function addVariantRow(data = {}) {
         variantCount++;
+        const rowId = `variant-row-${variantCount}`;
+        variantBlobs[rowId] = []; // initialize blobarray for this row
+
         const row = document.createElement('tr');
-        row.id = `variant-row-${variantCount}`;
-        row.className = 'border-b border-gray-50 group';
+        row.id = rowId;
+        row.className = 'border-b border-gray-50 group cursor-pointer hover:bg-gray-50 transition-colors';
+        row.onclick = (e) => {
+             // Don't select row if clicking the delete button
+             if (e.target.tagName === 'BUTTON') return;
+             selectVariantRow(rowId);
+        };
         
         const sizeOptions = ["S", "M", "L", "XL"].map(s => `<option value="${s}" ${data.size === s ? 'selected' : ''}>${s}</option>`).join('');
         const colorOptions = PREDEFINED_COLORS.map(c => `
@@ -184,13 +206,13 @@
 
         row.innerHTML = `
             <td class="py-2 pr-3">
-              <select class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="size">
+              <select class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="size" onchange="updateRowName('${rowId}')">
                 ${sizeOptions}
               </select>
             </td>
             <td class="py-2 pr-3">
               <div class="flex items-center gap-1.5">
-                <select class="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="color" onchange="updateColorPreview(this)">
+                <select class="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="color" onchange="updateColorPreview(this); updateRowName('${rowId}')">
                   <option value="">Select Color</option>
                   ${colorOptions}
                 </select>
@@ -199,12 +221,22 @@
             </td>
             <td class="py-2 pr-3"><input type="number" value="${data.price || ''}" placeholder="999" min="1" class="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="price"></td>
             <td class="py-2 pr-3"><input type="number" value="${data.stock || ''}" placeholder="50" min="0" class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="stock"></td>
-            <td class="py-2"><button type="button" onclick="removeVariantRow('variant-row-${variantCount}')" class="text-gray-300 hover:text-rose-500 transition font-black text-lg leading-none">✕</button></td>
+            <td class="py-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black text-gray-400" id="img-count-${rowId}">0 🖼️</span>
+                    <button type="button" onclick="removeVariantRow('${rowId}')" class="text-gray-300 hover:text-rose-500 transition font-black text-lg leading-none">✕</button>
+                </div>
+            </td>
         `;
         document.getElementById('variantsBody').appendChild(row);
         if (data.color) {
           const select = row.querySelector('[data-field="color"]');
           updateColorPreview(select);
+        }
+
+        // Auto select if it's the first one
+        if (variantCount === 1) {
+            selectVariantRow(rowId);
         }
     }
 
@@ -219,7 +251,37 @@
     }
 
     function removeVariantRow(rowId) {
+        if (activeRowId === rowId) {
+             document.getElementById('imageUploadCard').style.display = 'none';
+             document.getElementById('imageUploadPlaceholder').style.display = 'block';
+             activeRowId = null;
+        }
+        delete variantBlobs[rowId];
         document.getElementById(rowId)?.remove();
+    }
+    
+    function selectVariantRow(rowId) {
+        document.querySelectorAll('#variantsBody tr').forEach(tr => tr.classList.remove('bg-indigo-50/50', 'border-indigo-200'));
+        document.getElementById(rowId).classList.add('bg-indigo-50/50', 'border-indigo-200');
+        
+        activeRowId = rowId;
+        
+        // Show Image Card
+        document.getElementById('imageUploadPlaceholder').style.display = 'none';
+        document.getElementById('imageUploadCard').style.display = 'block';
+        
+        updateRowName(rowId);
+        redrawImagePreviews();
+    }
+    
+    function updateRowName(rowId) {
+        if (activeRowId !== rowId) return;
+        const tr = document.getElementById(rowId);
+        if (!tr) return;
+        const size = tr.querySelector('[data-field="size"]').value;
+        const colorSelect = tr.querySelector('[data-field="color"]');
+        const colorName = colorSelect.selectedIndex > 0 ? colorSelect.options[colorSelect.selectedIndex].text.trim() : 'Unknown Color';
+        document.getElementById('activeVariantName').textContent = `${colorName} - Size ${size}`;
     }
 
     function collectVariants() {
@@ -242,7 +304,6 @@
     }
 
     // ── Image & Cropper ─────────────────────────────────────────────────────
-    let croppedBlobs = []; // Final cropped File blobs
     let pendingFiles = [];
     let pendingIndex = 0;
 
@@ -276,9 +337,10 @@
         
         try {
             const croppedFile = await cropImage(file); // Call the global cropper utility!
-            croppedBlobs.push(croppedFile);
-            addImagePreview(URL.createObjectURL(croppedFile), croppedBlobs.length - 1);
-            updateImageCount();
+            if (activeRowId && variantBlobs[activeRowId]) {
+                variantBlobs[activeRowId].push(croppedFile);
+                redrawImagePreviews();
+            }
         } catch (err) {
             console.log('Skipped cropping for', file.name);
         }
@@ -286,36 +348,42 @@
         processNextPendingFile(); // Automatically process the next file in the queue
     }
 
-    function addImagePreview(src, index) {
+    function redrawImagePreviews() {
+        if (!activeRowId || !variantBlobs[activeRowId]) return;
+        
         const grid = document.getElementById('imagePreviewGrid');
-        const div = document.createElement('div');
-        div.id = `img-preview-${index}`;
-        div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group';
-        div.innerHTML = `
-            <img src="${src}" class="w-full h-full object-cover">
-            <button type="button" onclick="removeImage(${index})"
-                class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
-        `;
-        grid.appendChild(div);
-    }
-
-    function removeImage(index) {
-        croppedBlobs.splice(index, 1);
-        document.getElementById(`img-preview-${index}`)?.remove();
-        // Re-index remaining previews
-        const grid = document.getElementById('imagePreviewGrid');
-        Array.from(grid.children).forEach((div, i) => {
-            div.id = `img-preview-${i}`;
-            div.querySelector('button').setAttribute('onclick', `removeImage(${i})`);
+        grid.innerHTML = '';
+        const blobs = variantBlobs[activeRowId];
+        
+        blobs.forEach((blob, index) => {
+            const src = URL.createObjectURL(blob);
+            const div = document.createElement('div');
+            div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group';
+            div.innerHTML = `
+                <img src="${src}" class="w-full h-full object-cover">
+                <button type="button" onclick="removeImage(${index})"
+                    class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+            `;
+            grid.appendChild(div);
         });
-        updateImageCount();
-    }
-
-    function updateImageCount() {
-        const count = croppedBlobs.length;
+        
+        const count = blobs.length;
         const msg = document.getElementById('imageCountMsg');
         msg.textContent = `${count} image${count !== 1 ? 's' : ''} added`;
         msg.className = `text-xs font-bold mt-2 ${count < 3 ? 'text-rose-500' : 'text-emerald-600'}`;
+        
+        // Update table row count
+        const rowCountIndicator = document.getElementById(`img-count-${activeRowId}`);
+        if(rowCountIndicator) {
+             rowCountIndicator.textContent = `${count} 🖼️`;
+             rowCountIndicator.className = `text-[10px] font-black ${count < 3 ? 'text-rose-400' : 'text-emerald-500'}`;
+        }
+    }
+
+    function removeImage(index) {
+        if (!activeRowId || !variantBlobs[activeRowId]) return;
+        variantBlobs[activeRowId].splice(index, 1);
+        redrawImagePreviews();
     }
 
     // ── Category → Subcategory AJAX ─────────────────────────────────────────
@@ -360,8 +428,15 @@
             err.classList.remove('hidden');
             valid = false;
         }
-        if (croppedBlobs.length < 3) {
-            document.getElementById('imageError').classList.remove('hidden');
+        let allImagesValid = true;
+        const rows = document.querySelectorAll('#variantsBody tr');
+        rows.forEach(r => {
+            const b = variantBlobs[r.id];
+            if (!b || b.length < 3) allImagesValid = false;
+        });
+
+        if (!allImagesValid) {
+            Swal.fire('Images Required', 'Minimum 3 images are required for EACH variant.', 'warning');
             valid = false;
         }
         if (variants === null || variants.length === 0) {
@@ -384,7 +459,10 @@
             formData.append('isActive', document.getElementById('productActive').checked ? 'on' : 'false');
             formData.append('isFeatured', document.getElementById('productFeatured').checked ? 'on' : 'false');
             formData.append('variants', JSON.stringify(variants));
-            croppedBlobs.forEach(blob => formData.append('images', blob));
+            rows.forEach((row, index) => {
+                const b = variantBlobs[row.id] || [];
+                b.forEach(blob => formData.append(`variant_images_${index}`, blob));
+            });
 
             const res = await axios.post('/admin/products/add', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.data.success) {

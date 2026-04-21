@@ -97,31 +97,38 @@
             <!-- Right: Images & Settings -->
             <div class="space-y-6">
 
-                <!-- Existing Images -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Current Images</h3>
-                    <div class="grid grid-cols-3 gap-2" id="existingImagesGrid">
-                        <% product.images.forEach((img, i) => { %>
-                            <div class="relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group" id="existing-img-<%= i %>" data-url="<%= img %>">
-                                <img src="<%= img %>" class="w-full h-full object-cover">
-                                <button type="button" onclick="removeExistingImage('<%= img %>', 'existing-img-<%= i %>')"
-                                    class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
-                            </div>
-                        <% }) %>
+                <!-- Image Upload Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6" id="imageUploadCard" style="display: none;">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-tight">Images for <br><span id="activeVariantName" class="text-indigo-600 text-sm">Selected Variant</span></h3>
+                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">Min 3</span>
                     </div>
-                    <p id="existingCountMsg" class="text-xs font-bold mt-2 text-gray-400"><%= product.images.length %> existing image<%= product.images.length !== 1 ? 's' : '' %></p>
-                </div>
 
-                <!-- Add More Images -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Add More Images</h3>
-                    <div class="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-indigo-300 hover:bg-indigo-50/30 transition cursor-pointer" onclick="document.getElementById('imageFilePicker').click()">
-                        <p class="text-3xl mb-1">+</p>
-                        <p class="text-xs font-black text-slate-500">Upload & crop more images</p>
+                    <!-- Existing Images -->
+                    <div class="mb-4">
+                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Current Images</h4>
+                        <div class="grid grid-cols-3 gap-2" id="existingImagesGrid"></div>
+                    </div>
+
+                    <!-- Drop Zone -->
+                    <div id="imageDropZone" class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-indigo-300 hover:bg-indigo-50/30 transition cursor-pointer" onclick="document.getElementById('imageFilePicker').click()">
+                        <div class="text-4xl mb-2">🖼️</div>
+                        <p class="text-sm font-black text-slate-600">Click to upload</p>
+                        <p class="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">PNG, JPG, WebP</p>
                         <input type="file" id="imageFilePicker" accept="image/*" multiple class="hidden">
                     </div>
-                    <div id="newImagePreviewGrid" class="grid grid-cols-3 gap-2 mt-3"></div>
-                    <p id="imageError" class="text-rose-500 text-xs font-bold mt-1 hidden">Total must be at least 3 images.</p>
+
+                    <!-- New Image Previews Grid -->
+                    <div id="newImagePreviewGrid" class="grid grid-cols-3 gap-2 mt-4"></div>
+                    <p id="imageCountMsg" class="text-xs font-bold mt-2 text-gray-400">Total images: 0</p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center" id="imageUploadPlaceholder">
+                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span class="text-2xl">👆</span>
+                    </div>
+                    <h3 class="text-sm font-black text-gray-800">Select a Variant</h3>
+                    <p class="text-[10px] text-gray-400 mt-1 font-bold tracking-wide uppercase">Click on any variant row<br>to manage its images.</p>
                 </div>
 
                 <!-- Settings Card -->
@@ -168,7 +175,11 @@
     // ── Variant Management ──────────────────────────────────────────────────
     let variantCount = 0;
     let removedImages = [];
-    let newCroppedBlobs = [];
+    
+    let variantExistingImages = {}; // rowId -> [url1, url2]
+    let variantNewBlobs = {};       // rowId -> [blob1, blob2]
+    let activeRowId = null;
+
     const PREDEFINED_COLORS = [
       { name: 'Black', code: '#000000' },
       { name: 'White', code: '#FFFFFF' },
@@ -184,9 +195,17 @@
 
     function addVariantRow(data = {}) {
         variantCount++;
+        const rowId = `variant-row-${variantCount}`;
+        variantExistingImages[rowId] = data.images || [];
+        variantNewBlobs[rowId] = [];
+
         const row = document.createElement('tr');
-        row.id = `variant-row-${variantCount}`;
-        row.className = 'border-b border-gray-50 group';
+        row.id = rowId;
+        row.className = 'border-b border-gray-50 group cursor-pointer hover:bg-gray-50 transition-colors';
+        row.onclick = (e) => {
+             if (e.target.tagName === 'BUTTON') return;
+             selectVariantRow(rowId);
+        };
 
         const sizeOptions = ["S", "M", "L", "XL"].map(s => `<option value="${s}" ${data.size === s ? 'selected' : ''}>${s}</option>`).join('');
         const colorOptions = PREDEFINED_COLORS.map(c => `
@@ -195,15 +214,17 @@
           </option>
         `).join('');
 
+        const totalImgs = variantExistingImages[rowId].length;
+
         row.innerHTML = `
             <td class="py-2 pr-3">
-              <select class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="size">
+              <select class="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="size" onchange="updateRowName('${rowId}')">
                 ${sizeOptions}
               </select>
             </td>
             <td class="py-2 pr-3">
               <div class="flex items-center gap-1.5">
-                <select class="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="color" onchange="updateColorPreview(this)">
+                <select class="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="color" onchange="updateColorPreview(this); updateRowName('${rowId}')">
                   <option value="">Select Color</option>
                   ${colorOptions}
                 </select>
@@ -216,10 +237,53 @@
                 <span class="text-[10px] font-black text-gray-400 block max-w-[80px] truncate" title="${data.sku || 'Pending'}">${data.sku || 'Pending'}</span>
                 <input type="hidden" value="${data.sku || ''}" data-field="sku">
             </td>
-            <td class="py-2"><button type="button" onclick="document.getElementById('variant-row-${variantCount}').remove()" class="text-gray-300 hover:text-rose-500 transition font-black text-lg leading-none">✕</button></td>
+            <td class="py-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black ${totalImgs < 3 ? 'text-rose-400' : 'text-emerald-500'}" id="img-count-${rowId}">${totalImgs} 🖼️</span>
+                    <button type="button" onclick="removeVariantRow('${rowId}')" class="text-gray-300 hover:text-rose-500 transition font-black text-lg leading-none">✕</button>
+                </div>
+            </td>
         `;
         document.getElementById('variantsBody').appendChild(row);
         if (data.color) { updateColorPreview(row.querySelector('[data-field="color"]')); }
+
+        if (variantCount === 1) {
+            selectVariantRow(rowId);
+        }
+    }
+
+    function removeVariantRow(rowId) {
+        if (activeRowId === rowId) {
+             document.getElementById('imageUploadCard').style.display = 'none';
+             document.getElementById('imageUploadPlaceholder').style.display = 'block';
+             activeRowId = null;
+        }
+        delete variantExistingImages[rowId];
+        delete variantNewBlobs[rowId];
+        document.getElementById(rowId)?.remove();
+    }
+
+    function selectVariantRow(rowId) {
+        document.querySelectorAll('#variantsBody tr').forEach(tr => tr.classList.remove('bg-indigo-50/50', 'border-indigo-200'));
+        document.getElementById(rowId).classList.add('bg-indigo-50/50', 'border-indigo-200');
+        
+        activeRowId = rowId;
+        
+        document.getElementById('imageUploadPlaceholder').style.display = 'none';
+        document.getElementById('imageUploadCard').style.display = 'block';
+        
+        updateRowName(rowId);
+        redrawImagePreviews();
+    }
+
+    function updateRowName(rowId) {
+        if (activeRowId !== rowId) return;
+        const tr = document.getElementById(rowId);
+        if (!tr) return;
+        const size = tr.querySelector('[data-field="size"]').value;
+        const colorSelect = tr.querySelector('[data-field="color"]');
+        const colorName = colorSelect.selectedIndex > 0 ? colorSelect.options[colorSelect.selectedIndex].text.trim() : 'Unknown Color';
+        document.getElementById('activeVariantName').textContent = `${colorName} - Size ${size}`;
     }
 
     function updateColorPreview(select) {
@@ -239,12 +303,13 @@
             const price = parseFloat(row.querySelector('[data-field="price"]')?.value);
             const stock = parseInt(row.querySelector('[data-field="stock"]')?.value);
             const sku = row.querySelector('[data-field="sku"]')?.value || '';
+            const existingImages = variantExistingImages[row.id] || [];
             
             if (!size || !colorStr || isNaN(price) || price < 1 || isNaN(stock) || stock < 0) return null;
             
             try {
               const color = JSON.parse(colorStr);
-              variants.push({ size, color, price, stock, sku });
+              variants.push({ size, color, price, stock, sku, existingImages });
             } catch { return null; }
         }
         return variants;
@@ -253,19 +318,12 @@
     // Pre-load existing variants
     existingVariants.forEach(v => addVariantRow(v));
 
-    // ── Existing Image Removal ───────────────────────────────────────────────
-    function removeExistingImage(url, elementId) {
+    function removeExistingImage(url, idx) {
+        if (!activeRowId || !variantExistingImages[activeRowId]) return;
         removedImages.push(url);
-        document.getElementById(elementId)?.remove();
-        updateExistingCount();
+        variantExistingImages[activeRowId] = variantExistingImages[activeRowId].filter(u => u !== url);
+        redrawImagePreviews();
     }
-
-    function updateExistingCount() {
-        const remaining = document.querySelectorAll('#existingImagesGrid [data-url]').length;
-        document.getElementById('existingCountMsg').textContent = `${remaining} existing image${remaining !== 1 ? 's' : ''}`;
-    }
-
-    // ── Cropper for New Images ───────────────────────────────────────────────
 
     let pendingFiles = [];
     let pendingIndex = 0;
@@ -300,16 +358,10 @@
         
         try {
             const croppedFile = await cropImage(file);
-            newCroppedBlobs.push(croppedFile);
-            const idx = newCroppedBlobs.length - 1;
-            const src = URL.createObjectURL(croppedFile);
-            
-            const grid = document.getElementById('newImagePreviewGrid');
-            const div = document.createElement('div');
-            div.id = `new-img-${idx}`;
-            div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group';
-            div.innerHTML = `<img src="${src}" class="w-full h-full object-cover"><button type="button" onclick="removeNewImage(${idx})" class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>`;
-            grid.appendChild(div);
+            if (activeRowId && variantNewBlobs[activeRowId]) {
+                variantNewBlobs[activeRowId].push(croppedFile);
+                redrawImagePreviews();
+            }
         } catch (err) {
             console.log('Skipped cropping for', file.name);
         }
@@ -318,13 +370,56 @@
     }
 
     function removeNewImage(index) {
-        newCroppedBlobs.splice(index, 1);
-        document.getElementById(`new-img-${index}`)?.remove();
-        const grid = document.getElementById('newImagePreviewGrid');
-        Array.from(grid.children).forEach((div, i) => {
-            div.id = `new-img-${i}`;
-            div.querySelector('button').setAttribute('onclick', `removeNewImage(${i})`);
+        if (!activeRowId || !variantNewBlobs[activeRowId]) return;
+        variantNewBlobs[activeRowId].splice(index, 1);
+        redrawImagePreviews();
+    }
+
+    function redrawImagePreviews() {
+        if (!activeRowId) return;
+        
+        const existGrid = document.getElementById('existingImagesGrid');
+        const newGrid = document.getElementById('newImagePreviewGrid');
+        existGrid.innerHTML = '';
+        newGrid.innerHTML = '';
+
+        const existImages = variantExistingImages[activeRowId] || [];
+        const newBlobs = variantNewBlobs[activeRowId] || [];
+        
+        existImages.forEach((img, idx) => {
+            const div = document.createElement('div');
+            div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group';
+            div.innerHTML = `
+                <img src="${img}" class="w-full h-full object-cover">
+                <button type="button" onclick="removeExistingImage('${img}', ${idx})"
+                    class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+            `;
+            existGrid.appendChild(div);
         });
+
+        newBlobs.forEach((blob, idx) => {
+            const src = URL.createObjectURL(blob);
+            const div = document.createElement('div');
+            div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm group border-indigo-200';
+            div.innerHTML = `
+                <img src="${src}" class="w-full h-full object-cover">
+                <button type="button" onclick="removeNewImage(${idx})"
+                    class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+            `;
+            newGrid.appendChild(div);
+        });
+        
+        const count = existImages.length + newBlobs.length;
+        const msg = document.getElementById('imageCountMsg');
+        msg.textContent = `Total images: ${count}`;
+        msg.className = `text-xs font-bold mt-2 ${count < 3 ? 'text-rose-500' : 'text-emerald-600'}`;
+        
+        // Update table row count
+        const rowCountIndicator = document.getElementById(`img-count-${activeRowId}`);
+        if(rowCountIndicator) {
+             rowCountIndicator.textContent = `${count} 🖼️`;
+             rowCountIndicator.className = `text-[10px] font-black ${count < 3 ? 'text-rose-400' : 'text-emerald-500'}`;
+        }
     }
 
     // ── Category AJAX ──────────────────────────────────────────────────────
@@ -353,8 +448,6 @@
         const variants = collectVariants();
 
         document.querySelectorAll('#editProductForm .error-text').forEach(el => el.classList.add('hidden'));
-        document.getElementById('imageError').classList.add('hidden');
-        document.getElementById('variantError').classList.add('hidden');
 
         let valid = true;
         
@@ -371,10 +464,15 @@
             valid = false;
         }
 
-        const existingCount = document.querySelectorAll('#existingImagesGrid [data-url]').length;
-        const totalImages = existingCount + newCroppedBlobs.length;
-        if (totalImages < 3) {
-            document.getElementById('imageError').classList.remove('hidden');
+        let allImagesValid = true;
+        const rows = document.querySelectorAll('#variantsBody tr');
+        rows.forEach(r => {
+            const total = (variantExistingImages[r.id]?.length || 0) + (variantNewBlobs[r.id]?.length || 0);
+            if (total < 3) allImagesValid = false;
+        });
+
+        if (!allImagesValid) {
+            Swal.fire('Images Required', 'Minimum 3 images are required for EACH variant.', 'warning');
             valid = false;
         }
 
@@ -399,7 +497,11 @@
             formData.append('isFeatured', document.getElementById('productFeatured').checked ? 'on' : 'false');
             formData.append('variants', JSON.stringify(variants));
             formData.append('removedImages', JSON.stringify(removedImages));
-            newCroppedBlobs.forEach(blob => formData.append('images', blob));
+            
+            rows.forEach((row, index) => {
+                const b = variantNewBlobs[row.id] || [];
+                b.forEach(blob => formData.append(`variant_images_${index}`, blob));
+            });
 
             const res = await axios.put(`/admin/products/edit/${productId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.data.success) {

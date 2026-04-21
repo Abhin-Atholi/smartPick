@@ -36,7 +36,7 @@
                                 <!-- Product Image & Actions -->
                                 <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
                                     <a href="/products/details/<%= product._id %>" class="block w-full h-full">
-                                        <img src="<%= (product.images && product.images.length > 0) ? product.images[0] : '/images/placeholder.jpg' %>"
+                                        <img src="<%= (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) ? product.variants[0].images[0] : '/images/placeholder.jpg' %>"
                                             alt="<%= product.name %>"
                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                     </a>

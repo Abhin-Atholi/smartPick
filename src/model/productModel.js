@@ -25,6 +25,13 @@ const variantSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
+  },
+  images: {
+    type: [String],
+    validate: {
+      validator: (arr) => arr.length >= 3,
+      message: "Minimum 3 images required per variant"
+    }
   }
 }, { _id: false });
 
@@ -56,13 +63,7 @@ const productSchema = new mongoose.Schema({
     ref: "Subcategory",
   },
 
-  images: {
-    type: [String],
-    validate: {
-      validator: (arr) => arr.length >= 3,
-      message: "Minimum 3 product images required"
-    }
-  },
+
 
   variants: {
     type: [variantSchema],

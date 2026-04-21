@@ -109,10 +109,6 @@ export const addToCart = async (userId, productId, quantity, size, color) => {
 
 export const updateQuantity = async (userId, productId, size, color, quantity) => {
     const MAX_PER_PRODUCT = 5;
-    if (quantity > MAX_PER_PRODUCT) {
-        throw new Error(`Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`);
-    }
-
     const cart = await Cart.findOne({ user: userId });
     if (!cart) throw new Error("Cart not found");
 
@@ -123,6 +119,12 @@ export const updateQuantity = async (userId, productId, size, color, quantity) =
     );
 
     if (itemIndex === -1) throw new Error("Item not found in cart");
+
+    if (quantity > MAX_PER_PRODUCT) {
+        throw new Error(`Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`);
+    }
+
+    
 
     // Check product status and stock again
     const product = await Product.findById(productId).populate('category subcategory');

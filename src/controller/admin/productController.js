@@ -73,9 +73,7 @@ export const addProduct = async (req, res) => {
         if (!category) {
             return res.status(400).json({ success: false, message: "Category is required." });
         }
-        if (!req.files || req.files.length < 3) {
-            return res.status(400).json({ success: false, message: "Minimum 3 product images are required." });
-        }
+        // We will validate images below per variant
 
         // Parse variants sent as JSON string from the form
         let parsedVariants = [];
@@ -94,7 +92,16 @@ export const addProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: "A product with this name already exists." });
         }
 
-        const imageUrls = req.files.map(f => f.path);
+        parsedVariants.forEach((variant, index) => {
+            const vFiles = (req.files || []).filter(f => f.fieldname === `variant_images_${index}`);
+            variant.images = vFiles.map(f => f.path);
+        });
+
+        for (let i = 0; i < parsedVariants.length; i++) {
+            if (!parsedVariants[i].images || parsedVariants[i].images.length < 3) {
+                return res.status(400).json({ success: false, message: `Minimum 3 images are required for variant ${parsedVariants[i].size} - ${parsedVariants[i].color.name}.` });
+            }
+        }
 
     await productService.createProductFixed({
       name: name.trim(),
@@ -102,7 +109,6 @@ export const addProduct = async (req, res) => {
       brand: brand?.trim(),
       category,
       subcategory: subcategory || null,
-      images: imageUrls,
       variants: parsedVariants,
       isActive: isActive === 'true' || isActive === 'on' || isActive === true,
       isFeatured: isFeatured === 'true' || isFeatured === 'on'
@@ -167,7 +173,21 @@ export const updateProduct = async (req, res) => {
             removedImageUrls = removedImages ? JSON.parse(removedImages) : [];
         } catch { removedImageUrls = []; }
 
-        const newImageUrls = req.files ? req.files.map(f => f.path) : [];
+        // Mapped variant images
+         parsedVariants.forEach((variant, index) => {
+            const vFiles = (req.files || []).filter(f => f.fieldname === `variant_images_${index}`);
+            variant.newImageUrls = vFiles.map(f => f.path);
+            
+            // variant.existingImages should be passed from frontend
+            const existing = variant.existingImages || [];
+            variant.images = [...existing, ...variant.newImageUrls];
+        });
+
+        for (let i = 0; i < parsedVariants.length; i++) {
+            if (!parsedVariants[i].images || parsedVariants[i].images.length < 3) {
+                return res.status(400).json({ success: false, message: `Minimum 3 images are required for variant ${parsedVariants[i].size} - ${parsedVariants[i].color.name}.` });
+            }
+        }
 
         const updateData = {
             name: name.trim(),
@@ -177,16 +197,12 @@ export const updateProduct = async (req, res) => {
             subcategory: subcategory || null,
             variants: parsedVariants,
             isActive: isActive === 'true' || isActive === 'on' || isActive === true,
-            isFeatured: isFeatured === 'true' || isFeatured === 'on'
+            isFeatured: isFeatured === 'true' || isFeatured === 'on',
+            removedImageUrls: removedImageUrls
         };
 
-        const updated = await productService.updateProduct(id, updateData, newImageUrls, removedImageUrls);
+        const updated = await productService.updateProduct(id, updateData, removedImageUrls);
         if (!updated) return res.status(404).json({ success: false, message: "Product not found." });
-
-        // Check minimum images after update
-        if (updated.images.length < 3) {
-            return res.status(400).json({ success: false, message: "Product must have at least 3 images. Restore or upload new ones." });
-        }
 
         res.json({ success: true, message: "Product updated successfully!" });
     } catch (error) {
