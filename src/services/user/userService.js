@@ -76,7 +76,7 @@ export const removeImage = async (userId) => {
  * Logic: Manage Addresses (Push, Set, Pull)
  */
 export const addAddress = async (userId, addressData) => {
-  const { fullName, phone, pincode, state, city, locality, house, area } = addressData;
+  const { fullName, phone, pincode, state, city, locality, house, area, isDefault } = addressData;
 
   // Field-level validation (service concern)
   if (!fullName || fullName.trim().length < 3)
@@ -96,11 +96,20 @@ export const addAddress = async (userId, addressData) => {
   if (!area || area.trim().length < 3)
     throw new Error("Area / Street must be at least 3 characters.");
 
-  return await Address.create({ userId, ...addressData });
+  let defaultStatus = isDefault === true || isDefault === 'true';
+
+  const existingAddresses = await Address.countDocuments({ userId });
+  if (existingAddresses === 0) {
+    defaultStatus = true;
+  } else if (defaultStatus) {
+    await Address.updateMany({ userId }, { $set: { isDefault: false } });
+  }
+
+  return await Address.create({ userId, ...addressData, isDefault: defaultStatus });
 };
 
 export const updateAddress = async (userId, addressId, addressData) => {
-  const { fullName, phone, pincode, state, city, locality, house, area } = addressData;
+  const { fullName, phone, pincode, state, city, locality, house, area, isDefault } = addressData;
 
   // Field-level validation (service concern)
   if (!fullName || fullName.trim().length < 3)
@@ -119,11 +128,17 @@ export const updateAddress = async (userId, addressId, addressData) => {
     throw new Error("House / Building field must be at least 3 characters.");
   if (!area || area.trim().length < 3)
     throw new Error("Area / Street must be at least 3 characters.");
+
+  const defaultStatus = isDefault === true || isDefault === 'true';
+
+  if (defaultStatus) {
+    await Address.updateMany({ userId, _id: { $ne: addressId } }, { $set: { isDefault: false } });
+  }
 
   return await Address.findOneAndUpdate(
     { _id: addressId, userId },
     {
-      $set: { fullName, phone, pincode, state, city, locality, house, area },
+      $set: { fullName, phone, pincode, state, city, locality, house, area, isDefault: defaultStatus },
     }
   );
 };

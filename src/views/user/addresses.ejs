@@ -34,14 +34,18 @@
                       class="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-5 flex flex-col justify-between hover:border-indigo-200 transition-colors">
                       <div>
                         <div class="flex justify-between items-start">
-                          <div class="font-black text-indigo-700 text-lg">
+                          <div class="font-black text-indigo-700 text-lg flex items-center gap-2">
                             <%= a.fullName %>
+                            <% if (a.isDefault) { %>
+                              <span class="px-2 py-0.5 rounded text-xs font-bold bg-indigo-600 text-white shadow-sm">Default</span>
+                            <% } %>
                           </div>
                           <div class="flex items-center gap-3">
                             <button onclick="openEditModal(this)" data-id="<%= a._id %>"
                               data-fullname="<%= a.fullName %>" data-phone="<%= a.phone %>"
                               data-pincode="<%= a.pincode %>" data-state="<%= a.state %>" data-city="<%= a.city %>"
                               data-locality="<%= a.locality %>" data-house="<%= a.house %>" data-area="<%= a.area %>"
+                              data-isdefault="<%= a.isDefault ? 'true' : 'false' %>"
                               class="text-indigo-600 text-sm font-black hover:underline">
                               ✎ Edit
                             </button>
@@ -165,6 +169,13 @@
                   class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
               </div>
 
+              <div class="md:col-span-2 flex items-center gap-2 pt-2">
+                <input type="checkbox" id="add-isDefault" name="isDefault"
+                  <%= (typeof addAddressData !== 'undefined' && addAddressData && addAddressData.isDefault) ? 'checked' : '' %>
+                  class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
+                <label for="add-isDefault" class="text-sm font-bold text-gray-700 cursor-pointer">Set as default address</label>
+              </div>
+
               <div class="md:col-span-2 flex gap-3 pt-2 border-t">
                 <button type="button" onclick="closeAddModal()"
                   class="flex-1 py-3 border rounded-xl font-bold hover:bg-gray-50 transition">Cancel</button>
@@ -243,6 +254,12 @@
                   class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
               </div>
 
+              <div class="md:col-span-2 flex items-center gap-2 pt-2">
+                <input type="checkbox" id="edit-isDefault" name="isDefault" value="true"
+                  class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
+                <label for="edit-isDefault" class="text-sm font-bold text-gray-700 cursor-pointer">Set as default address</label>
+              </div>
+
               <div class="md:col-span-2 flex gap-3 pt-2 border-t">
                 <button type="button" onclick="closeEditModal()"
                   class="flex-1 py-3 border rounded-xl font-bold hover:bg-gray-50 transition">Cancel</button>
@@ -290,6 +307,7 @@
       document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(this).entries());
+        data.isDefault = this.elements.isDefault.checked;
         try {
           await axios.post('/account/addresses', data);
           window.location.reload();
@@ -304,6 +322,7 @@
       document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(this).entries());
+        data.isDefault = this.elements.isDefault.checked;
         const actionUrl = this.dataset.action;
         try {
           await axios.put(actionUrl, data);
@@ -335,6 +354,7 @@
         document.getElementById('edit-locality').value = btn.dataset.locality;
         document.getElementById('edit-house').value = btn.dataset.house;
         document.getElementById('edit-area').value = btn.dataset.area;
+        document.getElementById('edit-isDefault').checked = btn.dataset.isdefault === 'true';
         document.getElementById('editAddressModal').classList.remove('hidden');
       }
       function closeEditModal() {
@@ -366,6 +386,7 @@
           document.getElementById('edit-locality').value = `<%= editAddressData.locality || '' %>`;
           document.getElementById('edit-house').value = `<%= editAddressData.house || '' %>`;
           document.getElementById('edit-area').value = `<%= editAddressData.area || '' %>`;
+          document.getElementById('edit-isDefault').checked = <%= !!editAddressData.isDefault %>;
     <% } %>
           document.getElementById('editAddressModal').classList.remove('hidden');
   <% } %>

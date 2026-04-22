@@ -12,6 +12,7 @@ const addressSchema = new mongoose.Schema(
     house: { type: String, required: true },
     area: { type: String, required: true },
     country: { type: String, default: "India" },
+    isDefault: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
