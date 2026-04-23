@@ -28,10 +28,15 @@ export const addToCart = async (req, res, next) => {
         }
 
         const { productId, quantity, size, color } = req.body;
-        const cart = await cartService.addToCart(userId, productId, parseInt(quantity) || 1, size, color);
-        res.json({ success: true, message: "Added to cart successfully!", itemCount: cart.items.length });
+        const result = await cartService.addToCart(userId, productId, parseInt(quantity) || 1, size, color);
+        if (result.isDuplicate) {
+            return res.status(400).json({ success: false, message: result.message });
+        }
+        res.json({ success: true, message: "Added to cart successfully!", itemCount: result.items.length });
     } catch (err) {
-        console.error("addToCart error:", err);
+        if (!err.message.includes("already in your cart")) {
+            console.error("addToCart error:", err);
+        }
         res.status(400).json({ success: false, message: err.message });
     }
 };
@@ -41,15 +46,20 @@ export const updateQuantity = async (req, res, next) => {
         const userId = req.currentUser?._id || req.session?.user?._id;
         const { productId, size, color, quantity } = req.body;
 
-        const cart = await cartService.updateQuantity(userId, productId, size, color, parseInt(quantity));
+        const result = await cartService.updateQuantity(userId, productId, size, color, parseInt(quantity));
+        if (result && result.code === "LIMIT_REACHED") {
+            return res.status(400).json({ success: false, message: result.message, code: result.code });
+        }
 
         res.json({ 
             success: true, 
-            cartTotal: cart.cartTotal,
-            itemTotal: cart.items.find(i => i.product.toString() === productId && i.size === size && i.color === color).totalPrice
+            cartTotal: result.cartTotal,
+            itemTotal: result.items.find(i => i.product.toString() === productId && i.size === size && i.color === color).totalPrice
         });
     } catch (err) {
-        console.error("updateQuantity error:", err);
+        if (!err.message.includes("Maximum limit reached") && !err.message.includes("Units per product")) {
+            console.error("updateQuantity error:", err);
+        }
         res.status(400).json({ success: false, message: err.message });
     }
 };

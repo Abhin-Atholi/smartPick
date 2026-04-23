@@ -516,8 +516,10 @@
 
           /* ── Essential Helpers ── */
           async function addToCart(productId, btn) {
+            if (btn.disabled) return;
+            
             const original = btn.innerHTML;
-            btn.innerHTML = '✓ Added!';
+            btn.innerHTML = 'Adding...';
             btn.classList.replace('bg-indigo-600', 'bg-green-600');
             btn.disabled = true;
             try {
@@ -527,15 +529,30 @@
               });
               const data = await response.json();
               if (data.success) {
+                btn.innerHTML = '✓ Added!';
                 const badge = document.getElementById('cartBadge');
                 if (badge) badge.innerText = data.itemCount;
+              } else {
+                const isDuplicate = data.message?.includes("already in your cart");
+                Swal.fire({
+                  icon: isDuplicate ? 'info' : 'error',
+                  title: isDuplicate ? 'Already Added' : 'Oops...',
+                  text: data.message || 'Failed to add to cart',
+                  toast: true,
+                  position: 'top-end',
+                  showConfirmButton: false,
+                  timer: 3000
+                });
               }
-            } catch (e) { console.error(e); }
-            setTimeout(() => {
-              btn.innerHTML = original;
-              btn.classList.replace('bg-green-600', 'bg-indigo-600');
-              btn.disabled = false;
-            }, 1500);
+            } catch (e) {
+                console.error(e);
+            } finally {
+              setTimeout(() => {
+                btn.innerHTML = original;
+                btn.classList.replace('bg-green-600', 'bg-indigo-600');
+                btn.disabled = false;
+              }, 1500);
+            }
           }
 
           async function toggleWishlist(btn, productId) {

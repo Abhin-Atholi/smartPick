@@ -95,7 +95,9 @@
                                                 </button>
                                                 <span class="w-10 text-center text-sm font-black text-gray-900" id="qty-<%= item.product._id %>-<%= item.size %>-<%= item.color %>"><%= item.quantity %></span>
                                                 <button onclick="updateQty('<%= item.product._id %>', '<%= item.size %>', '<%= item.color %>', 1)" 
-                                                        class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white hover:shadow-sm transition-all text-gray-400 hover:text-indigo-600">
+                                                        <%= item.quantity >= 5 ? 'disabled' : '' %>
+                                                        id="plus-btn-<%= item.product._id %>-<%= item.size %>-<%= item.color %>"
+                                                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-all <%= item.quantity >= 5 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:bg-white hover:shadow-sm hover:text-indigo-600' %>">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                                 </button>
                                             </div>
@@ -194,6 +196,10 @@
         const newQty = currentQty + delta;
 
         if (newQty < 1) return;
+        if (newQty > 5) {
+            Swal.fire({ icon: 'info', title: 'Limit Reached', text: 'You can only have up to 5 units per product.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            return;
+        }
 
         try {
             const response = await axios.patch('/cart/update', {
@@ -203,11 +209,24 @@
             if (response.data.success) {
                 qtyEl.innerText = newQty;
                 updateSummary(response.data.cartTotal);
+                
+                // Update button states
+                const plusBtn = document.getElementById(`plus-btn-${productId}-${size}-${color}`);
+                if (plusBtn) {
+                    if (newQty >= 5) {
+                        plusBtn.disabled = true;
+                        plusBtn.className = "w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-300 cursor-not-allowed";
+                    } else {
+                        plusBtn.disabled = false;
+                        plusBtn.className = "w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-400 hover:bg-white hover:shadow-sm hover:text-indigo-600";
+                    }
+                }
             }
         } catch (err) {
+            const isLimit = err.response?.data?.code === "LIMIT_REACHED";
             Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
+                icon: isLimit ? 'info' : 'error',
+                title: isLimit ? 'Limit Reached' : 'Oops...',
                 text: err.response?.data?.message || 'Failed to update quantity',
                 toast: true,
                 position: 'top-end',

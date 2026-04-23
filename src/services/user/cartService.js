@@ -80,7 +80,7 @@ export const addToCart = async (userId, productId, quantity, size, color) => {
     const MAX_PER_PRODUCT = 5;
 
     if (existingItemIndex > -1) {
-        throw new Error("Item already in your cart. You can update the quantity from the cart page.");
+        return { success: false, message: "Item already in your cart. You can update the quantity from the cart page.", isDuplicate: true };
     } else {
         if (quantity > MAX_PER_PRODUCT) {
             throw new Error(`Maximum limit reached. You can only add up to ${MAX_PER_PRODUCT} units.`);
@@ -121,7 +121,7 @@ export const updateQuantity = async (userId, productId, size, color, quantity) =
     if (itemIndex === -1) throw new Error("Item not found in cart");
 
     if (quantity > MAX_PER_PRODUCT) {
-        throw new Error(`Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`);
+        return { success: false, message: `Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`, code: "LIMIT_REACHED" };
     }
 
     

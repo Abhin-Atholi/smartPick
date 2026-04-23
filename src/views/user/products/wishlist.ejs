@@ -220,6 +220,8 @@
                 }
 
                 async function addWishlistItemToCart(productId, btn) {
+                    if (btn.disabled) return;
+                    
                     const variantsStr = btn.getAttribute('data-variants');
                     if (!variantsStr) return;
                     
@@ -284,21 +286,20 @@
                                 location.reload();
                             }
                         } else {
+                            const isDuplicate = data.message?.includes("already in your cart");
                             Swal.fire({
-                                icon: 'error',
-                                title: 'Oops...',
+                                icon: isDuplicate ? 'info' : 'error',
+                                title: isDuplicate ? 'Already Added' : 'Oops...',
                                 text: data.message || 'Failed to add to cart',
                                 toast: true,
                                 position: 'top-end',
                                 showConfirmButton: false,
                                 timer: 3000
                             });
-                            btn.innerHTML = original;
-                            btn.classList.replace('bg-green-600', 'bg-indigo-600');
-                            btn.disabled = false;
                         }
                     } catch (e) {
                         console.error(e);
+                    } finally {
                         btn.innerHTML = original;
                         btn.classList.replace('bg-green-600', 'bg-indigo-600');
                         btn.disabled = false;

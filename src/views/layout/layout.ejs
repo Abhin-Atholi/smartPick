@@ -118,23 +118,19 @@
       }
 
       async function addToCart(productId, btn) {
-        // Find variant if it's from a grid where we don't have selection yet
-        // In this case, we might need a default variant or navigate to details
-        // For simple grid 'Add to Cart', we'll usually need size/color or we redirect to details
+        if (btn.disabled) return;
         
-        // If it's a simple call from grid:
+        const original = btn.innerHTML;
+        btn.innerHTML = 'Adding...';
+        btn.disabled = true;
+
         try {
           const response = await axios.post('/cart/add', { productId, quantity: 1 });
           if (response.data.success) {
-            const original = btn.innerHTML;
             btn.innerHTML = 'Added! ✅';
             btn.classList.add('bg-green-600', 'text-white');
             const badge = document.getElementById('cartBadge');
             if (badge) badge.innerText = response.data.itemCount;
-            setTimeout(() => {
-              btn.innerHTML = original;
-              btn.classList.remove('bg-green-600', 'text-white');
-            }, 2000);
           }
         } catch (err) {
           if (err.response && err.response.status === 401) {
@@ -150,9 +146,10 @@
               if (result.isConfirmed) window.location.href = '/login';
             });
           } else {
+            const isDuplicate = err.response?.data?.message?.includes("already in your cart");
             Swal.fire({
-              icon: 'error',
-              title: 'Oops...',
+              icon: isDuplicate ? 'info' : 'error',
+              title: isDuplicate ? 'Already Added' : 'Oops...',
               text: err.response?.data?.message || 'Failed to add to cart',
               toast: true,
               position: 'top-end',
@@ -160,6 +157,12 @@
               timer: 3000
             });
           }
+        } finally {
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.classList.remove('bg-green-600', 'text-white');
+            btn.disabled = false;
+          }, 2000);
         }
       }
     </script>

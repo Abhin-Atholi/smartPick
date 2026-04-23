@@ -340,6 +340,10 @@
 
     async function addToBag() {
         const btn = document.getElementById('mainCTA');
+        
+        // Prevent double clicks if already disabled
+        if (btn.disabled) return;
+        
         const label = btn.querySelector('span');
         const original = label.innerText;
 
@@ -381,7 +385,13 @@
                     if (result.isConfirmed) window.location.href = '/login';
                 });
             } else {
-                Swal.fire({ icon: 'error', title: 'Oops...', text: err.response?.data?.message || 'Something went wrong', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                const isDuplicate = err.response?.data?.message?.includes("already in your cart");
+                Swal.fire({ 
+                    icon: isDuplicate ? 'info' : 'error', 
+                    title: isDuplicate ? 'Already Added' : 'Oops...', 
+                    text: err.response?.data?.message || 'Something went wrong', 
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 
+                });
             }
         } finally {
             setTimeout(() => {
