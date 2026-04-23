@@ -120,7 +120,7 @@
 
                                     <!-- Cart Action -->
                                     <% if (!isUnavailable && !outOfStock) { %>
-                                        <button onclick="addToCart('<%= product._id %>', this)"
+                                        <button onclick="addWishlistItemToCart('<%= product._id %>', this)" data-variants='<%= JSON.stringify(product.variants || []) %>'
                                             class="w-full h-11 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 group-active:scale-95">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -219,7 +219,40 @@
                     }
                 }
 
-                async function addToCart(productId, btn) {
+                async function addWishlistItemToCart(productId, btn) {
+                    const variantsStr = btn.getAttribute('data-variants');
+                    if (!variantsStr) return;
+                    
+                    const variants = JSON.parse(variantsStr).filter(v => v.stock > 0);
+                    if (variants.length === 0) {
+                        Swal.fire({ icon: 'info', title: 'Out of Stock', text: 'All variants of this product are currently out of stock.' });
+                        return;
+                    }
+
+                    const variantsHtml = variants.map((v, i) => {
+                        const colorName = v.color && v.color.name ? v.color.name : 'Default';
+                        return `<option value="${i}">Size: ${v.size} | Color: ${colorName} - ₹${v.price}</option>`;
+                    }).join('');
+
+                    const { value: selectedIndex } = await Swal.fire({
+                        title: 'Select Variant',
+                        html: `<select id="swal-variant" class="w-full p-3 border border-gray-200 rounded-xl mt-4 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                   ${variantsHtml}
+                               </select>`,
+                        showCancelButton: true,
+                        confirmButtonText: 'Add to Cart',
+                        confirmButtonColor: '#4f46e5',
+                        preConfirm: () => {
+                            return document.getElementById('swal-variant').value;
+                        }
+                    });
+
+                    if (selectedIndex === undefined) return; // Cancelled
+
+                    const selectedVariant = variants[selectedIndex];
+                    const size = selectedVariant.size;
+                    const color = selectedVariant.color && selectedVariant.color.name ? selectedVariant.color.name : null;
+
                     const original = btn.innerHTML;
                     btn.innerHTML = '✓ Adding...';
                     btn.classList.replace('bg-indigo-600', 'bg-green-600');
@@ -229,12 +262,15 @@
                         const res = await fetch('/cart/add', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ productId, quantity: 1 })
+                            body: JSON.stringify({ productId, quantity: 1, size, color })
                         });
                         const data = await res.json();
 
                         if (data.success) {
                             btn.innerHTML = '✓ Moved!';
+                            const badge = document.getElementById('cartBadge');
+                            if (badge && data.itemCount !== undefined) badge.innerText = data.itemCount;
+                            
                             const item = document.getElementById(`item-${productId}`);
                             if (item) {
                                 item.style.opacity = '0';
@@ -244,6 +280,8 @@
                                     const grid = document.getElementById('wishlistGrid');
                                     if (grid && grid.children.length === 0) location.reload();
                                 }, 300);
+                            } else {
+                                location.reload();
                             }
                         } else {
                             Swal.fire({
