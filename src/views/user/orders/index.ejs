@@ -1,0 +1,357 @@
+<%- include("../partials/navbar") %>
+
+<main class="bg-gray-50 min-h-screen py-10">
+  <div class="max-w-5xl mx-auto px-4">
+
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-black text-gray-900">Order Management</h1>
+      <p class="text-sm text-gray-500 mt-1">Track your recent purchases and download invoices.</p>
+    </div>
+
+    <!-- Filter Tabs -->
+    <% 
+      const allStatuses = ['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', 'Returned'];
+      const activeFilter = typeof filter !== 'undefined' ? filter : 'All';
+    %>
+    <div class="flex flex-wrap gap-2 mb-6">
+      <% allStatuses.forEach(status => { %>
+        <a href="/orders<%= status === 'All' ? '' : `?status=${encodeURIComponent(status)}` %>"
+           class="px-4 py-2 rounded-full text-sm font-bold transition-all border
+             <%= activeFilter === status
+               ? 'bg-gray-900 text-white border-gray-900 shadow'
+               : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-800' %>">
+          <%= status === 'All' ? `All Orders (${totalOrders || 0})` : status %>
+        </a>
+      <% }) %>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <% if (!orders || orders.length === 0) { %>
+        <div class="py-20 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-4 w-12 h-12 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          <p class="text-gray-400 font-semibold">No orders found.</p>
+          <a href="/products" class="mt-3 inline-block text-sm text-indigo-600 font-bold hover:underline">Start Shopping</a>
+        </div>
+      <% } else { %>
+
+        <!-- Table Header -->
+        <div class="hidden md:grid grid-cols-[1.2fr_1fr_1.8fr_1fr_1.2fr_1.5fr] px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Order ID</span>
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Date</span>
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Items</span>
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Total</span>
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Status</span>
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Actions</span>
+        </div>
+
+        <!-- Table Rows -->
+        <div class="divide-y divide-gray-100">
+          <% orders.forEach(order => { %>
+            <div class="px-6 py-5">
+              <!-- Desktop Row -->
+              <div class="hidden md:grid grid-cols-[1.2fr_1fr_1.8fr_1fr_1.2fr_1.5fr] items-center gap-2">
+                
+                <!-- Order ID -->
+                <span class="text-sm font-black text-gray-900">
+                  <%= order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}` %>
+                </span>
+
+                <!-- Date -->
+                <span class="text-sm text-gray-500">
+                  <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                </span>
+
+                <!-- Item Thumbnails -->
+                <div class="flex items-center gap-2">
+                  <div class="flex -space-x-2">
+                    <% order.items.slice(0, 2).forEach(item => { %>
+                      <% 
+                        const variant = item.product?.variants?.find(v => v.color && v.color.name === item.color);
+                        const imgUrl = variant?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+                      %>
+                      <div class="w-9 h-9 rounded-full border-2 border-white bg-gray-100 overflow-hidden flex-shrink-0 shadow-sm">
+                        <img src="<%= imgUrl %>" class="w-full h-full object-cover">
+                      </div>
+                    <% }) %>
+                  </div>
+                  <% if (order.items.length > 2) { %>
+                    <span class="text-xs text-gray-400 font-bold ml-1">+<%= order.items.length - 2 %> more</span>
+                  <% } else if (order.items.length === 1 && order.items[0].product) { %>
+                    <span class="text-xs text-gray-500 font-semibold truncate max-w-[90px]"><%= order.items[0].product.name %></span>
+                  <% } %>
+                </div>
+
+                <!-- Total Amount -->
+                <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
+
+                <!-- Status Badge -->
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold w-fit
+                  <%= order.orderStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
+                      order.orderStatus === 'Cancelled' ? 'bg-red-50 text-red-700' :
+                      order.orderStatus === 'Shipped' ? 'bg-blue-50 text-blue-700' :
+                      order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-50 text-orange-700' :
+                      'bg-yellow-50 text-yellow-700' %>">
+                  <span class="w-1.5 h-1.5 rounded-full
+                    <%= order.orderStatus === 'Delivered' ? 'bg-green-500' :
+                        order.orderStatus === 'Cancelled' ? 'bg-red-500' :
+                        order.orderStatus === 'Shipped' ? 'bg-blue-500' :
+                        order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-500' :
+                        'bg-yellow-500' %>">
+                  </span>
+                  <%= order.orderStatus %>
+                </span>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-3">
+                  <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+                    View Details
+                  </a>
+                  <!-- Download Icon (placeholder) -->
+                  <button class="text-gray-300 hover:text-gray-500 transition-colors" title="Download Invoice">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Mobile Row -->
+              <div class="md:hidden space-y-2">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-black text-gray-900"><%= order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}` %></p>
+                    <p class="text-xs text-gray-400 mt-0.5"><%= new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></p>
+                  </div>
+                  <span class="px-2 py-1 rounded-full text-xs font-bold
+                    <%= order.orderStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
+                        order.orderStatus === 'Cancelled' ? 'bg-red-50 text-red-700' :
+                        order.orderStatus === 'Shipped' ? 'bg-blue-50 text-blue-700' :
+                        'bg-yellow-50 text-yellow-700' %>">
+                    <%= order.orderStatus %>
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
+                  <button onclick="toggleOrderDetails('<%= order._id %>')" class="text-sm font-bold text-indigo-600">View Details</button>
+                </div>
+              </div>
+
+              <!-- Expandable Details -->
+              <div id="details-<%= order._id %>" class="hidden mt-6 pt-6 border-t border-dashed border-gray-200">
+                <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Order Items</p>
+                <div class="space-y-3 mb-6">
+                  <% order.items.forEach(item => { %>
+                    <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 items-center">
+                      <% 
+                        const vDet = item.product?.variants?.find(v => v.color && v.color.name === item.color);
+                        const iUrl = vDet?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+                      %>
+                      <div class="w-14 h-16 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
+                        <img src="<%= iUrl %>" class="w-full h-full object-cover">
+                      </div>
+                      <div class="flex-grow min-w-0">
+                        <p class="text-sm font-black text-gray-900 truncate"><%= item.product?.name || 'Unavailable' %></p>
+                        <p class="text-xs text-gray-400 mt-0.5">Qty: <%= item.quantity %> &bull; Size: <%= item.size %> &bull; Color: <%= item.color %></p>
+                        <p class="text-sm font-black text-indigo-600 mt-1">₹<%= item.totalPrice.toLocaleString() %></p>
+                      </div>
+                      <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                        <span class="text-xs font-bold px-2 py-1 rounded-full
+                          <%= item.itemStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
+                              item.itemStatus === 'Cancelled' ? 'bg-red-50 text-red-700' :
+                              item.itemStatus === 'Returned' || item.itemStatus === 'Return Requested' ? 'bg-orange-50 text-orange-700' :
+                              'bg-yellow-50 text-yellow-700' %>">
+                          <%= item.itemStatus %>
+                        </span>
+                        <% if (!['Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Requested'].includes(item.itemStatus)) { %>
+                          <button onclick="openActionModal('cancel', '<%= order._id %>', '<%= item._id %>', 'Cancel Item')" class="text-xs font-bold text-red-500 hover:underline">Cancel</button>
+                        <% } %>
+                        <% if (item.itemStatus === 'Delivered') { %>
+                          <button onclick="openActionModal('return', '<%= order._id %>', '<%= item._id %>', 'Return Item')" class="text-xs font-bold text-orange-500 hover:underline">Return</button>
+                        <% } %>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+
+                <!-- Shipping Summary -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-indigo-50/30 rounded-xl border border-indigo-100 mb-4">
+                  <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase">Subtotal</p>
+                    <p class="text-sm font-black text-gray-800">₹<%= order.subtotal.toLocaleString() %></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase">Shipping</p>
+                    <p class="text-sm font-black text-gray-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase">Payment</p>
+                    <p class="text-sm font-black text-gray-800"><%= order.paymentMethod %></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase">Total</p>
+                    <p class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></p>
+                  </div>
+                </div>
+
+                <!-- Order-level actions -->
+                <div class="flex flex-wrap gap-3 justify-end">
+                  <% if (!['Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Requested'].includes(order.orderStatus)) { %>
+                    <button onclick="openActionModal('cancel', '<%= order._id %>', null, 'Cancel Entire Order')"
+                      class="px-5 py-2 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition">
+                      Cancel Order
+                    </button>
+                  <% } %>
+                  <% if (order.orderStatus === 'Delivered') { %>
+                    <button onclick="openActionModal('return', '<%= order._id %>', null, 'Return Entire Order')"
+                      class="px-5 py-2 border border-orange-200 text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-50 transition">
+                      Return Order
+                    </button>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Pagination -->
+    <% if (totalPages > 1) { %>
+      <div class="mt-8 flex justify-center items-center gap-2">
+        <% if (currentPage > 1) { %>
+          <a href="/orders?page=<%= currentPage - 1 %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %>"
+             class="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 border border-transparent transition">
+            ‹ Previous
+          </a>
+        <% } %>
+        <% for(let i = 1; i <= totalPages; i++) { %>
+          <a href="/orders?page=<%= i %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %>"
+             class="w-10 h-10 flex items-center justify-center rounded-xl font-black text-sm transition-all
+               <%= currentPage === i ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400' %>">
+            <%= i %>
+          </a>
+        <% } %>
+        <% if (currentPage < totalPages) { %>
+          <a href="/orders?page=<%= currentPage + 1 %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %>"
+             class="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 border border-transparent transition">
+            Next ›
+          </a>
+        <% } %>
+      </div>
+    <% } %>
+
+  </div>
+</main>
+
+<!-- Action Modal (Cancel / Return) -->
+<div id="actionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+      <h3 id="actionModalTitle" class="text-lg font-black text-gray-900">Action</h3>
+      <button onclick="closeActionModal()" class="text-gray-400 hover:text-black transition text-xl leading-none">✕</button>
+    </div>
+    <form id="actionForm" class="p-6 space-y-4">
+      <input type="hidden" id="actionType" name="actionType">
+      <input type="hidden" id="actionOrderId" name="orderId">
+      <input type="hidden" id="actionItemId" name="itemId">
+
+      <div class="space-y-2">
+        <label class="text-sm font-bold text-gray-700">
+          Reason <span id="reasonAsterisk" class="text-red-500">*</span>
+        </label>
+        <textarea id="actionReason" name="reason" rows="3" placeholder="Please provide a reason..."
+          class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition resize-none text-sm"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-2 border-t border-gray-100">
+        <button type="button" onclick="closeActionModal()"
+          class="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition">
+          Cancel
+        </button>
+        <button type="submit" id="actionSubmitBtn"
+          class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition shadow-lg shadow-red-100">
+          Confirm
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include("../partials/footer") %>
+<%- include("../partials/drawer") %>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  function toggleOrderDetails(orderId) {
+    const el = document.getElementById(`details-${orderId}`);
+    el.classList.toggle('hidden');
+  }
+
+  function openActionModal(type, orderId, itemId, title) {
+    document.getElementById('actionModalTitle').innerText = title;
+    document.getElementById('actionType').value = type;
+    document.getElementById('actionOrderId').value = orderId;
+    document.getElementById('actionItemId').value = itemId || '';
+    document.getElementById('actionReason').value = '';
+
+    const btn = document.getElementById('actionSubmitBtn');
+    const reasonField = document.getElementById('actionReason');
+    const reasonAsterisk = document.getElementById('reasonAsterisk');
+
+    if (type === 'cancel') {
+      btn.className = 'flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition shadow-lg shadow-red-100';
+      reasonField.required = false;
+      reasonAsterisk.classList.add('hidden');
+    } else {
+      btn.className = 'flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition shadow-lg shadow-orange-100';
+      reasonField.required = true;
+      reasonAsterisk.classList.remove('hidden');
+    }
+
+    document.getElementById('actionModal').classList.remove('hidden');
+  }
+
+  function closeActionModal() {
+    document.getElementById('actionModal').classList.add('hidden');
+  }
+
+  document.getElementById('actionForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const type = document.getElementById('actionType').value;
+    const orderId = document.getElementById('actionOrderId').value;
+    const itemId = document.getElementById('actionItemId').value;
+    const reason = document.getElementById('actionReason').value;
+
+    if (type === 'return' && !reason.trim()) {
+      return Swal.fire({ icon: 'warning', title: 'Reason Required', text: 'Please provide a reason for your return request.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    }
+
+    const btn = document.getElementById('actionSubmitBtn');
+    const originalText = btn.innerText;
+    btn.innerText = 'Processing...';
+    btn.disabled = true;
+
+    try {
+      const endpoint = type === 'cancel' ? '/order/cancel' : '/order/return';
+      const payload = { orderId, reason };
+      if (itemId) payload.itemId = itemId;
+
+      const res = await axios.post(endpoint, payload);
+      if (res.data.success) {
+        await Swal.fire({ icon: 'success', title: 'Done!', text: res.data.message, timer: 2000, showConfirmButton: false });
+        window.location.reload();
+      }
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Failed', text: err.response?.data?.message || 'Something went wrong.' });
+    } finally {
+      btn.innerText = originalText;
+      btn.disabled = false;
+      closeActionModal();
+    }
+  });
+
+  document.getElementById('actionModal').addEventListener('click', function (e) {
+    if (e.target === this) closeActionModal();
+  });
+</script>

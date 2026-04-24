@@ -9,4 +9,9 @@ router.get("/checkout", orderController.loadCheckout);
 router.post("/order/place", orderController.placeOrder);
 router.get("/order/success", orderController.loadOrderSuccess);
 
+router.get("/orders", orderController.getOrders);
+router.get("/orders/:id", orderController.getOrderDetails);
+router.post("/order/cancel", orderController.cancelOrder);
+router.post("/order/return", orderController.returnOrder);
+
 export default router;
