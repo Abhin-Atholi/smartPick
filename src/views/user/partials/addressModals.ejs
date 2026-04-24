@@ -1,0 +1,275 @@
+  <!-- ===================== ADD ADDRESS MODAL ===================== -->
+  <div id="addAddressModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div class="p-6 border-b flex justify-between items-center">
+        <h3 class="text-xl font-black">Add New Address</h3>
+        <button type="button" onclick="closeAddModal()" class="text-gray-400 hover:text-black transition text-xl">✕</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1">
+        <% if (typeof modalError !=="undefined" && modalError && (typeof modalType==="undefined" || modalType==="add" ))
+          { %>
+          <div class="mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100">
+            <%= modalError %>
+          </div>
+          <% } %>
+          <div id="addModalError" class="hidden mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100"></div>
+
+            <form id="addAddressForm" class="p-6 grid md:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
+                <input name="fullName" placeholder="John Doe"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.fullName || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Phone Number</label>
+                <input name="phone" placeholder="10-digit mobile number"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.phone || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Pincode</label>
+                <input name="pincode" placeholder="6-digit pincode"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.pincode || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">State</label>
+                <input name="state" placeholder="State"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.state || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">City</label>
+                <input name="city" placeholder="City / District"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.city || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Locality</label>
+                <input name="locality" placeholder="Locality / Town"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.locality || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="md:col-span-2 space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">House / Building</label>
+                <input name="house" placeholder="House No, Building Name"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.house || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="md:col-span-2 space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Area / Street</label>
+                <input name="area" placeholder="Area, Colony, Sector, Village"
+                  value="<%= (typeof addAddressData !== 'undefined' && addAddressData) ? addAddressData.area || '' : '' %>"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="md:col-span-2 flex items-center gap-2 pt-2">
+                <input type="checkbox" id="add-isDefault" name="isDefault"
+                  <%= (typeof addAddressData !== 'undefined' && addAddressData && addAddressData.isDefault) ? 'checked' : '' %>
+                  class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
+                <label for="add-isDefault" class="text-sm font-bold text-gray-700 cursor-pointer">Set as default address</label>
+              </div>
+
+              <div class="md:col-span-2 flex gap-3 pt-2 border-t">
+                <button type="button" onclick="closeAddModal()"
+                  class="flex-1 py-3 border rounded-xl font-bold hover:bg-gray-50 transition">Cancel</button>
+                <button type="submit"
+                  class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">Save
+                  Address</button>
+              </div>
+            </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== EDIT ADDRESS MODAL ===================== -->
+  <div id="editAddressModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div class="p-6 border-b flex justify-between items-center">
+        <h3 class="text-xl font-black">Edit Address</h3>
+        <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-black transition text-xl">✕</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1">
+        <% if (typeof modalError !=="undefined" && modalError && modalType==="edit" ) { %>
+          <div class="mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100">
+            <%= modalError %>
+          </div>
+          <% } %>
+          <div id="editModalError" class="hidden mx-6 mt-6 p-4 text-sm font-bold rounded-xl bg-red-50 text-red-700 border border-red-100"></div>
+
+            <form id="editAddressForm" data-action="" class="p-6 grid md:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
+                <input id="edit-fullName" name="fullName"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Phone Number</label>
+                <input id="edit-phone" name="phone"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Pincode</label>
+                <input id="edit-pincode" name="pincode"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">State</label>
+                <input id="edit-state" name="state"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">City</label>
+                <input id="edit-city" name="city"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Locality</label>
+                <input id="edit-locality" name="locality"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="md:col-span-2 space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">House / Building</label>
+                <input id="edit-house" name="house"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="md:col-span-2 space-y-1">
+                <label class="text-xs font-bold text-gray-500 uppercase ml-1">Area / Street</label>
+                <input id="edit-area" name="area"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+              </div>
+
+              <div class="md:col-span-2 flex items-center gap-2 pt-2">
+                <input type="checkbox" id="edit-isDefault" name="isDefault" value="true"
+                  class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
+                <label for="edit-isDefault" class="text-sm font-bold text-gray-700 cursor-pointer">Set as default address</label>
+              </div>
+
+              <div class="md:col-span-2 flex gap-3 pt-2 border-t">
+                <button type="button" onclick="closeEditModal()"
+                  class="flex-1 py-3 border rounded-xl font-bold hover:bg-gray-50 transition">Cancel</button>
+                <button type="submit"
+                  class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">Update
+                  Address</button>
+              </div>
+            </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Add Address Form (Axios Request) ----
+    if (document.getElementById('addAddressForm')) {
+      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(this).entries());
+        data.isDefault = this.elements.isDefault.checked;
+        try {
+          await axios.post('/account/addresses', data);
+          window.location.reload();
+        } catch (err) {
+          const errBox = document.getElementById('addModalError');
+          errBox.innerText = err.response?.data?.message || "Something went wrong";
+          errBox.classList.remove('hidden');
+        }
+      });
+    }
+
+    // ---- Edit Address Form (Axios Request) ----
+    if (document.getElementById('editAddressForm')) {
+      document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(this).entries());
+        data.isDefault = this.elements.isDefault.checked;
+        const actionUrl = this.dataset.action;
+        try {
+          await axios.put(actionUrl, data);
+          window.location.reload();
+        } catch (err) {
+          const errBox = document.getElementById('editModalError');
+          errBox.innerText = err.response?.data?.message || "Something went wrong";
+          errBox.classList.remove('hidden');
+        }
+      });
+    }
+
+    // ---- Add Modal ----
+    function openAddModal() {
+      document.getElementById('addAddressModal').classList.remove('hidden');
+    }
+    function closeAddModal() {
+      document.getElementById('addAddressModal').classList.add('hidden');
+    }
+
+    // ---- Edit Modal ----
+    function openEditModal(btn) {
+      const id = btn.dataset.id;
+      document.getElementById('editAddressForm').dataset.action = `/account/addresses/${id}`;
+      document.getElementById('edit-fullName').value = btn.dataset.fullname;
+      document.getElementById('edit-phone').value = btn.dataset.phone;
+      document.getElementById('edit-pincode').value = btn.dataset.pincode;
+      document.getElementById('edit-state').value = btn.dataset.state;
+      document.getElementById('edit-city').value = btn.dataset.city;
+      document.getElementById('edit-locality').value = btn.dataset.locality;
+      document.getElementById('edit-house').value = btn.dataset.house;
+      document.getElementById('edit-area').value = btn.dataset.area;
+      document.getElementById('edit-isDefault').checked = btn.dataset.isdefault === 'true';
+      document.getElementById('editAddressModal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+      document.getElementById('editAddressModal').classList.add('hidden');
+    }
+
+    // Close modals when clicking outside the box
+    if (document.getElementById('addAddressModal')) {
+      document.getElementById('addAddressModal').addEventListener('click', function (e) {
+        if (e.target === this) closeAddModal();
+      });
+    }
+    if (document.getElementById('editAddressModal')) {
+      document.getElementById('editAddressModal').addEventListener('click', function (e) {
+        if (e.target === this) closeEditModal();
+      });
+    }
+
+    // Auto-open the correct modal if there was a backend error
+    <% if (typeof modalType !== "undefined" && modalType === "add") { %>
+          openAddModal();
+    <% } %>
+
+    <% if (typeof modalType !== "undefined" && modalType === "edit") { %>
+      // Pre-fill edit modal with the submitted data so the user doesn't lose their input
+      <% if (typeof editAddressData !== "undefined" && editAddressData) { %>
+            document.getElementById('editAddressForm').dataset.action = `/account/addresses/<%= editAddressData._id %>`;
+            document.getElementById('edit-fullName').value = `<%= editAddressData.fullName || '' %>`;
+            document.getElementById('edit-phone').value = `<%= editAddressData.phone || '' %>`;
+            document.getElementById('edit-pincode').value = `<%= editAddressData.pincode || '' %>`;
+            document.getElementById('edit-state').value = `<%= editAddressData.state || '' %>`;
+            document.getElementById('edit-city').value = `<%= editAddressData.city || '' %>`;
+            document.getElementById('edit-locality').value = `<%= editAddressData.locality || '' %>`;
+            document.getElementById('edit-house').value = `<%= editAddressData.house || '' %>`;
+            document.getElementById('edit-area').value = `<%= editAddressData.area || '' %>`;
+            document.getElementById('edit-isDefault').checked = <%= !!editAddressData.isDefault %>;
+      <% } %>
+            document.getElementById('editAddressModal').classList.remove('hidden');
+    <% } %>
+  </script>
