@@ -5,7 +5,8 @@ import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
 
 export const getOrderById = async (userId, orderId) => {
-    return Order.findOne({ _id: orderId, user: userId }).populate('items.product');
+    return Order.findOne({ _id: orderId, user: userId })
+        .populate({ path: 'items.product', populate: { path: 'category' } });
 };
 
 export const placeOrder = async (userId, addressId, paymentMethod) => {
@@ -21,32 +22,33 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
         return { success: false, message: 'Address not found' };
     }
 
-    // 3. Validate Stock & Calculate Totals
-    let subtotal = 0;
+    // 3. Pre-flight stock check — validate ALL items first, collect failures
+    const affectedItems = [];
     const orderItems = [];
-    
+    let subtotal = 0;
+
     for (const item of cart.items) {
         const product = item.product;
-        if (!product || !product.isCurrentlyAvailable) {
-            return { success: false, message: `Product ${product ? product.name : 'Unknown'} is unavailable.` };
+        if (!product || product.isDeleted || !product.isActive) {
+            affectedItems.push({ name: product?.name || 'Unknown', reason: 'Product is unavailable' });
+            continue;
         }
-
         const variant = product.variants.find(v => v.size === item.size && v.color.name === item.color);
-        if (!variant || variant.stock < item.quantity) {
-            return { success: false, message: `Not enough stock for ${product.name} (Size: ${item.size}, Color: ${item.color}).` };
+        if (!variant) {
+            affectedItems.push({ name: product.name, reason: `Variant (Size: ${item.size}, Color: ${item.color}) not found` });
+            continue;
         }
-
+        if (variant.stock < item.quantity) {
+            affectedItems.push({ name: product.name, reason: `Only ${variant.stock} unit(s) left (you need ${item.quantity})` });
+            continue;
+        }
         const itemTotal = variant.price * item.quantity;
         subtotal += itemTotal;
+        orderItems.push({ product: product._id, quantity: item.quantity, size: item.size, color: item.color, price: variant.price, totalPrice: itemTotal });
+    }
 
-        orderItems.push({
-            product: product._id,
-            quantity: item.quantity,
-            size: item.size,
-            color: item.color,
-            price: variant.price,
-            totalPrice: itemTotal
-        });
+    if (affectedItems.length > 0) {
+        return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
     }
 
     // 4. Calculate Final Totals
@@ -54,8 +56,11 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
     const tax = 0; // Or calculate tax if needed
     const totalAmount = subtotal + shippingFee + tax;
 
-    // 5. Create Order
+    // 5. Create Order — pre-generate _id so orderId is always derived uniquely
+    const orderId = new mongoose.Types.ObjectId();
     const order = new Order({
+        _id: orderId,
+        orderId: `SP-${orderId.toString().slice(-6).toUpperCase()}`,
         user: userId,
         items: orderItems,
         shippingAddress: {
@@ -78,11 +83,12 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
         orderStatus: 'Processing'
     });
 
-    // 6. Deduct Stock
+    // 6. Deduct Stock using arrayFilters to safely target the exact variant
     for (const item of orderItems) {
         await Product.updateOne(
-            { _id: item.product, 'variants.size': item.size, 'variants.color.name': item.color },
-            { $inc: { 'variants.$.stock': -item.quantity } }
+            { _id: item.product },
+            { $inc: { 'variants.$[v].stock': -item.quantity } },
+            { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
         );
     }
 
@@ -96,16 +102,49 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
     return { success: true, orderId: order._id };
 };
 
-export const getOrders = async (userId, page = 1, limit = 10, filter = 'All') => {
+export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', search = {}) => {
     const skip = (page - 1) * limit;
     const query = { user: userId };
+
+    // Status filter
     if (filter && filter !== 'All') {
         query.orderStatus = filter;
     }
 
+    // ── Search filters ──────────────────────────────────────────────────────
+    const { q, date } = search;
+
+    if (q && q.trim()) {
+        const term = q.trim();
+        // Try matching orderId first
+        const orderIdCondition   = { orderId: { $regex: term, $options: 'i' } };
+        // Also search item names by looking up products
+        const matchingProducts   = await Product.find(
+            { name: { $regex: term, $options: 'i' } },
+            '_id'
+        ).lean();
+        const productIds = matchingProducts.map(p => p._id);
+        const itemNameCondition  = productIds.length > 0
+            ? { 'items.product': { $in: productIds } }
+            : null;
+
+        const orClauses = [orderIdCondition];
+        if (itemNameCondition) orClauses.push(itemNameCondition);
+        query.$or = orClauses;
+    }
+
+    if (date && date.trim()) {
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(date);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt = { $gte: start, $lte: end };
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     const [orders, totalOrders] = await Promise.all([
         Order.find(query)
-            .populate('items.product')
+            .populate({ path: 'items.product', populate: { path: 'category' } })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
@@ -135,10 +174,11 @@ export const cancelOrder = async (userId, orderId, reason) => {
         if (item.itemStatus !== 'Cancelled' && item.itemStatus !== 'Returned') {
             item.itemStatus = 'Cancelled';
             item.cancelReason = reason;
-            // Increment stock
+            // Increment stock using arrayFilters
             await Product.updateOne(
-                { _id: item.product, 'variants.size': item.size, 'variants.color.name': item.color },
-                { $inc: { 'variants.$.stock': item.quantity } }
+                { _id: item.product },
+                { $inc: { 'variants.$[v].stock': item.quantity } },
+                { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
             );
         }
     }
@@ -187,10 +227,11 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
     item.itemStatus = 'Cancelled';
     item.cancelReason = reason;
 
-    // Increment stock
+    // Increment stock using arrayFilters
     await Product.updateOne(
-        { _id: item.product, 'variants.size': item.size, 'variants.color.name': item.color },
-        { $inc: { 'variants.$.stock': item.quantity } }
+        { _id: item.product },
+        { $inc: { 'variants.$[v].stock': item.quantity } },
+        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
     );
 
     // Check if all items are cancelled

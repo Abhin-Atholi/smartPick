@@ -13,7 +13,7 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-    orderId: { type: String, unique: true },
+    orderId: { type: String, unique: true, sparse: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     items: [orderItemSchema],
     shippingAddress: {
@@ -37,14 +37,5 @@ const orderSchema = new mongoose.Schema({
     cancelReason: { type: String },
     returnReason: { type: String }
 }, { timestamps: true });
-
-// Pre-save hook to generate orderId
-orderSchema.pre('save', async function(next) {
-    if (this.isNew) {
-        const count = await mongoose.model('Order').countDocuments();
-        this.orderId = `#SP-${10000 + count + 1}`;
-    }
-    next();
-});
 
 export default mongoose.model("Order", orderSchema);

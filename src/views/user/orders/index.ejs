@@ -1,19 +1,81 @@
 <%- include("../partials/navbar") %>
 
 <main class="bg-gray-50 min-h-screen py-10">
+  <% const activeFilter = typeof filter !== 'undefined' ? filter : 'All'; %>
   <div class="max-w-5xl mx-auto px-4">
 
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+      <a href="/" class="hover:text-indigo-600 transition-colors">Home</a>
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      <span class="text-gray-900 font-bold">Orders</span>
+    </div>
+
     <!-- Page Header -->
-    <div class="mb-8">
+    <div class="mb-6">
       <h1 class="text-3xl font-black text-gray-900">Order Management</h1>
       <p class="text-sm text-gray-500 mt-1">Track your recent purchases and download invoices.</p>
     </div>
 
-    <!-- Filter Tabs -->
-    <% 
-      const allStatuses = ['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', 'Returned'];
-      const activeFilter = typeof filter !== 'undefined' ? filter : 'All';
+    <!-- Search Bar -->
+    <%
+      const sq   = typeof search !== 'undefined' ? (search.q   || '') : '';
+      const sDate = typeof search !== 'undefined' ? (search.date || '') : '';
     %>
+    <form method="GET" action="/orders" id="searchForm" class="mb-6">
+      <% if (activeFilter !== 'All') { %>
+        <input type="hidden" name="status" value="<%= activeFilter %>">
+      <% } %>
+      <div class="flex flex-wrap gap-3 items-end bg-white border border-gray-200 rounded-2xl px-5 py-4 shadow-sm">
+        <!-- Text search -->
+        <div class="flex-1 min-w-[180px]">
+          <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Order ID / Item Name</label>
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" name="q" value="<%= sq %>" placeholder="e.g. SP-10001 or T-Shirt"
+              class="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition bg-gray-50 focus:bg-white">
+          </div>
+        </div>
+
+        <!-- Date search -->
+        <div class="min-w-[160px]">
+          <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Order Date</label>
+          <input type="date" name="date" value="<%= sDate %>"
+            class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition bg-gray-50 focus:bg-white">
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-2">
+          <button type="submit"
+            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-sm shadow-indigo-100 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+          </button>
+          <a href="/orders<%= activeFilter !== 'All' ? `?status=${encodeURIComponent(activeFilter)}` : '' %>"
+            class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-bold rounded-xl transition flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Clear
+          </a>
+        </div>
+
+        <!-- Active search indicator -->
+        <% if (sq || sDate) { %>
+          <div class="w-full flex items-center gap-2 pt-2 border-t border-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="text-xs text-indigo-600 font-bold">
+              Showing results
+              <% if (sq) { %> for "<%= sq %>"<% } %>
+              <% if (sDate) { %> on <%= new Date(sDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %><% } %>
+              &mdash; <%= totalOrders %> order(s) found
+            </span>
+          </div>
+        <% } %>
+      </div>
+    </form>
+
+    <!-- Filter Tabs -->
+    <% const allStatuses = ['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', 'Returned']; %>
+
     <div class="flex flex-wrap gap-2 mb-6">
       <% allStatuses.forEach(status => { %>
         <a href="/orders<%= status === 'All' ? '' : `?status=${encodeURIComponent(status)}` %>"
@@ -108,10 +170,10 @@
                   <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
                     View Details
                   </a>
-                  <!-- Download Icon (placeholder) -->
-                  <button class="text-gray-300 hover:text-gray-500 transition-colors" title="Download Invoice">
+                  <a href="/orders/<%= order._id %>/download-invoice" title="Download Invoice"
+                     class="text-gray-300 hover:text-indigo-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  </button>
+                  </a>
                 </div>
               </div>
 
@@ -132,7 +194,7 @@
                 </div>
                 <div class="flex justify-between items-center">
                   <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
-                  <button onclick="toggleOrderDetails('<%= order._id %>')" class="text-sm font-bold text-indigo-600">View Details</button>
+                  <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600">View Details</a>
                 </div>
               </div>
 
@@ -218,21 +280,22 @@
     <!-- Pagination -->
     <% if (totalPages > 1) { %>
       <div class="mt-8 flex justify-center items-center gap-2">
+        <% const searchQs = (sq || sDate) ? `&q=${encodeURIComponent(sq)}&date=${encodeURIComponent(sDate)}` : ''; %>
         <% if (currentPage > 1) { %>
-          <a href="/orders?page=<%= currentPage - 1 %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %>"
+          <a href="/orders?page=<%= currentPage - 1 %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %><%= searchQs %>"
              class="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 border border-transparent transition">
             ‹ Previous
           </a>
         <% } %>
         <% for(let i = 1; i <= totalPages; i++) { %>
-          <a href="/orders?page=<%= i %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %>"
+          <a href="/orders?page=<%= i %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %><%= searchQs %>"
              class="w-10 h-10 flex items-center justify-center rounded-xl font-black text-sm transition-all
                <%= currentPage === i ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400' %>">
             <%= i %>
           </a>
         <% } %>
         <% if (currentPage < totalPages) { %>
-          <a href="/orders?page=<%= currentPage + 1 %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %>"
+          <a href="/orders?page=<%= currentPage + 1 %><%= activeFilter !== 'All' ? `&status=${encodeURIComponent(activeFilter)}` : '' %><%= searchQs %>"
              class="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 border border-transparent transition">
             Next ›
           </a>
