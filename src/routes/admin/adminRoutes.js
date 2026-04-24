@@ -18,6 +18,7 @@ import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.j
 import categoryRoutes from "./categoryRoutes.js";
 import subcategoryRoutes from "./subcategoryRoutes.js";
 import productRoutes from "./productRoutes.js";
+import * as orderController from "../../controller/admin/orderController.js";
 
 // --- Auth Routes ---
 router.get("/login", redirectIfAdminAuth, getLogin);
@@ -27,10 +28,7 @@ router.post("/login", postLogin);
 router.get("/dashboard", isAdmin, getDashboard);
 
 // --- Customer Management Routes ---
-// 1. Route to display the customer listing (with search and filter)
 router.get("/customers", isAdmin, getCustomers);
-
-// 2. Route to handle the Block/Unblock toggle via POST/PATCH
 router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
 
 router.get("/logout", isAdmin, adminLogout);
@@ -39,5 +37,11 @@ router.get("/logout", isAdmin, adminLogout);
 router.use("/category", categoryRoutes);
 router.use("/subcategory", subcategoryRoutes);
 router.use("/products", productRoutes);
+
+// --- Order Management Routes ---
+router.get("/orders", isAdmin, orderController.getOrders);
+router.get("/orders/:id", isAdmin, orderController.getOrderDetails);
+router.patch("/orders/:id/status", isAdmin, orderController.updateStatus);
+router.get("/orders/:id/download-invoice", isAdmin, orderController.downloadInvoice);
 
 export default router;

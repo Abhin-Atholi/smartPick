@@ -1,0 +1,261 @@
+<%
+  const statusColors = {
+    Processing:        'bg-blue-50 text-blue-700 border-blue-200',
+    Shipped:           'bg-indigo-50 text-indigo-700 border-indigo-200',
+    Delivered:         'bg-green-50 text-green-700 border-green-200',
+    Cancelled:         'bg-red-50 text-red-700 border-red-200',
+    'Return Requested':'bg-orange-50 text-orange-700 border-orange-200',
+    Returned:          'bg-yellow-50 text-yellow-700 border-yellow-200'
+  };
+  const TRANSITIONS = {
+    Processing:        ['Shipped', 'Cancelled'],
+    Shipped:           ['Delivered', 'Cancelled'],
+    Delivered:         ['Return Requested'],
+    'Return Requested':['Returned', 'Delivered'],
+    Returned:          [],
+    Cancelled:         []
+  };
+  const allowedNext = TRANSITIONS[order.orderStatus] || [];
+  const sc = statusColors[order.orderStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
+%>
+
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+  <a href="/admin/dashboard" class="hover:text-indigo-600 transition">Dashboard</a>
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+  <a href="/admin/orders" class="hover:text-indigo-600 transition">Orders</a>
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+  <span class="text-gray-900 font-bold"><%= order.orderId || order._id.toString().slice(-6).toUpperCase() %></span>
+</div>
+
+<!-- Page Header -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <h1 class="text-2xl font-black text-slate-800">Order <%= order.orderId || '#'+order._id.toString().slice(-6).toUpperCase() %></h1>
+    <p class="text-sm text-gray-400 mt-1">
+      Placed on <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' }) %>
+    </p>
+  </div>
+  <div class="flex items-center gap-3">
+    <!-- Current status badge -->
+    <span class="px-4 py-2 rounded-xl border text-sm font-black <%= sc %>">
+      <%= order.orderStatus %>
+    </span>
+    <!-- Status update dropdown -->
+    <% if (allowedNext.length > 0) { %>
+      <div class="relative" id="statusDropdownWrap">
+        <button id="statusBtn" onclick="toggleStatusMenu()"
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-sm shadow-indigo-100">
+          Change Status
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div id="statusMenu" class="hidden absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden">
+          <% allowedNext.forEach(ns => { %>
+            <button onclick="changeStatus('<%= order._id %>', '<%= ns %>')"
+              class="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition <%= ns === 'Cancelled' ? 'text-red-600 hover:bg-red-50 hover:text-red-700' : '' %>">
+              <%= ns %>
+            </button>
+          <% }) %>
+        </div>
+      </div>
+    <% } else { %>
+      <span class="text-xs text-gray-400 font-bold italic">No further status changes available</span>
+    <% } %>
+    <a href="/admin/orders/<%= order._id %>/download-invoice" target="_blank"
+      class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Invoice
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left: Items + Timeline -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Products Table -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100">
+        <h2 class="text-base font-black text-slate-800">Order Items</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black bg-gray-50">
+              <th class="px-6 py-3">Product</th>
+              <th class="px-6 py-3 text-center">Qty</th>
+              <th class="px-6 py-3 text-right">Unit Price</th>
+              <th class="px-6 py-3 text-right">Total</th>
+              <th class="px-6 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <% order.items.forEach((item, idx) => {
+              const prod = item.product;
+              const variant = prod?.variants?.find(v => v.size === item.size && v.color?.name === item.color);
+              const imgUrl = variant?.images?.[0] || prod?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+              const isc = statusColors[item.itemStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
+            %>
+            <tr class="hover:bg-gray-50/50 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                    <img src="<%= imgUrl %>" class="w-full h-full object-cover" onerror="this.src='/placeholder.jpg'">
+                  </div>
+                  <div>
+                    <p class="text-sm font-black text-slate-800 max-w-[180px] truncate"><%= prod?.name || 'Unavailable' %></p>
+                    <p class="text-xs text-gray-400 mt-0.5">Size: <%= item.size %> • Color: <%= item.color %></p>
+                    <% if (prod?.category?.name) { %>
+                      <p class="text-xs text-gray-400"><%= prod.category.name %></p>
+                    <% } %>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="text-sm font-bold text-slate-700"><%= item.quantity %></span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-bold text-slate-700">₹<%= item.price.toLocaleString() %></span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-black text-slate-800">₹<%= item.totalPrice.toLocaleString() %></span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold border <%= isc %>">
+                  <%= item.itemStatus %>
+                </span>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Shipping Address -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+      <h2 class="text-base font-black text-slate-800 mb-4">Shipping Address</h2>
+      <% const addr = order.shippingAddress; %>
+      <div class="text-sm text-slate-600 space-y-1">
+        <p class="font-black text-slate-800 text-base"><%= addr.fullName %></p>
+        <p><%= addr.phone %></p>
+        <p><%= addr.addressLine1 %></p>
+        <% if (addr.addressLine2) { %><p><%= addr.addressLine2 %></p><% } %>
+        <p><%= [addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ') %></p>
+        <p><%= addr.country %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Summary + Customer -->
+  <div class="space-y-6">
+
+    <!-- Order Summary -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+      <h2 class="text-base font-black text-slate-800 mb-4">Order Summary</h2>
+      <div class="space-y-3 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-bold">Subtotal</span>
+          <span class="font-black text-slate-800">₹<%= order.subtotal.toLocaleString() %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-bold">Shipping</span>
+          <span class="font-black text-slate-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-bold">Tax</span>
+          <span class="font-black text-slate-800">₹<%= (order.tax || 0).toLocaleString() %></span>
+        </div>
+        <% if (order.discount > 0) { %>
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-bold">Discount</span>
+          <span class="font-black text-red-600">-₹<%= order.discount.toLocaleString() %></span>
+        </div>
+        <% } %>
+        <div class="border-t border-dashed border-gray-200 pt-3 flex justify-between">
+          <span class="font-black text-slate-800 text-base">Total</span>
+          <span class="font-black text-indigo-600 text-xl">₹<%= order.totalAmount.toLocaleString() %></span>
+        </div>
+      </div>
+
+      <div class="mt-5 pt-4 border-t border-gray-100 space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-400 font-bold">Payment Method</span>
+          <span class="font-black text-slate-700"><%= order.paymentMethod %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400 font-bold">Payment Status</span>
+          <span class="font-black <%= order.paymentStatus === 'Paid' ? 'text-green-600' : 'text-orange-500' %>">
+            <%= order.paymentStatus %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Info -->
+    <% if (order.user) { %>
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+      <h2 class="text-base font-black text-slate-800 mb-4">Customer</h2>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+          <% if (order.user.profileImage) { %>
+            <img src="<%= order.user.profileImage %>" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+          <% } else { %>
+            <span class="text-lg font-black text-indigo-600"><%= order.user.fullName.charAt(0) %></span>
+          <% } %>
+        </div>
+        <div>
+          <p class="font-black text-slate-800"><%= order.user.fullName %></p>
+          <p class="text-xs text-gray-400"><%= order.user.email %></p>
+        </div>
+      </div>
+      <a href="/admin/customers" class="mt-4 block text-center text-xs font-bold text-indigo-600 hover:underline">View Customer Profile →</a>
+    </div>
+    <% } %>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  function toggleStatusMenu() {
+    document.getElementById('statusMenu').classList.toggle('hidden');
+  }
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('statusDropdownWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('statusMenu').classList.add('hidden');
+    }
+  });
+
+  async function changeStatus(orderId, newStatus) {
+    document.getElementById('statusMenu').classList.add('hidden');
+    const isCancellation = newStatus === 'Cancelled';
+    const { isConfirmed } = await Swal.fire({
+      title: `Set to "${newStatus}"?`,
+      text: isCancellation
+        ? 'This will CANCEL the order and restore product stock. This cannot be undone.'
+        : `Order status will be updated to "${newStatus}".`,
+      icon: isCancellation ? 'warning' : 'question',
+      showCancelButton: true,
+      confirmButtonColor: isCancellation ? '#dc2626' : '#4f46e5',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Confirm',
+      customClass: { popup: 'rounded-3xl' }
+    });
+    if (!isConfirmed) return;
+
+    try {
+      const res = await axios.patch(`/admin/orders/${orderId}/status`, { newStatus });
+      if (res.data.success) {
+        await Swal.fire({ icon: 'success', title: 'Updated!', text: res.data.message, timer: 1800, showConfirmButton: false });
+        window.location.reload();
+      } else {
+        Swal.fire({ icon: 'error', title: 'Not Allowed', text: res.data.message });
+      }
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Something went wrong.' });
+    }
+  }
+</script>
