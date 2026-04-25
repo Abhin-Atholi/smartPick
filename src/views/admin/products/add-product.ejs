@@ -287,6 +287,8 @@
     function collectVariants() {
         const rows = document.querySelectorAll('#variantsBody tr');
         const variants = [];
+        const variantKeys = new Set();
+        
         for (const row of rows) {
             const size = row.querySelector('[data-field="size"]')?.value.trim();
             const colorStr = row.querySelector('[data-field="color"]')?.value.trim();
@@ -297,6 +299,19 @@
             
             try {
               const color = JSON.parse(colorStr);
+              const key = `${size}-${color.name.toLowerCase()}`;
+              
+              if (variantKeys.has(key)) {
+                  Swal.fire({
+                      title: 'Duplicate Variant',
+                      text: `Size ${size} and Color ${color.name} is already added.`,
+                      icon: 'warning',
+                      borderRadius: '1rem'
+                  });
+                  return "DUPLICATE";
+              }
+              variantKeys.add(key);
+              
               variants.push({ size, color, price, stock });
             } catch { return null; }
         }
@@ -439,6 +454,7 @@
             Swal.fire('Images Required', 'Minimum 3 images are required for EACH variant.', 'warning');
             valid = false;
         }
+        if (variants === "DUPLICATE") return;
         if (variants === null || variants.length === 0) {
             document.getElementById('variantError').classList.remove('hidden');
             valid = false;

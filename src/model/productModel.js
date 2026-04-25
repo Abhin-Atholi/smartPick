@@ -67,10 +67,19 @@ const productSchema = new mongoose.Schema({
 
   variants: {
     type: [variantSchema],
-    validate: {
-      validator: (arr) => arr.length > 0,
-      message: "At least one product variant required"
-    }
+    validate: [
+      {
+        validator: (arr) => arr.length > 0,
+        message: "At least one product variant required"
+      },
+      {
+        validator: function(arr) {
+          const keys = arr.map(v => `${v.size}-${v.color.name.toLowerCase()}`);
+          return keys.length === new Set(keys).size;
+        },
+        message: "Duplicate variants (same size and color) are not allowed."
+      }
+    ]
   },
 
   isActive: {

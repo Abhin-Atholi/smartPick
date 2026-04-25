@@ -87,6 +87,19 @@ export const addProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: "At least one variant is required." });
         }
 
+        // Check for duplicate variants (Size + Color)
+        const variantKeys = new Set();
+        for (const v of parsedVariants) {
+            const key = `${v.size}-${v.color.name.toLowerCase()}`;
+            if (variantKeys.has(key)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color.name}.` 
+                });
+            }
+            variantKeys.add(key);
+        }
+
         const existingProduct = await productService.checkProductExists(name);
         if (existingProduct) {
             return res.status(400).json({ success: false, message: "A product with this name already exists." });
@@ -166,6 +179,19 @@ export const updateProduct = async (req, res) => {
 
         if (!parsedVariants || parsedVariants.length === 0) {
             return res.status(400).json({ success: false, message: "At least one variant is required." });
+        }
+
+        // Check for duplicate variants (Size + Color)
+        const variantKeys = new Set();
+        for (const v of parsedVariants) {
+            const key = `${v.size}-${v.color.name.toLowerCase()}`;
+            if (variantKeys.has(key)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color.name}.` 
+                });
+            }
+            variantKeys.add(key);
         }
 
         let removedImageUrls = [];
