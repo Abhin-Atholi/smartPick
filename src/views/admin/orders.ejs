@@ -5,18 +5,19 @@
   const sd = f.dateFrom || '';
   const ed = f.dateTo   || '';
   const so = f.sort     || 'newest';
-  const allStatuses = ['All','Processing','Shipped','Delivered','Cancelled','Return Requested','Returned'];
+  const allStatuses = ['All','Processing','Shipped','Out for Delivery','Delivered','Cancelled','Return Requested','Returned'];
   const statusColors = {
-    Processing:        'bg-blue-50 text-blue-700',
-    Shipped:           'bg-indigo-50 text-indigo-700',
-    Delivered:         'bg-green-50 text-green-700',
-    Cancelled:         'bg-red-50 text-red-700',
-    'Return Requested':'bg-orange-50 text-orange-700',
-    Returned:          'bg-yellow-50 text-yellow-700'
+    Processing:         'bg-blue-50 text-blue-700',
+    Shipped:            'bg-indigo-50 text-indigo-700',
+    'Out for Delivery': 'bg-purple-50 text-purple-700',
+    Delivered:          'bg-green-50 text-green-700',
+    Cancelled:          'bg-red-50 text-red-700',
+    'Return Requested': 'bg-orange-50 text-orange-700',
+    Returned:           'bg-yellow-50 text-yellow-700'
   };
   const dotColors = {
-    Processing:'bg-blue-500', Shipped:'bg-indigo-500', Delivered:'bg-green-500',
-    Cancelled:'bg-red-500', 'Return Requested':'bg-orange-500', Returned:'bg-yellow-500'
+    Processing:'bg-blue-500', Shipped:'bg-indigo-500', 'Out for Delivery':'bg-purple-500',
+    Delivered:'bg-green-500', Cancelled:'bg-red-500', 'Return Requested':'bg-orange-500', Returned:'bg-yellow-500'
   };
 %>
 
@@ -28,7 +29,7 @@
 </div>
 
 <!-- Page Header -->
-<div class="flex items-end justify-between mb-8">
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
   <div>
     <div class="flex items-center gap-3 mb-1">
       <h1 class="text-3xl font-black text-slate-800">Order Management</h1>
@@ -36,45 +37,48 @@
     </div>
     <p class="text-sm text-gray-400">Track and manage customer orders, process statuses, and handle returns efficiently.</p>
   </div>
+  <!-- Return Requests button -->
+  <a href="/admin/orders/return-requests"
+     class="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition shadow-sm shadow-orange-100">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.11"/></svg>
+    Return Requests
+    <% if (typeof stats !== 'undefined' && stats.returnRequestCount > 0) { %>
+      <span class="ml-1 px-2 py-0.5 bg-white/30 rounded-full text-xs font-black"><%= stats.returnRequestCount %></span>
+    <% } %>
+  </a>
 </div>
 
 <!-- Stats Cards -->
 <% if (typeof stats !== 'undefined') { %>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
-      <span class="text-2xl">🛍️</span>
-    </div>
+    <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">🛍️</div>
     <div>
-      <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Total Orders</p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Orders</p>
       <p class="text-2xl font-black text-slate-800"><%= stats.totalAll.toLocaleString() %></p>
     </div>
   </div>
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
-      <span class="text-2xl">⏳</span>
-    </div>
+    <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">⏳</div>
     <div>
-      <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Pending</p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Pending Orders</p>
       <p class="text-2xl font-black text-orange-500"><%= stats.pendingCount %></p>
     </div>
   </div>
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-      <span class="text-2xl">📦</span>
-    </div>
+    <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">📦</div>
     <div>
-      <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Delivered Today</p>
-      <p class="text-2xl font-black text-green-600"><%= stats.deliveredToday %></p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Delivered Products</p>
+      <p class="text-2xl font-black text-green-600"><%= stats.deliveredProductsCount.toLocaleString() %></p>
+      <p class="text-[10px] text-gray-400">items (all time)</p>
     </div>
   </div>
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-      <span class="text-2xl">↩️</span>
-    </div>
+    <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">⚠️</div>
     <div>
-      <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Returns / Issues</p>
-      <p class="text-2xl font-black text-red-500"><%= stats.returnsCount %></p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Cancelled / Returned</p>
+      <p class="text-2xl font-black text-red-500"><%= stats.cancelledReturnedCount.toLocaleString() %></p>
+      <p class="text-[10px] text-gray-400">items total</p>
     </div>
   </div>
 </div>
@@ -83,7 +87,6 @@
 <!-- Search / Filter / Sort Bar -->
 <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm mb-6">
   <form method="GET" action="/admin/orders" class="flex flex-wrap gap-3 items-end">
-    <!-- Search -->
     <div class="flex-1 min-w-[200px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Search</label>
       <div class="relative">
@@ -92,7 +95,6 @@
           class="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 bg-gray-50 focus:bg-white transition">
       </div>
     </div>
-    <!-- Status -->
     <div class="min-w-[150px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</label>
       <select name="status" class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 focus:bg-white transition">
@@ -101,19 +103,16 @@
         <% }) %>
       </select>
     </div>
-    <!-- Date From -->
     <div class="min-w-[140px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">From Date</label>
       <input type="date" name="dateFrom" value="<%= sd %>"
         class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 focus:bg-white transition">
     </div>
-    <!-- Date To -->
     <div class="min-w-[140px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">To Date</label>
       <input type="date" name="dateTo" value="<%= ed %>"
         class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 focus:bg-white transition">
     </div>
-    <!-- Sort -->
     <div class="min-w-[160px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Sort By</label>
       <select name="sort" class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 focus:bg-white transition">
@@ -123,7 +122,6 @@
         <option value="amount_asc"  <%= so==='amount_asc'  ?'selected':'' %>>Amount: Low → High</option>
       </select>
     </div>
-    <!-- Buttons -->
     <div class="flex gap-2 pb-0.5">
       <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-sm shadow-indigo-100 flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -154,12 +152,10 @@
       </thead>
       <tbody class="divide-y divide-gray-50">
         <% if (!orders || orders.length === 0) { %>
-          <tr>
-            <td colspan="7" class="px-8 py-20 text-center">
-              <p class="text-gray-400 font-semibold">No orders found matching your criteria.</p>
-              <a href="/admin/orders" class="mt-3 inline-block text-sm text-indigo-600 font-bold hover:underline">Clear filters</a>
-            </td>
-          </tr>
+          <tr><td colspan="7" class="px-8 py-20 text-center">
+            <p class="text-gray-400 font-semibold">No orders found matching your criteria.</p>
+            <a href="/admin/orders" class="mt-3 inline-block text-sm text-indigo-600 font-bold hover:underline">Clear filters</a>
+          </td></tr>
         <% } else { %>
           <% orders.forEach(order => {
             const sc = statusColors[order.orderStatus] || 'bg-gray-50 text-gray-500';
@@ -167,11 +163,7 @@
             const dt = new Date(order.createdAt);
           %>
           <tr class="hover:bg-gray-50/60 transition-colors">
-            <!-- Order ID -->
-            <td class="px-6 py-4">
-              <span class="text-sm font-black text-slate-800"><%= order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}` %></span>
-            </td>
-            <!-- Customer -->
+            <td class="px-6 py-4"><span class="text-sm font-black text-slate-800"><%= order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}` %></span></td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-full bg-indigo-50 border border-indigo-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -187,27 +179,18 @@
                 </div>
               </div>
             </td>
-            <!-- Date -->
             <td class="px-6 py-4">
               <p class="text-sm text-slate-600 font-bold"><%= dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) %></p>
               <p class="text-xs text-gray-400"><%= dt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) %></p>
             </td>
-            <!-- Items -->
-            <td class="px-6 py-4">
-              <span class="text-sm text-slate-600 font-bold"><%= order.items.length %> item<%= order.items.length !== 1 ? 's' : '' %></span>
-            </td>
-            <!-- Total -->
-            <td class="px-6 py-4">
-              <span class="text-sm font-black text-slate-800">₹<%= order.totalAmount.toLocaleString() %></span>
-            </td>
-            <!-- Status badge -->
+            <td class="px-6 py-4"><span class="text-sm text-slate-600 font-bold"><%= order.items.length %> item<%= order.items.length !== 1 ? 's' : '' %></span></td>
+            <td class="px-6 py-4"><span class="text-sm font-black text-slate-800">₹<%= order.totalAmount.toLocaleString() %></span></td>
             <td class="px-6 py-4">
               <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold <%= sc %>">
                 <span class="w-1.5 h-1.5 rounded-full <%= dc %>"></span>
                 <%= order.orderStatus %>
               </span>
             </td>
-            <!-- Actions -->
             <td class="px-6 py-4 text-right">
               <a href="/admin/orders/<%= order._id %>"
                 class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition">
@@ -221,7 +204,7 @@
     </table>
   </div>
 
-  <!-- Footer: count + pagination -->
+  <!-- Pagination footer -->
   <div class="px-6 py-4 border-t border-gray-50 bg-gray-50/30 flex flex-col sm:flex-row items-center justify-between gap-4">
     <p class="text-xs text-gray-500 font-bold">
       Showing <span class="text-indigo-600"><%= orders ? orders.length : 0 %></span> of
@@ -231,20 +214,18 @@
       <div class="flex items-center gap-1">
         <% const qs = `&search=${encodeURIComponent(sq)}&status=${encodeURIComponent(sf)}&dateFrom=${sd}&dateTo=${ed}&sort=${so}`; %>
         <% if (currentPage > 1) { %>
-          <a href="/admin/orders?page=<%= currentPage - 1 %><%= qs %>"
-            class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+          <a href="/admin/orders?page=<%= currentPage-1 %><%= qs %>" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </a>
         <% } %>
-        <% for(let i = 1; i <= totalPages; i++) { %>
+        <% for(let i=1; i<=totalPages; i++) { %>
           <a href="/admin/orders?page=<%= i %><%= qs %>"
-            class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition <%= i === currentPage ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600 bg-white border border-gray-200' %>">
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black transition <%= i===currentPage ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600 bg-white border border-gray-200' %>">
             <%= i %>
           </a>
         <% } %>
         <% if (currentPage < totalPages) { %>
-          <a href="/admin/orders?page=<%= currentPage + 1 %><%= qs %>"
-            class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+          <a href="/admin/orders?page=<%= currentPage+1 %><%= qs %>" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>
         <% } %>
@@ -253,5 +234,4 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

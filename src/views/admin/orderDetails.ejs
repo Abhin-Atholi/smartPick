@@ -1,22 +1,26 @@
 <%
   const statusColors = {
-    Processing:        'bg-blue-50 text-blue-700 border-blue-200',
-    Shipped:           'bg-indigo-50 text-indigo-700 border-indigo-200',
-    Delivered:         'bg-green-50 text-green-700 border-green-200',
-    Cancelled:         'bg-red-50 text-red-700 border-red-200',
-    'Return Requested':'bg-orange-50 text-orange-700 border-orange-200',
-    Returned:          'bg-yellow-50 text-yellow-700 border-yellow-200'
+    Processing:         'bg-blue-50 text-blue-700 border-blue-200',
+    Shipped:            'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'Out for Delivery': 'bg-purple-50 text-purple-700 border-purple-200',
+    Delivered:          'bg-green-50 text-green-700 border-green-200',
+    Cancelled:          'bg-red-50 text-red-700 border-red-200',
+    'Return Requested': 'bg-orange-50 text-orange-700 border-orange-200',
+    Returned:           'bg-yellow-50 text-yellow-700 border-yellow-200'
   };
+  // Admin-settable transitions only (no "Return Requested")
   const TRANSITIONS = {
-    Processing:        ['Shipped', 'Cancelled'],
-    Shipped:           ['Delivered', 'Cancelled'],
-    Delivered:         ['Return Requested'],
-    'Return Requested':['Returned', 'Delivered'],
-    Returned:          [],
-    Cancelled:         []
+    Processing:         ['Shipped', 'Cancelled'],
+    Shipped:            ['Out for Delivery', 'Cancelled'],
+    'Out for Delivery': ['Delivered', 'Cancelled'],
+    Delivered:          [],
+    'Return Requested': [],
+    Returned:           [],
+    Cancelled:          []
   };
   const allowedNext = TRANSITIONS[order.orderStatus] || [];
   const sc = statusColors[order.orderStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
+  const isDelivered = order.orderStatus === 'Delivered';
 %>
 
 <!-- Breadcrumb -->
@@ -32,16 +36,13 @@
 <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
   <div>
     <h1 class="text-2xl font-black text-slate-800">Order <%= order.orderId || '#'+order._id.toString().slice(-6).toUpperCase() %></h1>
-    <p class="text-sm text-gray-400 mt-1">
-      Placed on <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' }) %>
-    </p>
+    <p class="text-sm text-gray-400 mt-1">Placed on <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' }) %></p>
   </div>
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-3 flex-wrap">
     <!-- Current status badge -->
-    <span class="px-4 py-2 rounded-xl border text-sm font-black <%= sc %>">
-      <%= order.orderStatus %>
-    </span>
-    <!-- Status update dropdown -->
+    <span class="px-4 py-2 rounded-xl border text-sm font-black <%= sc %>"><%= order.orderStatus %></span>
+
+    <!-- Status update dropdown (admin-settable only) -->
     <% if (allowedNext.length > 0) { %>
       <div class="relative" id="statusDropdownWrap">
         <button id="statusBtn" onclick="toggleStatusMenu()"
@@ -52,30 +53,39 @@
         <div id="statusMenu" class="hidden absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden">
           <% allowedNext.forEach(ns => { %>
             <button onclick="changeStatus('<%= order._id %>', '<%= ns %>')"
-              class="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition <%= ns === 'Cancelled' ? 'text-red-600 hover:bg-red-50 hover:text-red-700' : '' %>">
+              class="w-full text-left px-5 py-3 text-sm font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition <%= ns === 'Cancelled' ? '!text-red-600 hover:!bg-red-50 hover:!text-red-700' : '' %>">
               <%= ns %>
             </button>
           <% }) %>
         </div>
       </div>
     <% } else { %>
-      <span class="text-xs text-gray-400 font-bold italic">No further status changes available</span>
+      <span class="text-xs text-gray-400 font-bold italic">No further transitions available</span>
     <% } %>
-    <a href="/admin/orders/<%= order._id %>/download-invoice" target="_blank"
-      class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Invoice
-    </a>
+
+    <!-- Invoice buttons: only when Delivered -->
+    <% if (isDelivered) { %>
+      <a href="/admin/orders/<%= order._id %>/view-invoice" target="_blank"
+        class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        View Invoice
+      </a>
+      <a href="/admin/orders/<%= order._id %>/download-invoice"
+        class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl transition">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Invoice
+      </a>
+    <% } %>
   </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Left: Items + Timeline -->
+  <!-- Left col: items + address -->
   <div class="lg:col-span-2 space-y-6">
 
     <!-- Products Table -->
     <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-100">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <h2 class="text-base font-black text-slate-800">Order Items</h2>
       </div>
       <div class="overflow-x-auto">
@@ -84,19 +94,21 @@
             <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black bg-gray-50">
               <th class="px-6 py-3">Product</th>
               <th class="px-6 py-3 text-center">Qty</th>
-              <th class="px-6 py-3 text-right">Unit Price</th>
+              <th class="px-6 py-3 text-right">Unit</th>
               <th class="px-6 py-3 text-right">Total</th>
               <th class="px-6 py-3 text-center">Status</th>
+              <th class="px-6 py-3 text-center">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <% order.items.forEach((item, idx) => {
+            <% order.items.forEach((item) => {
               const prod = item.product;
               const variant = prod?.variants?.find(v => v.size === item.size && v.color?.name === item.color);
               const imgUrl = variant?.images?.[0] || prod?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
               const isc = statusColors[item.itemStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
+              const canCancel = !['Cancelled','Returned','Return Requested'].includes(item.itemStatus);
             %>
-            <tr class="hover:bg-gray-50/50 transition-colors">
+            <tr class="hover:bg-gray-50/50 transition-colors" id="item-row-<%= item._id %>">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-4">
                   <div class="w-14 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
@@ -105,25 +117,25 @@
                   <div>
                     <p class="text-sm font-black text-slate-800 max-w-[180px] truncate"><%= prod?.name || 'Unavailable' %></p>
                     <p class="text-xs text-gray-400 mt-0.5">Size: <%= item.size %> • Color: <%= item.color %></p>
-                    <% if (prod?.category?.name) { %>
-                      <p class="text-xs text-gray-400"><%= prod.category.name %></p>
-                    <% } %>
+                    <% if (prod?.category?.name) { %><p class="text-xs text-gray-400"><%= prod.category.name %></p><% } %>
                   </div>
                 </div>
               </td>
+              <td class="px-6 py-4 text-center"><span class="text-sm font-bold text-slate-700"><%= item.quantity %></span></td>
+              <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-slate-700">₹<%= item.price.toLocaleString() %></span></td>
+              <td class="px-6 py-4 text-right"><span class="text-sm font-black text-slate-800">₹<%= item.totalPrice.toLocaleString() %></span></td>
               <td class="px-6 py-4 text-center">
-                <span class="text-sm font-bold text-slate-700"><%= item.quantity %></span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <span class="text-sm font-bold text-slate-700">₹<%= item.price.toLocaleString() %></span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <span class="text-sm font-black text-slate-800">₹<%= item.totalPrice.toLocaleString() %></span>
+                <span id="item-status-<%= item._id %>" class="px-2.5 py-1 rounded-full text-xs font-bold border <%= isc %>"><%= item.itemStatus %></span>
               </td>
               <td class="px-6 py-4 text-center">
-                <span class="px-2.5 py-1 rounded-full text-xs font-bold border <%= isc %>">
-                  <%= item.itemStatus %>
-                </span>
+                <% if (canCancel && order.orderStatus !== 'Cancelled') { %>
+                  <button onclick="cancelItem('<%= order._id %>', '<%= item._id %>')"
+                    class="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition">
+                    Cancel
+                  </button>
+                <% } else { %>
+                  <span class="text-xs text-gray-300 font-bold">—</span>
+                <% } %>
               </td>
             </tr>
             <% }) %>
@@ -147,37 +159,24 @@
     </div>
   </div>
 
-  <!-- Right: Summary + Customer -->
+  <!-- Right col: summary + customer -->
   <div class="space-y-6">
 
     <!-- Order Summary -->
     <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
       <h2 class="text-base font-black text-slate-800 mb-4">Order Summary</h2>
       <div class="space-y-3 text-sm">
-        <div class="flex justify-between">
-          <span class="text-gray-500 font-bold">Subtotal</span>
-          <span class="font-black text-slate-800">₹<%= order.subtotal.toLocaleString() %></span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-500 font-bold">Shipping</span>
-          <span class="font-black text-slate-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-500 font-bold">Tax</span>
-          <span class="font-black text-slate-800">₹<%= (order.tax || 0).toLocaleString() %></span>
-        </div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Subtotal</span><span class="font-black text-slate-800">₹<%= order.subtotal.toLocaleString() %></span></div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Shipping</span><span class="font-black text-slate-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span></div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Tax</span><span class="font-black text-slate-800">₹<%= (order.tax || 0).toLocaleString() %></span></div>
         <% if (order.discount > 0) { %>
-        <div class="flex justify-between">
-          <span class="text-gray-500 font-bold">Discount</span>
-          <span class="font-black text-red-600">-₹<%= order.discount.toLocaleString() %></span>
-        </div>
+          <div class="flex justify-between"><span class="text-gray-500 font-bold">Discount</span><span class="font-black text-red-600">-₹<%= order.discount.toLocaleString() %></span></div>
         <% } %>
         <div class="border-t border-dashed border-gray-200 pt-3 flex justify-between">
           <span class="font-black text-slate-800 text-base">Total</span>
           <span class="font-black text-indigo-600 text-xl">₹<%= order.totalAmount.toLocaleString() %></span>
         </div>
       </div>
-
       <div class="mt-5 pt-4 border-t border-gray-100 space-y-2 text-sm">
         <div class="flex justify-between">
           <span class="text-gray-400 font-bold">Payment Method</span>
@@ -185,14 +184,12 @@
         </div>
         <div class="flex justify-between">
           <span class="text-gray-400 font-bold">Payment Status</span>
-          <span class="font-black <%= order.paymentStatus === 'Paid' ? 'text-green-600' : 'text-orange-500' %>">
-            <%= order.paymentStatus %>
-          </span>
+          <span class="font-black <%= order.paymentStatus === 'Paid' ? 'text-green-600' : 'text-orange-500' %>"><%= order.paymentStatus %></span>
         </div>
       </div>
     </div>
 
-    <!-- Customer Info -->
+    <!-- Customer -->
     <% if (order.user) { %>
     <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
       <h2 class="text-base font-black text-slate-800 mb-4">Customer</h2>
@@ -209,10 +206,8 @@
           <p class="text-xs text-gray-400"><%= order.user.email %></p>
         </div>
       </div>
-      <a href="/admin/customers" class="mt-4 block text-center text-xs font-bold text-indigo-600 hover:underline">View Customer Profile →</a>
     </div>
     <% } %>
-
   </div>
 </div>
 
@@ -224,19 +219,15 @@
   }
   document.addEventListener('click', e => {
     const wrap = document.getElementById('statusDropdownWrap');
-    if (wrap && !wrap.contains(e.target)) {
-      document.getElementById('statusMenu').classList.add('hidden');
-    }
+    if (wrap && !wrap.contains(e.target)) document.getElementById('statusMenu')?.classList.add('hidden');
   });
 
   async function changeStatus(orderId, newStatus) {
-    document.getElementById('statusMenu').classList.add('hidden');
+    document.getElementById('statusMenu')?.classList.add('hidden');
     const isCancellation = newStatus === 'Cancelled';
     const { isConfirmed } = await Swal.fire({
       title: `Set to "${newStatus}"?`,
-      text: isCancellation
-        ? 'This will CANCEL the order and restore product stock. This cannot be undone.'
-        : `Order status will be updated to "${newStatus}".`,
+      text: isCancellation ? 'This will cancel the order and restore all item stocks.' : `Order will move to "${newStatus}".`,
       icon: isCancellation ? 'warning' : 'question',
       showCancelButton: true,
       confirmButtonColor: isCancellation ? '#dc2626' : '#4f46e5',
@@ -249,10 +240,36 @@
     try {
       const res = await axios.patch(`/admin/orders/${orderId}/status`, { newStatus });
       if (res.data.success) {
-        await Swal.fire({ icon: 'success', title: 'Updated!', text: res.data.message, timer: 1800, showConfirmButton: false });
+        await Swal.fire({ icon: 'success', title: 'Updated!', text: res.data.message, timer: 1500, showConfirmButton: false });
         window.location.reload();
       } else {
         Swal.fire({ icon: 'error', title: 'Not Allowed', text: res.data.message });
+      }
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Something went wrong.' });
+    }
+  }
+
+  async function cancelItem(orderId, itemId) {
+    const { isConfirmed } = await Swal.fire({
+      title: 'Cancel this item?',
+      text: 'Stock will be restored. This cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Yes, Cancel',
+      customClass: { popup: 'rounded-3xl' }
+    });
+    if (!isConfirmed) return;
+
+    try {
+      const res = await axios.patch(`/admin/orders/${orderId}/cancel-item`, { itemId });
+      if (res.data.success) {
+        await Swal.fire({ icon: 'success', title: 'Cancelled', text: res.data.message, timer: 1500, showConfirmButton: false });
+        window.location.reload();
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error', text: res.data.message });
       }
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Something went wrong.' });
