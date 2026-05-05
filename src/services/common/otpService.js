@@ -7,7 +7,9 @@ const genOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 
 export const getRemainingSeconds = async (email, purpose) => {
-  const otpRecord = await Otp.findOne({ email, purpose });
+  if (!email) return 0;
+  const normalizedEmail = email.trim().toLowerCase();
+  const otpRecord = await Otp.findOne({ email: normalizedEmail, purpose });
   if (!otpRecord) return 0;
   
   // Model TTL is 120s (2 minutes)
@@ -18,14 +20,18 @@ export const getRemainingSeconds = async (email, purpose) => {
 
 // Unified function to find a target for verification (used by loadVerify)
 export const getVerificationTarget = async (email, context) => {
+  if (!email) throw new Error("Session expired. Please start over.");
+  
+  const normalizedEmail = email.trim().toLowerCase();
   let target;
+  
   if (context === "changeEmail") {
-    target = await User.findOne({ pendingEmail: email });
+    target = await User.findOne({ pendingEmail: normalizedEmail });
   } else if (context === "resetPassword") {
-    target = await User.findOne({ email });
+    target = await User.findOne({ email: normalizedEmail });
   } else {
     // register context
-    target = await TempUser.findOne({ email });
+    target = await TempUser.findOne({ email: normalizedEmail });
   }
   
   if (!target) throw new Error("Session expired. Please start over.");
@@ -33,7 +39,9 @@ export const getVerificationTarget = async (email, context) => {
 };
 
 export const verifyOtp = async ({ email, otp, purpose }) => {
-  const otpRecord = await Otp.findOne({ email, purpose });
+  if (!email) return { ok: false, msg: "Email is required" };
+  const normalizedEmail = email.trim().toLowerCase();
+  const otpRecord = await Otp.findOne({ email: normalizedEmail, purpose });
   if (!otpRecord) return { ok: false, msg: "OTP expired or invalid" };
 
   if (otpRecord.otp !== otp) return { ok: false, msg: "Invalid OTP" };
@@ -98,7 +106,9 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
  * Resend Logic (Infers purpose by finding which model matches)
  */
 export const resendAnyOtp = async (email, explicitPurpose = null) => {
-  let target = await User.findOne({ pendingEmail: email }) || await TempUser.findOne({ email });
+  if (!email) throw new Error("Email is required");
+  const normalizedEmail = email.trim().toLowerCase();
+  let target = await User.findOne({ pendingEmail: normalizedEmail }) || await TempUser.findOne({ email: normalizedEmail });
   let purpose = explicitPurpose;
   
   if (!purpose) {
@@ -138,21 +148,23 @@ export const resendAnyOtp = async (email, explicitPurpose = null) => {
  * Creates and sends a new OTP for any purpose
  */
 export const sendOtp = async ({ email, purpose }) => {
+  if (!email) throw new Error("Email is required");
+  const normalizedEmail = email.trim().toLowerCase();
   if (purpose === "reset_password" || purpose === "changeEmail") {
-      const field = purpose === "changeEmail" ? { pendingEmail: email } : { email };
+      const field = purpose === "changeEmail" ? { pendingEmail: normalizedEmail } : { email: normalizedEmail };
       const user = await User.findOne(field);
       if (!user) throw new Error("User not found");
   } else if (purpose === "register") {
-      const tempUser = await TempUser.findOne({ email });
+      const tempUser = await TempUser.findOne({ email: normalizedEmail });
       if (!tempUser) throw new Error("Session expired.");
   }
 
   // Remove existing OTPs for same email and purpose
-  await Otp.deleteMany({ email, purpose });
+  await Otp.deleteMany({ email: normalizedEmail, purpose });
 
   const otp = genOtp();
   console.log(otp)
-  await Otp.create({ email, otp, purpose });
+  await Otp.create({ email: normalizedEmail, otp, purpose });
 
   await sendOtpEmail(email, otp);
   return { ok: true, email };

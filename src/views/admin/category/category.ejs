@@ -443,6 +443,8 @@
     </div>
 </div>
 
+
+<%- include("../partials/image-cropper") %>
 <script>
     async function toggleVisibility(categoryId, currentStatus) {
         const action = currentStatus ? 'hide' : 'show';
@@ -685,7 +687,7 @@
         const id = document.getElementById('editCategoryId').value;
         const nameInput = document.getElementById('editCategoryName').value.trim();
         const descInput = document.getElementById('editCategoryDesc').value.trim();
-        const imageFile = document.getElementById('editCategoryImage').files[0];
+        const imageFile = currentEditCropBlob || document.getElementById('editCategoryImage').files[0];
 
         document.querySelectorAll('#editCategoryForm .error-text').forEach(el => el.classList.add('hidden'));
         let isValid = true;
