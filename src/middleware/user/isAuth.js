@@ -108,9 +108,11 @@ export const setCartAndWishlistLocals = async (req, res, next) => {
             ]);
 
             res.locals.wishlistProductIds = wishlist ? wishlist.products.map(p => p.toString()) : [];
+            res.locals.wishlistCount = wishlist ? wishlist.products.length : 0;
             res.locals.cart = cart || { items: [] };
         } else {
             res.locals.wishlistProductIds = [];
+            res.locals.wishlistCount = 0;
             res.locals.cart = { items: [] };
         }
         next();

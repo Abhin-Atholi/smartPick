@@ -87,11 +87,14 @@
         </button>
 
         <!-- Wishlist -->
-        <a href="/wishlist" class="w-10 h-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-500 grid place-items-center transition-colors" title="Wishlist">
+        <a href="/wishlist" class="w-10 h-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-500 grid place-items-center relative transition-colors" title="Wishlist">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
+          <span id="wishlistBadge" class="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white px-1.5 rounded-full leading-none py-0.5">
+            <%= (typeof wishlistCount !== 'undefined') ? wishlistCount : 0 %>
+          </span>
         </a>
 
         <!-- Cart with badge -->

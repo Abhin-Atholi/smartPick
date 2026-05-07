@@ -7,7 +7,7 @@ const orderItemSchema = new mongoose.Schema({
     color: { type: String, required: true },
     price: { type: Number, required: true },
     totalPrice: { type: Number, required: true },
-    itemStatus: { type: String, enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested',"Out for Delivery", 'Returned'], default: 'Processing' },
+    itemStatus: { type: String, enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested',"Out for Delivery", 'Returned', 'Return Rejected'], default: 'Processing' },
     cancelReason: { type: String },
     returnReason: { type: String }
 });
@@ -33,7 +33,7 @@ const orderSchema = new mongoose.Schema({
     totalAmount: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['COD', 'Razorpay', 'Wallet'], required: true },
     paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Refunded'], default: 'Pending' },
-    orderStatus: { type: String, enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', "Out for Delivery",'Returned'], default: 'Processing' },
+    orderStatus: { type: String, enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', "Out for Delivery",'Returned', 'Return Rejected'], default: 'Processing' },
     cancelReason: { type: String },
     returnReason: { type: String }
 }, { timestamps: true });

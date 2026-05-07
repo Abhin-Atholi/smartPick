@@ -120,6 +120,7 @@ export const getOrders = async (req, res, next) => {
             currentPage: orderData.currentPage,
             totalPages: orderData.totalPages,
             totalOrders: orderData.totalOrders,
+            stats: orderData.stats,
             filter,
             search   // forward back to view so inputs stay filled
         });

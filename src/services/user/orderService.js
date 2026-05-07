@@ -3,6 +3,22 @@ import Order from '../../model/orderModel.js';
 import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
+import Wallet from '../../model/walletModel.js';
+
+const processRefund = async (userId, amount, description, orderId) => {
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+        wallet = new Wallet({ userId, balance: 0, transactions: [] });
+    }
+    wallet.balance += amount;
+    wallet.transactions.push({
+        type: 'Credit',
+        amount,
+        description,
+        orderId
+    });
+    await wallet.save();
+};
 
 export const getOrderById = async (userId, orderId) => {
     return Order.findOne({ _id: orderId, user: userId })
@@ -108,7 +124,11 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
 
     // Status filter
     if (filter && filter !== 'All') {
-        query.orderStatus = filter;
+        if (filter === 'Processing') {
+            query.orderStatus = { $in: ['Processing', 'Shipped', 'Out for Delivery'] };
+        } else {
+            query.orderStatus = filter;
+        }
     }
 
     // ── Search filters ──────────────────────────────────────────────────────
@@ -142,20 +162,48 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
     }
     // ────────────────────────────────────────────────────────────────────────
 
-    const [orders, totalOrders] = await Promise.all([
+    const [orders, totalOrders, statsArray] = await Promise.all([
         Order.find(query)
             .populate({ path: 'items.product', populate: { path: 'category' } })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
-        Order.countDocuments(query)
+        Order.countDocuments(query),
+        Order.aggregate([
+            { $match: { user: new mongoose.Types.ObjectId(userId) } },
+            {
+                $group: {
+                    _id: '$orderStatus',
+                    count: { $sum: 1 }
+                }
+            }
+        ])
     ]);
+
+    const stats = {
+        Processing: 0,
+        Shipped: 0,
+        'Out for Delivery': 0,
+        Cancelled: 0,
+        'Return Requested': 0,
+        Returned: 0,
+        Delivered: 0,
+        totalAll: 0
+    };
+
+    statsArray.forEach(s => {
+        if (stats.hasOwnProperty(s._id)) {
+            stats[s._id] = s.count;
+        }
+        stats.totalAll += s.count;
+    });
 
     return {
         orders,
         totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
-        currentPage: page
+        currentPage: page,
+        stats
     };
 };
 
@@ -163,7 +211,7 @@ export const cancelOrder = async (userId, orderId, reason) => {
     const order = await Order.findOne({ _id: orderId, user: userId });
     if (!order) return { success: false, message: "Order not found" };
 
-    if (['Shipped', 'Delivered', 'Cancelled', 'Returned'].includes(order.orderStatus)) {
+    if (order.orderStatus !== 'Processing') {
         return { success: false, message: `Cannot cancel an order that is already ${order.orderStatus.toLowerCase()}` };
     }
 
@@ -183,8 +231,10 @@ export const cancelOrder = async (userId, orderId, reason) => {
         }
     }
     
+    
     if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
-        order.paymentStatus = 'Refunded'; // Or handle wallet refund later
+        order.paymentStatus = 'Refunded'; 
+        await processRefund(userId, order.totalAmount, `Refund for cancelled Order ${order.orderId}`, orderId);
     }
 
     await order.save();
@@ -199,15 +249,21 @@ export const returnOrder = async (userId, orderId, reason) => {
         return { success: false, message: "Only delivered orders can be returned" };
     }
 
-    order.orderStatus = 'Return Requested';
-    order.returnReason = reason;
-
+    let updatedCount = 0;
     for (const item of order.items) {
         if (item.itemStatus === 'Delivered') {
             item.itemStatus = 'Return Requested';
             item.returnReason = reason;
+            updatedCount++;
         }
     }
+
+    if (updatedCount === 0) {
+        return { success: false, message: "No eligible delivered items to return" };
+    }
+
+    order.orderStatus = 'Return Requested';
+    order.returnReason = reason;
 
     await order.save();
     return { success: true, message: "Return requested successfully" };
@@ -220,7 +276,7 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
     const item = order.items.id(itemId);
     if (!item) return { success: false, message: "Item not found in order" };
 
-    if (['Shipped', 'Delivered', 'Cancelled', 'Returned'].includes(item.itemStatus)) {
+    if (item.itemStatus !== 'Processing') {
         return { success: false, message: `Cannot cancel an item that is already ${item.itemStatus.toLowerCase()}` };
     }
 
@@ -238,7 +294,14 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
     const activeItems = order.items.filter(i => i.itemStatus !== 'Cancelled' && i.itemStatus !== 'Returned');
     if (activeItems.length === 0) {
         order.orderStatus = 'Cancelled';
-        if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+    }
+
+    if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+        // Refund the specific item amount
+        await processRefund(userId, item.totalPrice, `Refund for cancelled item in Order ${order.orderId}`, orderId);
+        
+        // If whole order is now cancelled, mark payment as refunded
+        if (order.orderStatus === 'Cancelled') {
             order.paymentStatus = 'Refunded';
         }
     }

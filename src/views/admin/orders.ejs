@@ -52,33 +52,52 @@
 <% if (typeof stats !== 'undefined') { %>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">🛍️</div>
+    <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">🛍️</div>
     <div>
       <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Orders</p>
-      <p class="text-2xl font-black text-slate-800"><%= stats.totalAll.toLocaleString() %></p>
+      <p class="text-xl font-black text-slate-800"><%= stats.totalAll.toLocaleString() %></p>
     </div>
   </div>
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">⏳</div>
+    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">⏳</div>
     <div>
-      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Pending Orders</p>
-      <p class="text-2xl font-black text-orange-500"><%= stats.pendingCount %></p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Processing</p>
+      <p class="text-xl font-black text-blue-600"><%= stats.pendingCount %></p>
     </div>
   </div>
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">📦</div>
+    <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">📦</div>
     <div>
-      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Delivered Products</p>
-      <p class="text-2xl font-black text-green-600"><%= stats.deliveredProductsCount.toLocaleString() %></p>
-      <p class="text-[10px] text-gray-400">items (all time)</p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Shipped</p>
+      <p class="text-xl font-black text-indigo-600"><%= stats.shippedCount %></p>
     </div>
   </div>
   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">⚠️</div>
+    <div class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">🚚</div>
     <div>
-      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Cancelled / Returned</p>
-      <p class="text-2xl font-black text-red-500"><%= stats.cancelledReturnedCount.toLocaleString() %></p>
-      <p class="text-[10px] text-gray-400">items total</p>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Out for Delivery</p>
+      <p class="text-xl font-black text-purple-600"><%= stats.outForDeliveryCount %></p>
+    </div>
+  </div>
+  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+    <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">↩️</div>
+    <div>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Return Request</p>
+      <p class="text-xl font-black text-orange-500"><%= stats.returnRequestCount %></p>
+    </div>
+  </div>
+  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+    <div class="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">✅</div>
+    <div>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Returned</p>
+      <p class="text-xl font-black text-yellow-600"><%= stats.returnedCount %></p>
+    </div>
+  </div>
+  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+    <div class="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">❌</div>
+    <div>
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Cancelled</p>
+      <p class="text-xl font-black text-red-600"><%= stats.cancelledCount %></p>
     </div>
   </div>
 </div>

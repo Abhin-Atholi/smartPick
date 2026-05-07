@@ -323,12 +323,12 @@
                         </div>
 
                         <div id="imagePreviewContainer"
-                            class="hidden absolute inset-0 z-20 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                            class="hidden absolute inset-0 z-20 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200 pointer-events-none">
                             <img id="imagePreview" src="" class="w-full h-full object-cover">
                             <div
                                 class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <span
-                                    class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm">Change
+                                    class="bg-white px-4 py-2 rounded-lg font-black text-xs text-slate-800 shadow-sm pointer-events-none">Change
                                     Image</span>
                             </div>
                         </div>
@@ -417,7 +417,7 @@
                         </div>
 
                         <div id="editImagePreviewContainer"
-                            class="absolute inset-0 z-10 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                            class="absolute inset-0 z-10 bg-white rounded-2xl overflow-hidden shadow-inner border border-gray-200 pointer-events-none">
                             <img id="editImagePreview" src="" class="w-full h-full object-cover">
                             <div
                                 class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
@@ -563,7 +563,11 @@
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
                 document.getElementById('uploadPrompt').classList.add('hidden');
             } catch (err) {
-                e.target.value = ''; // They cancelled
+                console.error("Crop error:", err);
+                if (err.message !== "Crop cancelled by user") {
+                    Swal.fire('Error', 'Failed to initialize cropper. Please check your connection or try another image.', 'error');
+                }
+                e.target.value = ''; // They cancelled or error occurred
             }
         }
     });
@@ -588,6 +592,10 @@
                 document.getElementById('editImagePreviewContainer').classList.remove('hidden');
                 document.getElementById('editUploadPrompt').classList.add('hidden');
             } catch (err) {
+                console.error("Crop error:", err);
+                if (err.message !== "Crop cancelled by user") {
+                    Swal.fire('Error', 'Failed to initialize cropper. Please check your connection or try another image.', 'error');
+                }
                 e.target.value = '';
             }
         }

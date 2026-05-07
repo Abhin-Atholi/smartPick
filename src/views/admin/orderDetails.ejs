@@ -106,7 +106,7 @@
               const variant = prod?.variants?.find(v => v.size === item.size && v.color?.name === item.color);
               const imgUrl = variant?.images?.[0] || prod?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
               const isc = statusColors[item.itemStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
-              const canCancel = !['Cancelled','Returned','Return Requested'].includes(item.itemStatus);
+              const canCancel = item.itemStatus === 'Processing';
             %>
             <tr class="hover:bg-gray-50/50 transition-colors" id="item-row-<%= item._id %>">
               <td class="px-6 py-4">

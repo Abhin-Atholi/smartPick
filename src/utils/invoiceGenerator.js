@@ -190,7 +190,7 @@ export const generateInvoice = (order, res, disposition = 'inline') => {
     doc.rect(MARGIN, y, COL_W, 22).fillColor(DARK).fill();
     doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(8);
     doc.text('ITEM',     colX.item  + 4, y + 7, { width: 180 });
-    doc.text('CATEGORY', colX.cat   + 4, y + 7, { width: 90  });
+    doc.text('STATUS',   colX.cat   + 4, y + 7, { width: 90  });
     doc.text('QTY',      colX.qty   + 4, y + 7, { width: 50, align: 'center' });
     doc.text('PRICE',    colX.price + 4, y + 7, { width: 55, align: 'right'  });
     doc.text('TOTAL',    colX.total + 4, y + 7, { width: tableRight - colX.total - 4, align: 'right' });
@@ -209,7 +209,7 @@ export const generateInvoice = (order, res, disposition = 'inline') => {
 
         const name     = item.product?.name || 'Product';
         const variant  = `Size: ${item.size} • Color: ${item.color}`;
-        const category = item.product?.category?.name || '—';
+        const status   = item.itemStatus || '—';
 
         doc.fillColor(DARK).font('Helvetica-Bold').fontSize(9)
             .text(name, colX.item + 4, y + 6, { width: 182, ellipsis: true });
@@ -217,7 +217,7 @@ export const generateInvoice = (order, res, disposition = 'inline') => {
             .text(variant, colX.item + 4, y + 19, { width: 182 });
 
         doc.fillColor(MID).font('Helvetica').fontSize(8.5)
-            .text(category, colX.cat + 4, y + 13, { width: 90 });
+            .text(status, colX.cat + 4, y + 13, { width: 90 });
 
         doc.fillColor(DARK).font('Helvetica').fontSize(9)
             .text(String(item.quantity), colX.qty + 4, y + 13, { width: 50, align: 'center' })

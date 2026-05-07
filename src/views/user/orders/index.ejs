@@ -72,18 +72,28 @@
         <% } %>
       </div>
     </form>
-
+    
     <!-- Filter Tabs -->
-    <% const allStatuses = ['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', 'Returned']; %>
+    <% const allStatuses = ['All', 'Processing', 'Delivered', 'Cancelled', 'Return Requested', 'Returned']; %>
 
     <div class="flex flex-wrap gap-2 mb-6">
       <% allStatuses.forEach(status => { %>
+        <% 
+          let count = 0;
+          if (status === 'All') {
+            count = stats.totalAll || 0;
+          } else if (status === 'Processing') {
+            count = (stats['Processing'] || 0) + (stats['Shipped'] || 0) + (stats['Out for Delivery'] || 0);
+          } else {
+            count = stats[status] || 0;
+          }
+        %>
         <a href="/orders<%= status === 'All' ? '' : `?status=${encodeURIComponent(status)}` %>"
            class="px-4 py-2 rounded-full text-sm font-bold transition-all border
              <%= activeFilter === status
                ? 'bg-gray-900 text-white border-gray-900 shadow'
                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-800' %>">
-          <%= status === 'All' ? `All Orders (${totalOrders || 0})` : status %>
+          <%= status %> (<%= count %>)
         </a>
       <% }) %>
     </div>
@@ -151,13 +161,13 @@
                 <!-- Status Badge -->
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold w-fit
                   <%= order.orderStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
-                      order.orderStatus === 'Cancelled' ? 'bg-red-50 text-red-700' :
+                      order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Rejected' ? 'bg-red-50 text-red-700' :
                       order.orderStatus === 'Shipped' ? 'bg-blue-50 text-blue-700' :
                       order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-50 text-orange-700' :
                       'bg-yellow-50 text-yellow-700' %>">
                   <span class="w-1.5 h-1.5 rounded-full
                     <%= order.orderStatus === 'Delivered' ? 'bg-green-500' :
-                        order.orderStatus === 'Cancelled' ? 'bg-red-500' :
+                        order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Rejected' ? 'bg-red-500' :
                         order.orderStatus === 'Shipped' ? 'bg-blue-500' :
                         order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-500' :
                         'bg-yellow-500' %>">
@@ -219,12 +229,12 @@
                       <div class="flex flex-col items-end gap-2 flex-shrink-0">
                         <span class="text-xs font-bold px-2 py-1 rounded-full
                           <%= item.itemStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
-                              item.itemStatus === 'Cancelled' ? 'bg-red-50 text-red-700' :
+                              item.itemStatus === 'Cancelled' || item.itemStatus === 'Return Rejected' ? 'bg-red-50 text-red-700' :
                               item.itemStatus === 'Returned' || item.itemStatus === 'Return Requested' ? 'bg-orange-50 text-orange-700' :
                               'bg-yellow-50 text-yellow-700' %>">
                           <%= item.itemStatus %>
                         </span>
-                        <% if (!['Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Requested'].includes(item.itemStatus)) { %>
+                        <% if (item.itemStatus === 'Processing' && order.orderStatus !== 'Cancelled') { %>
                           <button onclick="openActionModal('cancel', '<%= order._id %>', '<%= item._id %>', 'Cancel Item')" class="text-xs font-bold text-red-500 hover:underline">Cancel</button>
                         <% } %>
                         <% if (item.itemStatus === 'Delivered') { %>
@@ -257,13 +267,16 @@
 
                 <!-- Order-level actions -->
                 <div class="flex flex-wrap gap-3 justify-end">
-                  <% if (!['Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Requested'].includes(order.orderStatus)) { %>
+                  <% if (order.orderStatus === 'Processing') { %>
                     <button onclick="openActionModal('cancel', '<%= order._id %>', null, 'Cancel Entire Order')"
                       class="px-5 py-2 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition">
                       Cancel Order
                     </button>
                   <% } %>
-                  <% if (order.orderStatus === 'Delivered') { %>
+                  <% 
+                    const hasDeliveredItems = order.items.some(i => i.itemStatus === 'Delivered');
+                    if (order.orderStatus === 'Delivered' && hasDeliveredItems) { 
+                  %>
                     <button onclick="openActionModal('return', '<%= order._id %>', null, 'Return Entire Order')"
                       class="px-5 py-2 border border-orange-200 text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-50 transition">
                       Return Order

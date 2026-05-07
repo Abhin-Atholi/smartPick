@@ -9,18 +9,28 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         Back to Orders
       </a>
-      <div class="flex items-center gap-3">
-        <a href="/orders/<%= order._id %>/view-invoice" target="_blank"
-           class="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-gray-900 border border-gray-200 bg-white px-4 py-2 rounded-xl transition hover:shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          View Invoice
-        </a>
-        <a href="/orders/<%= order._id %>/download-invoice"
-           class="flex items-center gap-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl transition shadow-sm shadow-indigo-200">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Invoice
-        </a>
-      </div>
+      <div class="flex flex-wrap gap-3 mt-4 md:mt-0">
+          <% if (order.orderStatus === 'Processing') { %>
+            <button onclick="openActionModal('cancel', '<%= order._id %>', null, 'Cancel Entire Order')"
+              class="px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition shadow-sm">
+              Cancel Order
+            </button>
+          <% } %>
+          <% 
+            const hasDeliveredItems = order.items.some(i => i.itemStatus === 'Delivered');
+            if (order.orderStatus === 'Delivered' && hasDeliveredItems) { 
+          %>
+            <button onclick="openActionModal('return', '<%= order._id %>', null, 'Return Entire Order')"
+              class="px-5 py-2.5 bg-white border border-orange-200 text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-50 transition shadow-sm">
+              Return Order
+            </button>
+          <% } %>
+          <a href="/orders/<%= order._id %>/download-invoice"
+            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-indigo-100 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Invoice
+          </a>
+        </div>
     </div>
 
     <!-- Order Header -->
@@ -30,13 +40,13 @@
         <span class="text-lg font-black text-gray-800"><%= order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}` %></span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
           <%= order.orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' :
-              order.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' :
+              order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Rejected' ? 'bg-red-100 text-red-700' :
               order.orderStatus === 'Shipped' ? 'bg-blue-100 text-blue-700' :
               order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-100 text-orange-700' :
               'bg-yellow-100 text-yellow-800' %>">
           <span class="w-1.5 h-1.5 rounded-full
             <%= order.orderStatus === 'Delivered' ? 'bg-green-500' :
-                order.orderStatus === 'Cancelled' ? 'bg-red-500' :
+                order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Rejected' ? 'bg-red-500' :
                 order.orderStatus === 'Shipped' ? 'bg-blue-500' :
                 order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-500' :
                 'bg-yellow-500' %>">
@@ -82,16 +92,28 @@
                     <span>Size: <span class="font-bold text-gray-700"><%= item.size %></span></span>
                     <span>Color: <span class="font-bold text-gray-700"><%= item.color %></span></span>
                   </div>
-                  <!-- Item Status Badge only (no action buttons) -->
-                  <div class="mt-3">
+                  <!-- Item Status Badge & Action -->
+                  <div class="mt-3 flex items-center gap-3">
                     <span class="text-xs font-bold px-2 py-1 rounded-full
                       <%= item.itemStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
-                          item.itemStatus === 'Cancelled' ? 'bg-red-50 text-red-700' :
+                          item.itemStatus === 'Cancelled' || item.itemStatus === 'Return Rejected' ? 'bg-red-50 text-red-700' :
                           item.itemStatus === 'Returned' || item.itemStatus === 'Return Requested' ? 'bg-orange-50 text-orange-700' :
                           item.itemStatus === 'Shipped' ? 'bg-blue-50 text-blue-700' :
                           'bg-yellow-50 text-yellow-700' %>">
                       <%= item.itemStatus %>
                     </span>
+                    <% if (item.itemStatus === 'Processing' && order.orderStatus !== 'Cancelled') { %>
+                      <button onclick="openActionModal('cancel', '<%= order._id %>', '<%= item._id %>', 'Cancel Item')" 
+                              class="text-xs font-bold text-red-600 hover:text-red-700 transition">
+                        Cancel Item
+                      </button>
+                    <% } %>
+                    <% if (item.itemStatus === 'Delivered' && order.orderStatus !== 'Returned' && order.orderStatus !== 'Cancelled') { %>
+                      <button onclick="openActionModal('return', '<%= order._id %>', '<%= item._id %>', 'Return Item')" 
+                              class="text-xs font-bold text-orange-500 hover:text-orange-600 transition">
+                        Return Item
+                      </button>
+                    <% } %>
                   </div>
                 </div>
 
@@ -196,7 +218,7 @@
         </div>
 
         <!-- Cancel / Return Order-level Actions -->
-        <% if (!['Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Requested'].includes(order.orderStatus)) { %>
+        <% if (order.orderStatus === 'Processing') { %>
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <h2 class="text-base font-black text-gray-900 mb-1">Cancel Order?</h2>
           <p class="text-sm text-gray-400 mb-4">Do you want to cancel the entire order?</p>
@@ -207,7 +229,10 @@
         </div>
         <% } %>
 
-        <% if (order.orderStatus === 'Delivered') { %>
+        <% 
+          const hasDeliveredCardItems = order.items.some(i => i.itemStatus === 'Delivered');
+          if (order.orderStatus === 'Delivered' && hasDeliveredCardItems) { 
+        %>
         <div class="bg-white rounded-2xl border border-orange-200 shadow-sm p-6">
           <h2 class="text-base font-black text-gray-900 mb-1">Return Order?</h2>
           <p class="text-sm text-gray-400 mb-4">Request a return for the entire order.</p>

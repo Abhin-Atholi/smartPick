@@ -1,15 +1,25 @@
 import Order from '../../model/orderModel.js';
 import Product from '../../model/productModel.js';
+import Wallet from '../../model/walletModel.js';
+
+const processRefund = async (userId, amount, description, orderId) => {
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) wallet = new Wallet({ userId, balance: 0, transactions: [] });
+    wallet.balance += amount;
+    wallet.transactions.push({ type: 'Credit', amount, description, orderId });
+    await wallet.save();
+};
 
 // ── Admin-settable status transitions ────────────────────────────────────────
 // "Return Requested" is user-triggered only; admin cannot set it manually.
 const ALLOWED_TRANSITIONS = {
     'Processing':       ['Shipped', 'Cancelled'],
-    'Shipped':          ['Out for Delivery', 'Cancelled'],
-    'Out for Delivery': ['Delivered', 'Cancelled'],
+    'Shipped':          ['Out for Delivery'],
+    'Out for Delivery': ['Delivered'],
     'Delivered':        [],           // returns come from user side
     'Return Requested': [],           // admin approves/rejects via separate flow
     'Returned':         [],
+    'Return Rejected':  [],
     'Cancelled':        []
 };
 
@@ -83,17 +93,37 @@ export const getAllOrders = async ({
     ]);
     const cancelledReturnedCount = cancelledReturnedAgg[0]?.total || 0;
 
-    const [totalAll, pendingCount, returnRequestCount] = await Promise.all([
-        Order.countDocuments({}),
-        Order.countDocuments({ orderStatus: 'Processing' }),
-        Order.countDocuments({ orderStatus: 'Return Requested' })
+    // Status counts
+    const statusCountsAgg = await Order.aggregate([
+        { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
     ]);
+    
+    const statsObj = {
+        Processing: 0, Shipped: 0, 'Out for Delivery': 0, 
+        Cancelled: 0, 'Return Requested': 0, Returned: 0,
+        Delivered: 0, totalAll: 0
+    };
+    
+    statusCountsAgg.forEach(s => {
+        if (s._id in statsObj) statsObj[s._id] = s.count;
+        statsObj.totalAll += s.count;
+    });
 
     return {
         orders, totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
         currentPage: page,
-        stats: { totalAll, pendingCount, deliveredProductsCount, cancelledReturnedCount, returnRequestCount }
+        stats: {
+            totalAll: statsObj.totalAll,
+            pendingCount: statsObj.Processing,
+            shippedCount: statsObj.Shipped,
+            outForDeliveryCount: statsObj['Out for Delivery'],
+            cancelledCount: statsObj.Cancelled,
+            returnRequestCount: statsObj['Return Requested'],
+            returnedCount: statsObj.Returned,
+            deliveredProductsCount,
+            cancelledReturnedCount
+        }
     };
 };
 
@@ -121,11 +151,15 @@ export const updateOrderStatus = async (orderId, newStatus) => {
                 item.itemStatus = 'Cancelled';
             }
         }
+        if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+            order.paymentStatus = 'Refunded';
+            await processRefund(order.user, order.totalAmount, `Refund for admin-cancelled Order ${order.orderId}`, orderId);
+        }
     } else {
-        const syncMap = { Shipped: 'Shipped', 'Out for Delivery': 'Shipped', Delivered: 'Delivered' };
+        const syncMap = { Shipped: 'Shipped', 'Out for Delivery': 'Out for Delivery', Delivered: 'Delivered' };
         if (syncMap[newStatus]) {
             order.items.forEach(item => {
-                if (!['Cancelled','Returned'].includes(item.itemStatus)) item.itemStatus = syncMap[newStatus];
+                if (!['Cancelled','Returned', 'Return Rejected'].includes(item.itemStatus)) item.itemStatus = syncMap[newStatus];
             });
         }
     }
@@ -143,8 +177,8 @@ export const cancelOrderItem = async (orderId, itemId) => {
 
     const item = order.items.id(itemId);
     if (!item) return { success: false, message: 'Item not found' };
-    if (['Cancelled','Returned'].includes(item.itemStatus)) {
-        return { success: false, message: `Item is already ${item.itemStatus}` };
+    if (['Cancelled','Returned', 'Return Rejected', 'Shipped', 'Out for Delivery', 'Delivered'].includes(item.itemStatus)) {
+        return { success: false, message: `Item cannot be cancelled because it is ${item.itemStatus}` };
     }
 
     await restoreStock(item);
@@ -153,6 +187,11 @@ export const cancelOrderItem = async (orderId, itemId) => {
     // Auto-cancel whole order if all items are now cancelled/returned
     const active = order.items.filter(i => !['Cancelled','Returned'].includes(i.itemStatus));
     if (active.length === 0) order.orderStatus = 'Cancelled';
+
+    if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+        await processRefund(order.user, item.totalPrice, `Refund for admin-cancelled item in Order ${order.orderId}`, orderId);
+        if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
+    }
 
     await order.save();
     return { success: true, message: 'Item cancelled and stock restored' };
@@ -192,12 +231,19 @@ export const handleReturnDecision = async (orderId, itemId, decision) => {
         await restoreStock(item);
         item.itemStatus = 'Returned';
         // If all returnable items are now returned/cancelled, mark order Returned
-        const nonReturned = order.items.filter(i => !['Returned','Cancelled'].includes(i.itemStatus));
+        const nonReturned = order.items.filter(i => !['Returned','Cancelled', 'Return Rejected'].includes(i.itemStatus));
         if (nonReturned.length === 0) order.orderStatus = 'Returned';
+
+        if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+            await processRefund(order.user, item.totalPrice, `Refund for returned item in Order ${order.orderId}`, orderId);
+            if (order.orderStatus === 'Returned') order.paymentStatus = 'Refunded';
+        }
     } else {
-        item.itemStatus = 'Delivered';       // revert to Delivered
-        // Revert order status if it was Return Requested
-        if (order.orderStatus === 'Return Requested') order.orderStatus = 'Delivered';
+        item.itemStatus = 'Return Rejected';
+        // Mark order as Return Rejected if it was requested at order level
+        if (order.orderStatus === 'Return Requested') {
+            order.orderStatus = 'Return Rejected';
+        }
     }
 
     await order.save();
