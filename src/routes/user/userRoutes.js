@@ -10,6 +10,7 @@ import wishlistRoutes from "./wishlistRoutes.js";
 import cartRoutes from "./cartRoutes.js";
 import productRoutes from "./productRoutes.js";
 import orderRoutes from "./orderRoutes.js";
+import paymentRoutes from "./paymentRoutes.js";
 
 router.use(checkBlocked);
 
@@ -24,6 +25,7 @@ router.use("/account", accountRoutes); // /account, /account/addresses, etc.
 router.use("/wishlist", wishlistRoutes); // /wishlist, /wishlist/toggle, etc.
 router.use("/cart", cartRoutes);
 router.use("/products", productRoutes); // /products, /products/details, etc.
+router.use("/payment", paymentRoutes);
 router.use("/", orderRoutes); // Mounts /checkout, /order/place, /order/success
 
 export default router;

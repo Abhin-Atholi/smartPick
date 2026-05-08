@@ -78,9 +78,9 @@
                             <span class="font-bold text-gray-900">Cash on Delivery (COD)</span>
                         </label>
 
-                        <label class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-not-allowed opacity-60">
-                            <input type="radio" name="paymentMethod" value="Razorpay" disabled class="w-5 h-5 text-gray-400 border-gray-300">
-                            <span class="font-bold text-gray-900">Razorpay (Cards/UPI/NetBanking) <span class="text-xs font-bold text-indigo-600 ml-2 bg-indigo-50 px-2 py-1 rounded-md">Coming Soon</span></span>
+                        <label class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-colors">
+                            <input type="radio" name="paymentMethod" value="Razorpay" class="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="font-bold text-gray-900">Razorpay (Cards/UPI/NetBanking)</span>
                         </label>
 
                         <label class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-not-allowed opacity-60">
@@ -184,6 +184,7 @@
 <%- include("partials/drawer") %>
 <%- include("partials/addressModals") %>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -211,10 +212,51 @@
         btn.innerHTML = 'Processing...';
 
         try {
-            const response = await axios.post('/order/place', { addressId, paymentMethod });
-            
-            if (response.data.success) {
-                window.location.href = `/order/success?orderId=${response.data.orderId}`;
+            if (paymentMethod === 'Razorpay') {
+                const initRes = await axios.post('/payment/initiate', { addressId });
+                if (initRes.data.success) {
+                    const options = {
+                        key: initRes.data.key,
+                        amount: initRes.data.amount * 100,
+                        currency: "INR",
+                        name: "SmartPick",
+                        description: "Purchase transaction",
+                        order_id: initRes.data.razorpayOrderId,
+                        handler: async function (response) {
+                            try {
+                                const verifyRes = await axios.post('/payment/verify', {
+                                    orderId: initRes.data.orderId,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_signature: response.razorpay_signature
+                                });
+                                if (verifyRes.data.success) {
+                                    window.location.href = verifyRes.data.redirectUrl;
+                                }
+                            } catch (error) {
+                                console.error(error);
+                                Swal.fire({ icon: 'error', title: 'Verification Failed', text: 'Payment verification failed.' });
+                            }
+                        },
+                        modal: {
+                            ondismiss: async function() {
+                                await axios.post('/payment/failure', { orderId: initRes.data.orderId });
+                                window.location.href = `/payment/failure/${initRes.data.orderId}`;
+                            }
+                        }
+                    };
+                    const rzp1 = new Razorpay(options);
+                    rzp1.on('payment.failed', async function (response) {
+                        await axios.post('/payment/failure', { orderId: initRes.data.orderId });
+                        window.location.href = `/payment/failure/${initRes.data.orderId}`;
+                    });
+                    rzp1.open();
+                }
+            } else {
+                const response = await axios.post('/order/place', { addressId, paymentMethod });
+                if (response.data.success) {
+                    window.location.href = `/order/success?orderId=${response.data.orderId}`;
+                }
             }
         } catch (err) {
             console.error(err);

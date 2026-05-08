@@ -120,7 +120,7 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
 
 export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', search = {}) => {
     const skip = (page - 1) * limit;
-    const query = { user: userId };
+    const query = { user: userId, orderStatus: { $ne: 'Expired' } };
 
     // Status filter
     if (filter && filter !== 'All') {

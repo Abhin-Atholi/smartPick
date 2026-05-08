@@ -1,0 +1,154 @@
+<%- include("../partials/navbar") %>
+
+<main class="bg-gray-50 min-h-screen py-12 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 text-center relative overflow-hidden">
+        <!-- Visual Indicator -->
+        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <div class="absolute -right-2 -bottom-2 w-8 h-8 bg-white rounded-full flex items-center justify-center font-black text-red-600 text-xs border border-red-100 shadow-sm" id="failedAttemptsCount">
+                <%= order.paymentDetails?.failedAttempts || 0 %>
+            </div>
+        </div>
+
+        <h1 class="text-2xl font-black text-gray-900 mb-2">Payment Failed</h1>
+        <p class="text-sm text-gray-500 mb-8 px-4" id="statusMessage">Your transaction could not be completed. Please try again before the session expires.</p>
+
+        <!-- 5-Minute Countdown HUD -->
+        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 mb-8 relative">
+            <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Session Expires In</p>
+            <div class="text-4xl font-black text-indigo-600 tabular-nums font-mono" id="countdownHUD">
+                05:00
+            </div>
+            <p class="text-xs text-indigo-400 mt-2">Order #<%= order.orderId %></p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+            <button id="retryBtn" onclick="retryPayment()" class="w-full h-14 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 active:scale-95 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 2.81-6.73L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 1 0-2.81 6.73L3 16"></path></svg>
+                Retry Payment
+            </button>
+            <a id="cancelBtn" href="/cart" class="w-full h-14 bg-white text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 border border-gray-200 transition flex items-center justify-center">
+                Cancel & Return to Cart
+            </a>
+            
+            <a id="expiredBtn" href="/cart" class="hidden w-full h-14 bg-gray-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-black transition flex items-center justify-center">
+                Rebuild Cart
+            </a>
+        </div>
+    </div>
+</main>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const orderId = "<%= order._id %>";
+    const expiryTimeIso = "<%= order.paymentDetails?.retryExpiryTime?.toISOString() %>";
+    const expiryTime = new Date(expiryTimeIso).getTime();
+    
+    const countdownHUD = document.getElementById('countdownHUD');
+    const retryBtn = document.getElementById('retryBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const expiredBtn = document.getElementById('expiredBtn');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // Countdown Timer Logic
+    const timerInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = expiryTime - now;
+
+        if (distance <= 0) {
+            clearInterval(timerInterval);
+            countdownHUD.innerHTML = "00:00";
+            
+            // Timer Expiry Logic
+            retryBtn.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+            expiredBtn.classList.remove('hidden');
+            
+            statusMessage.innerHTML = "Retry session expired. Please place the order again.";
+            statusMessage.classList.add('text-red-500');
+            countdownHUD.classList.replace('text-indigo-600', 'text-red-600');
+            countdownHUD.parentElement.classList.replace('bg-indigo-50', 'bg-red-50');
+            countdownHUD.parentElement.classList.replace('border-indigo-100', 'border-red-100');
+            return;
+        }
+
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        countdownHUD.innerHTML = 
+            (minutes < 10 ? "0" : "") + minutes + ":" + 
+            (seconds < 10 ? "0" : "") + seconds;
+            
+    }, 1000);
+
+    // Active Retry Execution
+    async function retryPayment() {
+        if (retryBtn.disabled) return;
+        
+        retryBtn.disabled = true;
+        const ogText = retryBtn.innerHTML;
+        retryBtn.innerHTML = "Processing...";
+
+        try {
+            const response = await axios.post('/payment/retry', { orderId });
+            
+            if (response.data.success) {
+                const options = {
+                    key: response.data.key,
+                    amount: response.data.amount * 100,
+                    currency: "INR",
+                    name: "SmartPick",
+                    description: "Retry Payment",
+                    order_id: response.data.razorpayOrderId,
+                    handler: async function (paymentResponse) {
+                        try {
+                            const verifyRes = await axios.post('/payment/verify', {
+                                orderId: orderId,
+                                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                                razorpay_order_id: paymentResponse.razorpay_order_id,
+                                razorpay_signature: paymentResponse.razorpay_signature
+                            });
+                            if (verifyRes.data.success) {
+                                window.location.href = verifyRes.data.redirectUrl;
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            Swal.fire({ icon: 'error', title: 'Verification Failed', text: 'Payment verification failed.' });
+                        }
+                    },
+                    modal: {
+                        ondismiss: async function() {
+                            await axios.post('/payment/failure', { orderId });
+                            window.location.reload(); // Refresh to update failed attempts
+                        }
+                    }
+                };
+                
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', async function (response) {
+                    await axios.post('/payment/failure', { orderId });
+                    window.location.reload();
+                });
+                rzp.open();
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Retry Failed',
+                text: error.response?.data?.message || 'Could not initiate retry. Session may have expired.'
+            });
+            if (error.response?.data?.message === 'Payment session expired') {
+                window.location.reload();
+            }
+        } finally {
+            retryBtn.disabled = false;
+            retryBtn.innerHTML = ogText;
+        }
+    }
+</script>
+<%- include("../partials/footer") %>

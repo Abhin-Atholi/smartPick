@@ -109,12 +109,13 @@
       <% } else { %>
 
         <!-- Table Header -->
-        <div class="hidden md:grid grid-cols-[1.2fr_1fr_1.8fr_1fr_1.2fr_1.5fr] px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <div class="hidden md:grid grid-cols-[1.1fr_1fr_1.6fr_1fr_1.1fr_1.1fr_1.8fr] px-6 py-4 border-b border-gray-100 bg-gray-50 gap-2">
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Order ID</span>
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Date</span>
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Items</span>
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Total</span>
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Status</span>
+          <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Payment</span>
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Actions</span>
         </div>
 
@@ -123,7 +124,7 @@
           <% orders.forEach(order => { %>
             <div class="px-6 py-5">
               <!-- Desktop Row -->
-              <div class="hidden md:grid grid-cols-[1.2fr_1fr_1.8fr_1fr_1.2fr_1.5fr] items-center gap-2">
+              <div class="hidden md:grid grid-cols-[1.1fr_1fr_1.6fr_1fr_1.1fr_1.1fr_1.8fr] items-center gap-2">
                 
                 <!-- Order ID -->
                 <span class="text-sm font-black text-gray-900">
@@ -175,15 +176,42 @@
                   <%= order.orderStatus %>
                 </span>
 
+                <!-- Payment Status -->
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold w-fit
+                  <%= order.paymentStatus === 'Paid' ? 'bg-green-50 text-green-700' :
+                      order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'bg-red-50 text-red-700' :
+                      'bg-yellow-50 text-yellow-700' %>">
+                  <span class="w-1.5 h-1.5 rounded-full
+                    <%= order.paymentStatus === 'Paid' ? 'bg-green-500' :
+                        order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'bg-red-500' :
+                        'bg-yellow-500' %>">
+                  </span>
+                  <%= order.paymentStatus %>
+                </span>
+
                 <!-- Actions -->
                 <div class="flex items-center gap-3">
                   <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
-                    View Details
+                    View
                   </a>
-                  <a href="/orders/<%= order._id %>/download-invoice" title="Download Invoice"
-                     class="text-gray-300 hover:text-indigo-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  </a>
+                  <button onclick="toggleOrderDetails('<%= order._id %>')" class="text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
+                    Track
+                  </button>
+                  
+                  <% 
+                    const isFailedRzp = order.paymentMethod === 'Razorpay' && (order.paymentStatus === 'Failed' || order.orderStatus === 'Payment Pending' || order.orderStatus === 'Payment Failed');
+                    const expTime = order.paymentDetails?.retryExpiryTime ? new Date(order.paymentDetails.retryExpiryTime).getTime() : null;
+                    const isValid = expTime && new Date().getTime() < expTime;
+                    
+                    if (isFailedRzp && isValid) {
+                  %>
+                    <div class="flex items-center gap-1.5 border border-red-200 bg-red-50 rounded-lg px-2 py-1">
+                      <span class="text-[10px] font-bold text-red-600 countdown-timer font-mono" data-expiry="<%= expTime %>">05:00</span>
+                      <button onclick="retryPaymentFromList('<%= order._id %>', this)" class="text-[10px] font-black uppercase text-white bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded transition">
+                        Retry
+                      </button>
+                    </div>
+                  <% } %>
                 </div>
               </div>
 
@@ -202,9 +230,36 @@
                     <%= order.orderStatus %>
                   </span>
                 </div>
-                <div class="flex justify-between items-center">
-                  <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
-                  <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600">View Details</a>
+                <div class="flex flex-col gap-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
+                    <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600">View Details</a>
+                  </div>
+                  
+                  <div class="flex justify-between items-center bg-gray-50 rounded-lg p-2 border border-gray-100">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Payment</span>
+                      <span class="inline-flex items-center gap-1 text-[10px] font-bold w-fit
+                        <%= order.paymentStatus === 'Paid' ? 'text-green-600' :
+                            order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'text-red-600' :
+                            'text-yellow-600' %>">
+                        <%= order.paymentStatus %>
+                      </span>
+                    </div>
+                    
+                    <% if (isFailedRzp && isValid) { %>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold text-red-600 countdown-timer font-mono" data-expiry="<%= expTime %>">05:00</span>
+                        <button onclick="retryPaymentFromList('<%= order._id %>', this)" class="text-[10px] font-black uppercase text-white bg-red-600 hover:bg-red-700 px-2 py-1 rounded transition">
+                          Retry
+                        </button>
+                      </div>
+                    <% } else { %>
+                      <button onclick="toggleOrderDetails('<%= order._id %>')" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors">
+                        Track
+                      </button>
+                    <% } %>
+                  </div>
                 </div>
               </div>
 
@@ -257,7 +312,15 @@
                   </div>
                   <div>
                     <p class="text-xs text-gray-400 font-bold uppercase">Payment</p>
-                    <p class="text-sm font-black text-gray-800"><%= order.paymentMethod %></p>
+                    <p class="text-sm font-black text-gray-800">
+                      <%= order.paymentMethod %>
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-md ml-1 font-bold inline-block mt-0.5
+                        <%= order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 
+                            order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'bg-red-100 text-red-700' : 
+                            'bg-yellow-100 text-yellow-700' %>">
+                        <%= order.paymentStatus %>
+                      </span>
+                    </p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-400 font-bold uppercase">Total</p>
@@ -266,7 +329,23 @@
                 </div>
 
                 <!-- Order-level actions -->
-                <div class="flex flex-wrap gap-3 justify-end">
+                <div class="flex flex-wrap gap-3 justify-end items-center">
+                  <% 
+                    const isFailedRazorpay = order.paymentMethod === 'Razorpay' && (order.paymentStatus === 'Failed' || order.orderStatus === 'Payment Pending' || order.orderStatus === 'Payment Failed');
+                    const expiryTime = order.paymentDetails?.retryExpiryTime ? new Date(order.paymentDetails.retryExpiryTime).getTime() : null;
+                    const isNotExpired = expiryTime && new Date().getTime() < expiryTime;
+                    
+                    if (isFailedRazorpay && isNotExpired) {
+                  %>
+                    <div class="flex items-center gap-2 bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                      <span class="text-xs font-bold text-red-600 countdown-timer font-mono" data-expiry="<%= expiryTime %>">05:00</span>
+                    </div>
+                    <button onclick="retryPaymentFromList('<%= order._id %>', this)" 
+                      class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-sm">
+                      Retry Payment
+                    </button>
+                  <% } %>
                   <% if (order.orderStatus === 'Processing') { %>
                     <button onclick="openActionModal('cancel', '<%= order._id %>', null, 'Cancel Entire Order')"
                       class="px-5 py-2 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition">
@@ -430,4 +509,97 @@
   document.getElementById('actionModal').addEventListener('click', function (e) {
     if (e.target === this) closeActionModal();
   });
+  // Countdown Timer Logic
+  setInterval(() => {
+    document.querySelectorAll('.countdown-timer').forEach(timer => {
+      const expiryTime = parseInt(timer.getAttribute('data-expiry'));
+      if (!expiryTime) return;
+      
+      const now = new Date().getTime();
+      const distance = expiryTime - now;
+
+      if (distance <= 0) {
+        timer.innerHTML = "00:00";
+        if (!timer.dataset.expired) {
+          timer.dataset.expired = 'true';
+          setTimeout(() => window.location.reload(), 1500);
+        }
+        return;
+      }
+
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      timer.innerHTML = 
+        (minutes < 10 ? "0" : "") + minutes + ":" + 
+        (seconds < 10 ? "0" : "") + seconds;
+    });
+  }, 1000);
+
+  // Direct Retry from List
+  async function retryPaymentFromList(orderId, btnElement) {
+      if (btnElement.disabled) return;
+      
+      btnElement.disabled = true;
+      const ogText = btnElement.innerHTML;
+      btnElement.innerHTML = "Processing...";
+
+      try {
+          const response = await axios.post('/payment/retry', { orderId });
+          
+          if (response.data.success) {
+              const options = {
+                  key: response.data.key,
+                  amount: response.data.amount * 100,
+                  currency: "INR",
+                  name: "SmartPick",
+                  description: "Retry Payment",
+                  order_id: response.data.razorpayOrderId,
+                  handler: async function (paymentResponse) {
+                      try {
+                          const verifyRes = await axios.post('/payment/verify', {
+                              orderId: orderId,
+                              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                              razorpay_order_id: paymentResponse.razorpay_order_id,
+                              razorpay_signature: paymentResponse.razorpay_signature
+                          });
+                          if (verifyRes.data.success) {
+                              window.location.href = verifyRes.data.redirectUrl;
+                          }
+                      } catch (error) {
+                          console.error(error);
+                          Swal.fire({ icon: 'error', title: 'Verification Failed', text: 'Payment verification failed.' });
+                      }
+                  },
+                  modal: {
+                      ondismiss: async function() {
+                          await axios.post('/payment/failure', { orderId });
+                          window.location.reload(); 
+                      }
+                  }
+              };
+              
+              const rzp = new Razorpay(options);
+              rzp.on('payment.failed', async function (response) {
+                  await axios.post('/payment/failure', { orderId });
+                  window.location.reload();
+              });
+              rzp.open();
+          }
+      } catch (error) {
+          console.error(error);
+          Swal.fire({
+              icon: 'error',
+              title: 'Retry Failed',
+              text: error.response?.data?.message || 'Could not initiate retry. Session may have expired.'
+          });
+          if (error.response?.data?.message === 'Payment session expired') {
+              window.location.reload();
+          }
+      } finally {
+          btnElement.disabled = false;
+          btnElement.innerHTML = ogText;
+      }
+  }
 </script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
