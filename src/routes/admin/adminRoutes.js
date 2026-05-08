@@ -11,6 +11,7 @@ import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.j
 import categoryRoutes from "./categoryRoutes.js";
 import subcategoryRoutes from "./subcategoryRoutes.js";
 import productRoutes from "./productRoutes.js";
+import couponRoutes from "./couponRoutes.js";
 import * as orderController from "../../controller/admin/orderController.js";
 
 // --- Auth ---
@@ -26,10 +27,11 @@ router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
 
 router.get("/logout", isAdmin, adminLogout);
 
-// --- Category / Subcategory / Products ---
+// --- Category / Subcategory / Products / Coupons ---
 router.use("/category", categoryRoutes);
 router.use("/subcategory", subcategoryRoutes);
 router.use("/products", productRoutes);
+router.use("/coupons", isAdmin, couponRoutes);
 
 // --- Order Management ---
 router.get("/orders",                              isAdmin, orderController.getOrders);
