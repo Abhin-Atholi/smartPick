@@ -46,7 +46,7 @@ export const getCoupons = async (search, status, page, limit) => {
 };
 
 export const addCoupon = async (data) => {
-    const { code, description, discountType, discountValue, minimumAmount, maximumDiscount, usageLimit, expiryDate } = data;
+    const { code, description, discountType, discountValue, minimumAmount, maximumDiscount, usageLimit, startDate, expiryDate, isActive } = data;
 
     if (!code || !discountType || !discountValue || !minimumAmount || !usageLimit || !expiryDate) {
         throw new Error("Missing required fields.");
@@ -86,6 +86,9 @@ export const addCoupon = async (data) => {
     if (new Date(expiryDate) <= new Date()) {
         throw new Error("Expiry date must be in the future.");
     }
+    if (startDate && expiryDate && new Date(startDate) >= new Date(expiryDate)) {
+        throw new Error("Start date must be before expiry date.");
+    }
 
     const newCoupon = new Coupon({
         code: trimmedCode,
@@ -95,8 +98,9 @@ export const addCoupon = async (data) => {
         minimumAmount: valMinAmount,
         maximumDiscount: discountType === 'percentage' ? valMaxDiscount : null,
         usageLimit: valUsageLimit,
+        startDate: startDate ? new Date(startDate) : new Date(),
         expiryDate: new Date(expiryDate),
-        isActive: true
+        isActive: isActive === 'true' || isActive === true
     });
 
     await newCoupon.save();
@@ -104,7 +108,7 @@ export const addCoupon = async (data) => {
 };
 
 export const editCoupon = async (id, data) => {
-    const { code, description, discountType, discountValue, minimumAmount, maximumDiscount, usageLimit, expiryDate } = data;
+    const { code, description, discountType, discountValue, minimumAmount, maximumDiscount, usageLimit, startDate, expiryDate, isActive } = data;
 
     const coupon = await Coupon.findById(id);
     if (!coupon || coupon.isDeleted) {
@@ -161,7 +165,12 @@ export const editCoupon = async (id, data) => {
     coupon.description = description;
     coupon.minimumAmount = valMinAmount;
     coupon.usageLimit = valUsageLimit;
+    if (startDate && expiryDate && new Date(startDate) >= new Date(expiryDate)) {
+        throw new Error("Start date must be before expiry date.");
+    }
+    coupon.startDate = startDate ? new Date(startDate) : coupon.startDate;
     coupon.expiryDate = new Date(expiryDate);
+    coupon.isActive = isActive === 'true' || isActive === true;
 
     await coupon.save();
     return coupon;

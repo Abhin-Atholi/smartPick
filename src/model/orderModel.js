@@ -7,6 +7,12 @@ const orderItemSchema = new mongoose.Schema({
     color: { type: String, required: true },
     price: { type: Number, required: true },
     totalPrice: { type: Number, required: true },
+    offerApplied: {
+        offerName: { type: String },
+        offerType: { type: String },
+        discountType: { type: String },
+        discountAmount: { type: Number }
+    },
     itemStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested',"Out for Delivery", 'Returned', 'Return Rejected'], default: 'Processing' },
     cancelReason: { type: String },
     returnReason: { type: String }
@@ -30,6 +36,7 @@ const orderSchema = new mongoose.Schema({
     shippingFee: { type: Number, required: true },
     tax: { type: Number, required: true },
     discount: { type: Number, default: 0 },
+    walletAmountUsed: { type: Number, default: 0 },
     totalAmount: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['COD', 'Razorpay', 'Wallet'], required: true },
     paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Refunded', 'Expired'], default: 'Pending' },

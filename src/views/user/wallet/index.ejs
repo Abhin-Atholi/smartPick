@@ -1,0 +1,338 @@
+<%- include("../partials/navbar") %>
+
+<section class="max-w-6xl mx-auto px-4 py-8">
+    <%- include("../partials/accountHeader", { breadcrumb: 'My Wallet' }) %>
+
+    <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+        <%- include("../partials/accountSidebar", { active: "wallet" }) %>
+
+        <main class="space-y-6">
+
+            <!-- Balance Card -->
+            <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-2xl p-8 shadow-xl shadow-indigo-200 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full pointer-events-none"></div>
+                <div class="absolute -bottom-6 -left-6 w-32 h-32 bg-white/10 rounded-full pointer-events-none"></div>
+                <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                    <div>
+                        <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Available Balance</p>
+                        <p class="text-4xl sm:text-5xl font-black text-white">
+                            ₹<%= balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+                        </p>
+                        <p class="text-indigo-300 text-xs font-semibold mt-2">SmartPick Wallet · <%= total %> transaction<%= total !== 1 ? 's' : '' %></p>
+                    </div>
+                    <button onclick="openAddMoneyModal()"
+                        class="flex-shrink-0 flex items-center gap-2 bg-white text-indigo-700 font-black px-6 py-3 rounded-2xl hover:bg-indigo-50 active:scale-95 transition-all shadow-lg text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Add Money
+                    </button>
+                </div>
+            </div>
+
+            <!-- Referral Card -->
+            <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.referralCode) { %>
+            <div class="bg-gradient-to-r from-violet-50 to-indigo-50 border border-indigo-100 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <p class="font-black text-gray-900 text-sm mb-0.5">Your Referral Code</p>
+                    <p class="text-xs text-gray-500 font-semibold">Share this code — your friend gets ₹50, you get ₹100!</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="refCodeDisplay" class="font-mono font-black text-indigo-700 text-lg tracking-widest bg-white border border-indigo-200 px-4 py-2 rounded-xl">
+                        <%= currentUser.referralCode %>
+                    </span>
+                    <button onclick="copyReferralCode('<%= currentUser.referralCode %>')"
+                        class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition active:scale-95">
+                        Copy
+                    </button>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Transactions Table -->
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-black text-gray-900">Transaction History</h2>
+                        <p class="text-xs text-gray-400 font-semibold mt-0.5"><%= total %> total transactions</p>
+                    </div>
+                </div>
+
+                <% if (transactions.length > 0) { %>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-600 whitespace-nowrap">
+                            <thead class="text-[11px] uppercase bg-gray-50 text-gray-400 font-black tracking-wider border-b border-gray-100">
+                                <tr>
+                                    <th class="px-5 py-4">Date & Time</th>
+                                    <th class="px-5 py-4">Description</th>
+                                    <th class="px-5 py-4">Transaction Ref</th>
+                                    <th class="px-5 py-4">Type</th>
+                                    <th class="px-5 py-4">Status</th>
+                                    <th class="px-5 py-4 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                <% transactions.forEach(tx => { %>
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <!-- Date & Time -->
+                                        <td class="px-5 py-4">
+                                            <p class="font-bold text-gray-800 text-xs">
+                                                <%= new Date(tx.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                            </p>
+                                            <p class="text-[10px] text-gray-400 font-semibold mt-0.5">
+                                                <%= new Date(tx.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) %>
+                                            </p>
+                                        </td>
+
+                                        <!-- Description -->
+                                        <td class="px-5 py-4 max-w-[220px]">
+                                            <p class="font-bold text-gray-900 text-xs truncate" title="<%= tx.description %>">
+                                                <%= tx.description %>
+                                            </p>
+                                            <% if (tx.orderId) { %>
+                                                <a href="/order/<%= tx.orderId %>" class="text-[10px] text-indigo-500 font-bold hover:underline mt-0.5 block">
+                                                    View Order →
+                                                </a>
+                                            <% } %>
+                                        </td>
+
+                                        <!-- Transaction Ref (Razorpay ID or internal) -->
+                                        <td class="px-5 py-4">
+                                            <% 
+                                                // Extract Razorpay payment ID from description if present
+                                                const rzpMatch = tx.description && tx.description.match(/pay_[A-Za-z0-9]+/);
+                                                const txRef = rzpMatch ? rzpMatch[0] : (tx._id ? tx._id.toString().slice(-8).toUpperCase() : '—');
+                                            %>
+                                            <span class="font-mono text-[10px] text-gray-500 bg-gray-100 px-2 py-1 rounded-lg font-bold">
+                                                <%= txRef %>
+                                            </span>
+                                        </td>
+
+                                        <!-- Type Badge -->
+                                        <td class="px-5 py-4">
+                                            <% const methodColors = {
+                                                'Referral': 'bg-violet-100 text-violet-700',
+                                                'Refund': 'bg-blue-100 text-blue-700',
+                                                'Purchase': 'bg-orange-100 text-orange-700',
+                                                'Admin Credit': 'bg-teal-100 text-teal-700',
+                                                'Order Payment': 'bg-indigo-100 text-indigo-700',
+                                                'Top-up': 'bg-emerald-100 text-emerald-700'
+                                            }; %>
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider <%= methodColors[tx.method] || 'bg-gray-100 text-gray-500' %>">
+                                                <%= tx.method || tx.type %>
+                                            </span>
+                                        </td>
+
+                                        <!-- Status -->
+                                        <td class="px-5 py-4">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider
+                                                <%= tx.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' %>">
+                                                <%= tx.status || 'Completed' %>
+                                            </span>
+                                        </td>
+
+                                        <!-- Amount -->
+                                        <td class="px-5 py-4 text-right">
+                                            <p class="font-black text-base <%= tx.type === 'Credit' ? 'text-green-600' : 'text-red-500' %>">
+                                                <%= tx.type === 'Credit' ? '+' : '−' %>₹<%= tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
+                                            </p>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <% if (totalPages > 1) { %>
+                        <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                            <p class="text-xs font-bold text-gray-400">Page <%= currentPage %> of <%= totalPages %></p>
+                            <nav class="flex items-center gap-1">
+                                <% if (currentPage > 1) { %>
+                                    <a href="?page=<%= currentPage - 1 %>" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition">← Prev</a>
+                                <% } %>
+                                <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                                    <a href="?page=<%= i %>" class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors
+                                        <%= currentPage === i ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100' %>">
+                                        <%= i %>
+                                    </a>
+                                <% } %>
+                                <% if (currentPage < totalPages) { %>
+                                    <a href="?page=<%= currentPage + 1 %>" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition">Next →</a>
+                                <% } %>
+                            </nav>
+                        </div>
+                    <% } %>
+
+                <% } else { %>
+                    <div class="flex flex-col items-center justify-center py-20 text-center px-4">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-400" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        </div>
+                        <p class="text-gray-500 font-bold text-lg">No transactions yet</p>
+                        <p class="text-gray-400 text-sm mt-1">Add money or shop to see your wallet activity here.</p>
+                        <button onclick="openAddMoneyModal()" class="mt-6 px-6 py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 transition">
+                            Add Money
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+
+        </main>
+    </div>
+</section>
+
+<!-- Add Money Modal -->
+<div id="addMoneyModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="text-lg font-black text-slate-800">Add Money to Wallet</h3>
+            <button onclick="closeAddMoneyModal()" class="text-gray-400 hover:text-red-500 transition p-1 rounded-lg hover:bg-red-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-5">
+            <!-- Quick Amounts -->
+            <div>
+                <p class="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Quick Select</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <% [100, 250, 500, 1000, 2000, 5000].forEach(amt => { %>
+                        <button onclick="setAmount(<%= amt %>)"
+                            class="quick-amt-btn py-2 text-sm font-black border border-gray-200 rounded-xl hover:border-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 transition-all active:scale-95">
+                            ₹<%= amt.toLocaleString('en-IN') %>
+                        </button>
+                    <% }) %>
+                </div>
+            </div>
+
+            <!-- Custom Amount -->
+            <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5">Or Enter Amount</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-500 text-sm">₹</span>
+                    <input type="number" id="topupAmount" min="1" max="50000" placeholder="0.00" oninput="clearQuickSelect()"
+                        class="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                </div>
+                <p class="text-[10px] text-gray-400 font-semibold mt-1">Min: ₹1 · Max: ₹50,000 per transaction</p>
+            </div>
+
+            <button onclick="handleAddMoney()"
+                id="payNowBtn"
+                class="w-full py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-100 text-sm">
+                Pay & Add to Wallet
+            </button>
+        </div>
+    </div>
+</div>
+
+<%- include("../partials/footer") %>
+<%- include("../partials/drawer") %>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // ── Modal Controls ────────────────────────────────────────────────────────
+    function openAddMoneyModal() {
+        document.getElementById('topupAmount').value = '';
+        clearQuickSelect();
+        document.getElementById('addMoneyModal').classList.remove('hidden');
+    }
+    function closeAddMoneyModal() {
+        document.getElementById('addMoneyModal').classList.add('hidden');
+    }
+    document.getElementById('addMoneyModal').addEventListener('click', function(e) {
+        if (e.target === this) closeAddMoneyModal();
+    });
+
+    // ── Quick Amount Buttons ──────────────────────────────────────────────────
+    function setAmount(amount) {
+        document.getElementById('topupAmount').value = amount;
+        document.querySelectorAll('.quick-amt-btn').forEach(btn => {
+            btn.classList.remove('border-indigo-500', 'text-indigo-700', 'bg-indigo-50');
+            btn.classList.add('border-gray-200');
+        });
+        event.target.classList.add('border-indigo-500', 'text-indigo-700', 'bg-indigo-50');
+        event.target.classList.remove('border-gray-200');
+    }
+    function clearQuickSelect() {
+        document.querySelectorAll('.quick-amt-btn').forEach(btn => {
+            btn.classList.remove('border-indigo-500', 'text-indigo-700', 'bg-indigo-50');
+            btn.classList.add('border-gray-200');
+        });
+    }
+
+    // ── Add Money Flow ────────────────────────────────────────────────────────
+    async function handleAddMoney() {
+        const amount = parseFloat(document.getElementById('topupAmount').value);
+        if (!amount || amount < 1 || amount > 50000) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter an amount between ₹1 and ₹50,000.' });
+            return;
+        }
+
+        const btn = document.getElementById('payNowBtn');
+        btn.disabled = true;
+        btn.textContent = 'Opening Payment...';
+
+        try {
+            const { data } = await axios.post('/wallet/topup/initiate', { amount });
+            if (!data.success) throw new Error(data.message);
+
+            const options = {
+                key: data.key,
+                amount: Math.round(amount * 100),
+                currency: 'INR',
+                name: 'SmartPick Wallet',
+                description: `Add ₹${amount.toLocaleString('en-IN')} to your wallet`,
+                order_id: data.orderId,
+                theme: { color: '#4f46e5' },
+                prefill: {},
+                handler: async function(response) {
+                    try {
+                        const verifyRes = await axios.post('/wallet/topup/verify', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            amount
+                        });
+                        if (verifyRes.data.success) {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Money Added!',
+                                text: verifyRes.data.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            location.reload();
+                        } else {
+                            throw new Error(verifyRes.data.message);
+                        }
+                    } catch (err) {
+                        Swal.fire({ icon: 'error', title: 'Verification Failed', text: err.response?.data?.message || err.message });
+                    }
+                },
+                modal: {
+                    ondismiss: function() {
+                        btn.disabled = false;
+                        btn.textContent = 'Pay & Add to Wallet';
+                    }
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+            closeAddMoneyModal();
+
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || err.message });
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Pay & Add to Wallet';
+        }
+    }
+
+    // ── Copy Referral Code ────────────────────────────────────────────────────
+    function copyReferralCode(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            Swal.fire({ icon: 'success', title: 'Copied!', text: `Referral code ${code} copied to clipboard.`, timer: 1500, showConfirmButton: false });
+        });
+    }
+</script>

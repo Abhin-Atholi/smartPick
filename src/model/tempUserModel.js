@@ -4,6 +4,7 @@ const tempUserSchema = new mongoose.Schema({
     email: { type: String, required: true },
     fullName: { type: String, required: true },
     password: { type: String, required: true },
+    referralCode: { type: String, default: null },
     createdAt: {
         type: Date,
         default: Date.now,

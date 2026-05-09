@@ -224,10 +224,31 @@
                 </div>
             </div>
 
-            <div class="mb-6">
-                <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Expiry Date & Time <span class="text-red-500">*</span></label>
-                <input type="datetime-local" id="expiryDate" name="expiryDate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
-                <p id="expiryDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Start Date <span class="text-red-500">*</span></label>
+                    <input type="datetime-local" id="startDate" name="startDate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
+                    <p id="startDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                </div>
+                <!-- Expiry Date -->
+                <div>
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Expiry Date <span class="text-red-500">*</span></label>
+                    <input type="datetime-local" id="expiryDate" name="expiryDate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
+                    <p id="expiryDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                </div>
+            </div>
+
+            <!-- Active Status Toggle -->
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 mb-5">
+                <div>
+                    <p class="text-sm font-black text-gray-800">Active Status</p>
+                    <p class="text-[11px] text-gray-400 font-semibold mt-0.5">Inactive coupons cannot be applied by users</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="isActive" name="isActive" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -276,16 +297,18 @@
         form.reset();
         document.getElementById('couponId').value = '';
         document.getElementById('modalTitle').textContent = 'Add New Coupon';
-        
+        // Default startDate to now
+        const now = new Date();
+        const pad = n => n < 10 ? '0' + n : n;
+        document.getElementById('startDate').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        document.getElementById('isActive').checked = true;
         // Reset locks
         codeInput.readOnly = false;
         codeInput.classList.remove('bg-gray-200', 'text-gray-500', 'border-transparent');
         codeLockText.classList.add('hidden');
         discountTypeSelect.disabled = false;
         discountTypeSelect.classList.remove('bg-gray-200', 'text-gray-500');
-        
-        discountTypeSelect.dispatchEvent(new Event('change')); // Trigger UI update
-        
+        discountTypeSelect.dispatchEvent(new Event('change'));
         modal.classList.remove('hidden');
         setTimeout(() => {
             modal.classList.remove('opacity-0');
@@ -312,8 +335,14 @@
         // Format Date for datetime-local input
         const d = new Date(coupon.expiryDate);
         const pad = n => n < 10 ? '0' + n : n;
-        const formattedDate = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        document.getElementById('expiryDate').value = formattedDate;
+        const formattedExpiry = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        document.getElementById('expiryDate').value = formattedExpiry;
+
+        if (coupon.startDate) {
+            const s = new Date(coupon.startDate);
+            document.getElementById('startDate').value = `${s.getFullYear()}-${pad(s.getMonth()+1)}-${pad(s.getDate())}T${pad(s.getHours())}:${pad(s.getMinutes())}`;
+        }
+        document.getElementById('isActive').checked = coupon.isActive !== false;
 
         // Security Lock check
         if (coupon.usedCount > 0) {

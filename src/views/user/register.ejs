@@ -61,6 +61,26 @@
                  focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
       </div>
 
+      <!-- Referral Code (optional) -->
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-700">
+          Referral Code <span class="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <div class="relative">
+          <input type="text" name="referralCode" id="referralCodeInput"
+            placeholder="e.g. SPAB12CD"
+            value="<%= locals.referralCode ? referralCode : '' %>"
+            maxlength="10" autocomplete="off"
+            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none font-mono font-bold uppercase tracking-widest
+                   focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+            style="text-transform:uppercase">
+          <% if (locals.referralCode && referralCode) { %>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs font-bold">✓ Applied</span>
+          <% } %>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Get ₹50 wallet credit when you use a friend's referral code.</p>
+      </div>
+
       <button type="submit"
         class="w-full rounded-lg bg-indigo-600 text-white font-black py-2.5 text-sm
                shadow-md hover:bg-indigo-700 transition">
@@ -87,27 +107,26 @@
 
   </div>
 
-  <!-- Footer -->
+  <!-- Footer
   <div class="fixed bottom-6 left-0 right-0 text-center text-xs text-gray-400">
     © 2024 E-commerce Inc. All rights reserved.
-  </div>
+  </div> -->
 </div>
 
 <script>
+// Auto-uppercase + no spaces for referral code input
+const refInput = document.getElementById('referralCodeInput');
+if (refInput) {
+    refInput.addEventListener('input', function () {
+        const pos = this.selectionStart;
+        this.value = this.value.replace(/\s+/g, '').toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+}
+
 document.getElementById('registrationForm').addEventListener('submit', function(e) {
     const password = document.getElementsByName('password')[0].value;
     const confirmPassword = document.getElementsByName('confirmPassword')[0].value;
     const name = document.getElementsByName('name')[0].value.trim();
-
-    // if (name.length < 3) {
-    //     e.preventDefault();
-    //     alert("Name must be at least 3 characters long.");
-    // } else if (password.length < 8) {
-    //     e.preventDefault();
-    //     alert("Password must be at least 8 characters.");
-    // } else if (password !== confirmPassword) {
-    //     e.preventDefault();
-    //     alert("Passwords do not match!");
-    // }
 });
 </script>

@@ -4,6 +4,8 @@ import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
 import Wallet from '../../model/walletModel.js';
+import Coupon from '../../model/couponModel.js';
+import * as walletService from './walletService.js';
 
 const processRefund = async (userId, amount, description, orderId) => {
     let wallet = await Wallet.findOne({ userId });
@@ -25,7 +27,7 @@ export const getOrderById = async (userId, orderId) => {
         .populate({ path: 'items.product', populate: { path: 'category' } });
 };
 
-export const placeOrder = async (userId, addressId, paymentMethod) => {
+export const placeOrder = async (userId, addressId, paymentMethod, couponData = null) => {
     // 1. Fetch Cart
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
     if (!cart || cart.items.length === 0) {
@@ -38,7 +40,7 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
         return { success: false, message: 'Address not found' };
     }
 
-    // 3. Pre-flight stock check — validate ALL items first, collect failures
+    // 3. Pre-flight stock check
     const affectedItems = [];
     const orderItems = [];
     let subtotal = 0;
@@ -60,19 +62,41 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
         }
         const itemTotal = variant.price * item.quantity;
         subtotal += itemTotal;
-        orderItems.push({ product: product._id, quantity: item.quantity, size: item.size, color: item.color, price: variant.price, totalPrice: itemTotal });
+        orderItems.push({
+            product: product._id,
+            quantity: item.quantity,
+            size: item.size,
+            color: item.color,
+            price: variant.price,
+            totalPrice: itemTotal
+        });
     }
 
     if (affectedItems.length > 0) {
         return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
     }
 
-    // 4. Calculate Final Totals
-    const shippingFee = subtotal > 999 ? 0 : 50; // Simple logic: free shipping over 999
-    const tax = 0; // Or calculate tax if needed
-    const totalAmount = subtotal + shippingFee + tax;
+    // 4. Calculate Totals
+    const shippingFee = subtotal > 999 ? 0 : 50;
+    const tax = 0;
+    const couponDiscount = couponData?.discountAmount || 0;
+    const totalAmount = Math.max(1, subtotal - couponDiscount + shippingFee + tax);
 
-    // 5. Create Order — pre-generate _id so orderId is always derived uniquely
+    // 5. Wallet payment handling
+    let walletAmountUsed = 0;
+    let finalPaymentStatus = 'Pending';
+    let finalOrderStatus = 'Processing';
+
+    if (paymentMethod === 'Wallet') {
+        const wallet = await walletService.getOrCreateWallet(userId);
+        if (wallet.balance < totalAmount) {
+            return { success: false, message: `Insufficient wallet balance. Available: ₹${wallet.balance.toFixed(2)}, Required: ₹${totalAmount.toFixed(2)}` };
+        }
+        walletAmountUsed = totalAmount;
+        finalPaymentStatus = 'Paid';
+    }
+
+    // 6. Build order
     const orderId = new mongoose.Types.ObjectId();
     const order = new Order({
         _id: orderId,
@@ -92,14 +116,20 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
         subtotal,
         shippingFee,
         tax,
-        discount: 0,
+        discount: couponDiscount,
+        walletAmountUsed,
         totalAmount,
         paymentMethod,
-        paymentStatus: 'Pending',
-        orderStatus: 'Processing'
+        paymentStatus: finalPaymentStatus,
+        orderStatus: finalOrderStatus,
+        couponApplied: couponData ? {
+            code: couponData.code,
+            discountAmount: couponData.discountAmount,
+            discountType: couponData.discountType
+        } : undefined
     });
 
-    // 6. Deduct Stock using arrayFilters to safely target the exact variant
+    // 7. Deduct stock
     for (const item of orderItems) {
         await Product.updateOne(
             { _id: item.product },
@@ -108,12 +138,30 @@ export const placeOrder = async (userId, addressId, paymentMethod) => {
         );
     }
 
-    // 7. Save Order and Clear Cart
+    // 8. Debit wallet atomically (after stock deducted, before order save)
+    if (paymentMethod === 'Wallet' && walletAmountUsed > 0) {
+        await walletService.debitWallet(
+            userId,
+            walletAmountUsed,
+            `Order ${order.orderId} — Wallet Payment`,
+            'Order Payment',
+            order._id
+        );
+    }
+
+    // 9. Save order and clear cart
     await order.save();
-    
     cart.items = [];
     cart.cartTotal = 0;
     await cart.save();
+
+    // 10. Mark coupon as used (non-fatal)
+    if (couponData?.code && finalPaymentStatus === 'Paid') {
+        Coupon.findOneAndUpdate(
+            { code: couponData.code },
+            { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
+        ).catch(err => console.error('Coupon usedBy update failed:', err));
+    }
 
     return { success: true, orderId: order._id };
 };

@@ -90,12 +90,22 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser) throw new Error("Session expired.");
 
+  // Resolve referral code to a referrer user ID (if provided)
+  let referredById = null;
+  if (tempUser.referralCode) {
+      try {
+          const referrer = await User.findOne({ referralCode: tempUser.referralCode }).select('_id').lean();
+          if (referrer) referredById = referrer._id;
+      } catch (_) {} // Non-fatal — proceed without referral
+  }
+
   const newUser = await User.create({
-    fullName: tempUser.fullName,
-    email: tempUser.email,
-    password: tempUser.password,
-    isVerified: true,
-    authProvider: "local"
+      fullName: tempUser.fullName,
+      email: tempUser.email,
+      password: tempUser.password,
+      isVerified: true,
+      authProvider: "local",
+      referredBy: referredById
   });
 
   await TempUser.deleteOne({ _id: tempUser._id });

@@ -2,11 +2,12 @@ import bcrypt from "bcrypt";
 import User from "../../model/userModel.js";
 import TempUser from "../../model/tempUserModel.js";
 import * as otpService from "../common/otpService.js";
+import { validateReferralCode } from "../../utils/referralHelper.js";
 
 /**
  * Register: Handles temporary user creation and OTP generation
  */
-export const register = async ({ name, email, password, confirmPassword }) => {
+export const register = async ({ name, email, password, confirmPassword, referralCode }) => {
   if (!name && !email && !password && !confirmPassword) throw new Error("All fields are required");
   email = email.trim().toLowerCase();
   if (name.length<3) throw new Error("Name should have atleast 3 characters");
@@ -24,7 +25,8 @@ export const register = async ({ name, email, password, confirmPassword }) => {
     {
       fullName: name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      referralCode: referralCode ? referralCode.toUpperCase().trim() : null
     },
     { upsert: true, new: true }
   );

@@ -4,7 +4,7 @@ import passport from "passport";
 
 
 export const loadLogin = (req, res) => res.render("user/login", { title: "Login", msg: req.query.msg || null, email: req.query.email || "" });
-export const loadRegister = (req, res) => res.render("user/register", { title: "Register", msg: req.query.msg || null, name: req.query.name || "", email: req.query.email || "" });
+export const loadRegister = (req, res) => res.render("user/register", { title: "Register", msg: req.query.msg || null, name: req.query.name || "", email: req.query.email || "", referralCode: req.query.ref || "" });
 
 /** * FORGOT PASSWORD FLOW 
  */
@@ -58,7 +58,7 @@ export const registerUser = async (req, res) => {
     const result = await authService.register(req.body);
     res.redirect(`/verify?email=${encodeURIComponent(result.email)}`);
   } catch (err) {
-    res.redirect(`/register?msg=${encodeURIComponent(err.message)}&name=${encodeURIComponent(req.body.name || "")}&email=${encodeURIComponent(req.body.email || "")}`);
+    res.redirect(`/register?msg=${encodeURIComponent(err.message)}&name=${encodeURIComponent(req.body.name || "")}&email=${encodeURIComponent(req.body.email || "")}&ref=${encodeURIComponent(req.body.referralCode || "")}`);
   }
 };
 
