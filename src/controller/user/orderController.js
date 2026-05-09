@@ -2,6 +2,7 @@ import * as orderService from '../../services/user/orderService.js';
 import * as cartService from '../../services/user/cartService.js';
 import Address from '../../model/addressModel.js';
 import { generateInvoice } from '../../utils/invoiceGenerator.js';
+import * as couponHelper from '../../utils/couponHelper.js';
 
 export const loadCheckout = async (req, res, next) => {
     try {
@@ -35,7 +36,30 @@ export const loadCheckout = async (req, res, next) => {
             });
 
         const shippingFee = subtotal > 999 ? 0 : 50;
-        const totalAmount = subtotal + shippingFee;
+        
+        let discount = 0;
+        let appliedCoupon = null;
+
+        // Revalidate coupon on page load just in case it expired while browsing
+        if (req.session.appliedCoupon && subtotal > 0 && !hasStockIssue) {
+            try {
+                const result = await couponHelper.validateAndCalculateDiscount(
+                    req.session.appliedCoupon.code,
+                    subtotal,
+                    userId
+                );
+                discount = result.discountAmount;
+                appliedCoupon = req.session.appliedCoupon;
+                // Update session accurately
+                req.session.appliedCoupon.discountAmount = discount;
+            } catch (err) {
+                // If invalid, drop from session
+                delete req.session.appliedCoupon;
+                req.session.save();
+            }
+        }
+
+        const totalAmount = subtotal - discount + shippingFee;
 
         res.render('user/checkout', {
             title: "Checkout — SmartPick",
@@ -44,6 +68,8 @@ export const loadCheckout = async (req, res, next) => {
             cartItems: cartItemsWithStock,
             subtotal,
             shippingFee,
+            discount,
+            appliedCoupon,
             totalAmount,
             hasStockIssue
         });
@@ -69,9 +95,14 @@ export const placeOrder = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Please select a payment method" });
         }
 
-        const result = await orderService.placeOrder(userId, addressId, paymentMethod);
+        const couponData = req.session.appliedCoupon || null;
+        
+        const result = await orderService.placeOrder(userId, addressId, paymentMethod, couponData);
 
         if (result.success) {
+            if (req.session.appliedCoupon) {
+                delete req.session.appliedCoupon;
+            }
             res.json({ success: true, message: "Order placed successfully", orderId: result.orderId });
         } else {
             res.status(400).json({ success: false, message: result.message, affectedItems: result.affectedItems || [] });

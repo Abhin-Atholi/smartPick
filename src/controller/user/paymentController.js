@@ -5,6 +5,7 @@ import Order from '../../model/orderModel.js';
 import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
+import * as couponHelper from '../../utils/couponHelper.js';
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'test_key',
@@ -49,7 +50,31 @@ export const initiateCheckout = async (req, res) => {
         // 4. Calculate Final Totals
         const shippingFee = subtotal > 999 ? 0 : 50;
         const tax = 0;
-        const totalAmount = subtotal + shippingFee + tax;
+        
+        let discount = 0;
+        let couponAppliedData = null;
+
+        if (req.session.appliedCoupon) {
+            try {
+                const result = await couponHelper.validateAndCalculateDiscount(
+                    req.session.appliedCoupon.code,
+                    subtotal,
+                    userId
+                );
+                discount = result.discountAmount;
+                couponAppliedData = {
+                    code: result.coupon.code,
+                    discountAmount: discount,
+                    discountType: result.coupon.discountType
+                };
+            } catch (error) {
+                delete req.session.appliedCoupon;
+                req.session.save();
+                return res.status(400).json({ success: false, message: `Coupon Error: ${error.message}` });
+            }
+        }
+
+        const totalAmount = subtotal - discount + shippingFee + tax;
 
         // 5. Initialize Razorpay Order
         const rzpOrder = await razorpay.orders.create({
@@ -80,11 +105,12 @@ export const initiateCheckout = async (req, res) => {
             subtotal,
             shippingFee,
             tax,
-            discount: 0,
+            discount,
             totalAmount,
             paymentMethod: 'Razorpay',
             paymentStatus: 'Pending',
             orderStatus: 'Payment Pending',
+            couponApplied: couponAppliedData,
             paymentDetails: {
                 razorpayOrderId: rzpOrder.id,
                 retryExpiryTime,

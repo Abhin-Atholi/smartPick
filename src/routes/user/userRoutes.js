@@ -11,6 +11,7 @@ import cartRoutes from "./cartRoutes.js";
 import productRoutes from "./productRoutes.js";
 import orderRoutes from "./orderRoutes.js";
 import paymentRoutes from "./paymentRoutes.js";
+import couponRoutes from "./couponRoutes.js";
 
 router.use(checkBlocked);
 
@@ -27,5 +28,6 @@ router.use("/cart", cartRoutes);
 router.use("/products", productRoutes); // /products, /products/details, etc.
 router.use("/payment", paymentRoutes);
 router.use("/", orderRoutes); // Mounts /checkout, /order/place, /order/success
+router.use("/", couponRoutes); // Mounts /apply-coupon, /remove-coupon
 
 export default router;
