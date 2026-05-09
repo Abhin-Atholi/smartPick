@@ -12,35 +12,30 @@ import categoryRoutes from "./categoryRoutes.js";
 import subcategoryRoutes from "./subcategoryRoutes.js";
 import productRoutes from "./productRoutes.js";
 import couponRoutes from "./couponRoutes.js";
-import * as orderController from "../../controller/admin/orderController.js";
-
+import orderRoutes from "./orderRoutes.js";
 // --- Auth ---
 router.get("/login", redirectIfAdminAuth, getLogin);
 router.post("/login", postLogin);
 
+// Apply isAdmin globally for all routes below
+router.use(isAdmin);
+
 // --- Dashboard ---
-router.get("/dashboard", isAdmin, getDashboard);
+router.get("/dashboard", getDashboard);
 
 // --- Customers ---
-router.get("/customers", isAdmin, getCustomers);
-router.post("/customers/toggle/:id", isAdmin, toggleCustomerStatus);
+router.get("/customers", getCustomers);
+router.post("/customers/toggle/:id", toggleCustomerStatus);
 
-router.get("/logout", isAdmin, adminLogout);
+router.get("/logout", adminLogout);
 
 // --- Category / Subcategory / Products / Coupons ---
 router.use("/category", categoryRoutes);
 router.use("/subcategory", subcategoryRoutes);
 router.use("/products", productRoutes);
-router.use("/coupons", isAdmin, couponRoutes);
+router.use("/coupons", couponRoutes);
 
 // --- Order Management ---
-router.get("/orders",                              isAdmin, orderController.getOrders);
-router.get("/orders/return-requests",              isAdmin, orderController.getReturnRequests);
-router.get("/orders/:id",                          isAdmin, orderController.getOrderDetails);
-router.patch("/orders/:id/status",                 isAdmin, orderController.updateStatus);
-router.patch("/orders/:id/cancel-item",            isAdmin, orderController.cancelItem);
-router.post("/orders/:id/return-decision",         isAdmin, orderController.handleReturn);
-router.get("/orders/:id/view-invoice",             isAdmin, orderController.viewInvoice);
-router.get("/orders/:id/download-invoice",         isAdmin, orderController.downloadInvoice);
+router.use("/orders", orderRoutes);
 
 export default router;

@@ -460,8 +460,6 @@
 
         try {
             const url = isEdit ? `/admin/coupons/edit/${id}` : '/admin/coupons/add';
-            const res = await axios.patch(isEdit ? url : '/admin/coupons/add', data); // Wait, add is POST.
-            // Oh, wait, I can just use axios correctly based on isEdit
             const response = await (isEdit ? axios.patch(url, data) : axios.post(url, data));
 
             if (response.data.success) {
