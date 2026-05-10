@@ -51,9 +51,9 @@ export const verifyOtp = async ({ email, otp, purpose }) => {
 
   let user;
   if (purpose === "changeEmail") {
-      user = await User.findOne({ pendingEmail: email });
+      user = await User.findOne({ pendingEmail: normalizedEmail });
   } else {
-      user = await User.findOne({ email });
+      user = await User.findOne({ email: normalizedEmail });
   }
 
   if (!user && purpose !== "register") return { ok: false, msg: "User not found" };
@@ -86,9 +86,9 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
     return { type: "EMAIL_CHANGE", user };
   }
 
-  // Fallback to Registration (TempUser)
-  const tempUser = await TempUser.findOne({ email });
-  if (!tempUser) throw new Error("Session expired.");
+  const normalizedEmail = email.trim().toLowerCase();
+  const tempUser = await TempUser.findOne({ email: normalizedEmail });
+  if (!tempUser) throw new Error("Session expired. Please register again.");
 
   // Resolve referral code to a referrer user ID (if provided)
   let referredById = null;

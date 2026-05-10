@@ -31,12 +31,11 @@ export const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate a unique referral code before saving a new user
-userSchema.pre('save', function (next) {
+userSchema.pre('save', async function () {
   if (this.isNew && !this.referralCode) {
     // 'SP' + 4 random bytes → e.g. 'SPAB12CD'
     this.referralCode = 'SP' + crypto.randomBytes(4).toString('hex').toUpperCase();
   }
-  next();
 });
 
 

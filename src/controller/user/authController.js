@@ -111,32 +111,37 @@ export const googleAuthCallback = (req, res) => {
 export const loadVerify = async (req, res) => {
   try {
     const { email, context, msg } = req.query;
-    const target = await otpService.getVerificationTarget(email, context);
-    const purpose = context === "changeEmail" ? "changeEmail" : "register";
+    // Default context to 'register' if not provided
+    const target = await otpService.getVerificationTarget(email, context || "register");
+    const purpose = (context === "changeEmail") ? "changeEmail" : "register";
     const remainingSeconds = await otpService.getRemainingSeconds(email, purpose);
     
     res.render("user/verify", { 
-      title: "Verify", 
+      title: "Verify Account", 
       email, 
       purpose,
       remainingSeconds, 
       msg: msg || (remainingSeconds === 0 ? "OTP Expired" : null) 
     });
   } catch (err) {
+    console.error("loadVerify Error:", err);
     res.redirect("/register?msg=" + encodeURIComponent(err.message));
   }
 };
 
-export const verifyOtp = async (req, res) => {
+export const verifyOtp = async (req, res, next) => {
   try {
-    const result = await otpService.verifyUniversalOtp(req.body.email, req.body.otp, req.body.purpose);
+    const { email, otp, purpose } = req.body;
+    if (!email || !otp) throw new Error("Email and OTP are required");
+
+    const result = await otpService.verifyUniversalOtp(email, otp, purpose);
+    
     if (result.type === "EMAIL_CHANGE") {
-      req.session.user.email = result.user.email;
-      return res.redirect("/account?msg=Email updated! ✅");
+      if (req.session.user) req.session.user.email = result.user.email;
+      return req.session.save(() => res.redirect("/account?msg=Email updated! ✅"));
     }
     
     req.session.userId = result.user._id;
-    
     req.session.user = {
       _id: result.user._id,
       fullName: result.user.fullName,
@@ -144,9 +149,16 @@ export const verifyOtp = async (req, res) => {
       role: result.user.role,
       profileImage: result.user.profileImage || null
     };
-    req.session.save(() => res.redirect("/home"));
+
+    req.session.save((err) => {
+      if (err) return next(err);
+      res.redirect("/home");
+    });
   } catch (err) {
-    res.redirect(`/verify?email=${encodeURIComponent(req.body.email)}&msg=${encodeURIComponent(err.message)}`);
+    console.error("verifyOtp Error:", err);
+    const email = req.body.email || "";
+    const purpose = req.body.purpose || "register";
+    res.redirect(`/verify?email=${encodeURIComponent(email)}&context=${encodeURIComponent(purpose)}&msg=${encodeURIComponent(err.message)}`);
   }
 };
 
