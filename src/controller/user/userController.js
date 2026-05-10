@@ -1,15 +1,19 @@
 import * as userService from "../../services/user/userService.js"; // Ensure this filename is correct
 
 import * as productService from "../../services/user/productService.js";
+import * as offerHelper from "../../utils/offerHelper.js";
 
 export const loadHome = async (req, res) => {
   try {
     const { categories, latestProducts } = await productService.getHomeData();
 
+    // Enrich latest products with offers
+    const enrichedProducts = await offerHelper.applyOffersToProducts(latestProducts);
+
     res.render("user/home", { 
       title: "SmartPick | Premium Fashion", 
       categories, 
-      latestProducts 
+      latestProducts: enrichedProducts 
     });
   } catch (error) {
     console.error("Home load error:", error);
@@ -37,13 +41,13 @@ export const logout = (req, res) => {
 
       req.session.save((err) => {
         if (err) console.error("Logout error:", err);
-        res.redirect("/");
+        res.redirect("/login");
       });
     });
   } else {
     req.session.save((err) => {
       if (err) console.error("Logout error:", err);
-      res.redirect("/");
+      res.redirect("/login");
     });
   }
 };

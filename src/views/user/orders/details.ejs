@@ -10,12 +10,26 @@
         Back to Orders
       </a>
       <div class="flex flex-wrap gap-3 mt-4 md:mt-0">
-          <% if (order.orderStatus === 'Processing') { %>
-            <button onclick="openActionModal('cancel', '<%= order._id %>', null, 'Cancel Entire Order')"
-              class="px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition shadow-sm">
-              Cancel Order
-            </button>
+          <% 
+            const isFailedRazorpay = order.paymentMethod === 'Razorpay' && ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
+            const expiryTime = order.paymentDetails?.retryExpiryTime ? new Date(order.paymentDetails.retryExpiryTime).getTime() : null;
+            const isNotExpired = expiryTime && new Date().getTime() < expiryTime;
+            
+            if (isFailedRazorpay && isNotExpired) {
+          %>
+            <div class="flex items-center gap-3 bg-red-50 border border-red-200 px-4 py-2 rounded-xl">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-black text-red-400 uppercase tracking-widest">Retry Expires In</span>
+                <span class="text-sm font-black text-red-600 countdown-timer font-mono" data-expiry="<%= expiryTime %>">05:00</span>
+              </div>
+              <button onclick="retryPaymentFromList('<%= order._id %>', this)" 
+                class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-red-100 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                Retry Payment
+              </button>
+            </div>
           <% } %>
+
           <% 
             const hasDeliveredItems = order.items.some(i => i.itemStatus === 'Delivered');
             if (order.orderStatus === 'Delivered' && hasDeliveredItems) { 
@@ -25,11 +39,22 @@
               Return Order
             </button>
           <% } %>
-          <a href="/orders/<%= order._id %>/download-invoice"
-            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-indigo-100 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Invoice
-          </a>
+
+          <% 
+            const invoiceEligibleStatuses = ['Delivered', 'Return Requested', 'Returned', 'Return Rejected'];
+            if (invoiceEligibleStatuses.includes(order.orderStatus)) { 
+          %>
+            <a href="/orders/<%= order._id %>/view-invoice" target="_blank"
+              class="px-5 py-2.5 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-50 transition shadow-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              View Invoice
+            </a>
+            <a href="/orders/<%= order._id %>/download-invoice"
+              class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-indigo-100 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download
+            </a>
+          <% } %>
         </div>
     </div>
 
@@ -229,10 +254,6 @@
 
         <!-- Cancel / Return Order-level Actions -->
         <% 
-          const isFailedRazorpay = order.paymentMethod === 'Razorpay' && (order.paymentStatus === 'Failed' || order.orderStatus === 'Payment Pending' || order.orderStatus === 'Payment Failed');
-          const expiryTime = order.paymentDetails?.retryExpiryTime ? new Date(order.paymentDetails.retryExpiryTime).getTime() : null;
-          const isNotExpired = expiryTime && new Date().getTime() < expiryTime;
-          
           if (isFailedRazorpay && isNotExpired) {
         %>
         <div class="bg-red-50 rounded-2xl border border-red-200 shadow-sm p-6 mb-6">

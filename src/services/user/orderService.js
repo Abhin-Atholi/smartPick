@@ -24,8 +24,31 @@ const processRefund = async (userId, amount, description, orderId) => {
 };
 
 export const getOrderById = async (userId, orderId) => {
-    return Order.findOne({ _id: orderId, user: userId })
+    const order = await Order.findOne({ _id: orderId, user: userId })
         .populate({ path: 'items.product', populate: { path: 'category' } });
+
+    if (!order) return null;
+
+    // Robust Expiry Check: If order is still pending/failed but retry window closed
+    const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
+    const hasExpiry = order.paymentDetails?.retryExpiryTime;
+    
+    if (isRzpPending && hasExpiry && new Date() > order.paymentDetails.retryExpiryTime && order.orderStatus !== 'Expired') {
+        order.orderStatus = 'Expired';
+        order.paymentStatus = 'Expired';
+        for (const item of order.items) {
+            item.itemStatus = 'Expired';
+            // Restore stock
+            await Product.updateOne(
+                { _id: item.product },
+                { $inc: { 'variants.$[v].stock': item.quantity } },
+                { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+            );
+        }
+        await order.save();
+    }
+
+    return order;
 };
 
 export const placeOrder = async (userId, addressId, paymentMethod, couponData = null) => {
@@ -41,7 +64,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         return { success: false, message: 'Address not found' };
     }
 
-    // 3. Pre-flight stock check
+    // 3. Pre-flight stock check & item building
     const affectedItems = [];
     const orderItems = [];
     let subtotal = 0;
@@ -87,7 +110,8 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
                 offerType: bestOffer.offerType,
                 discountType: bestOffer.discountType,
                 discountAmount: bestOffer.discountAmount * item.quantity
-            } : undefined
+            } : undefined,
+            itemStatus: (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing'
         });
     }
 
@@ -105,11 +129,12 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
     orderItems.forEach(item => { originalSubtotal += (item.originalPrice * item.quantity); });
     const totalOfferDiscount = originalSubtotal - subtotal;
 
-    // 5. Wallet payment handling
+    // 5. Initial Statuses
     let walletAmountUsed = 0;
     let finalPaymentStatus = 'Pending';
-    let finalOrderStatus = 'Processing';
+    let finalOrderStatus = (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing';
 
+    // Handle Wallet logic early to check balance
     if (paymentMethod === 'Wallet') {
         const wallet = await walletService.getOrCreateWallet(userId);
         if (wallet.balance < totalAmount) {
@@ -119,11 +144,11 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         finalPaymentStatus = 'Paid';
     }
 
-    // 6. Build order
-    const orderId = new mongoose.Types.ObjectId();
+    // 6. Build order document
+    const orderIdObj = new mongoose.Types.ObjectId();
     const order = new Order({
-        _id: orderId,
-        orderId: `SP-${orderId.toString().slice(-6).toUpperCase()}`,
+        _id: orderIdObj,
+        orderId: `SP-${orderIdObj.toString().slice(-6).toUpperCase()}`,
         user: userId,
         items: orderItems,
         shippingAddress: {
@@ -154,7 +179,14 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         } : undefined
     });
 
-    // 7. Deduct stock
+    if (paymentMethod === 'Razorpay') {
+        order.paymentDetails = {
+            retryExpiryTime: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes window
+            failedAttempts: 0
+        };
+    }
+
+    // 7. STOCK RESERVATION (Crucial: lock stock before payment gateway opens)
     for (const item of orderItems) {
         await Product.updateOne(
             { _id: item.product },
@@ -163,7 +195,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         );
     }
 
-    // 8. Debit wallet atomically (after stock deducted, before order save)
+    // 8. Wallet debit (Atomic)
     if (paymentMethod === 'Wallet' && walletAmountUsed > 0) {
         await walletService.debitWallet(
             userId,
@@ -174,21 +206,22 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         );
     }
 
-    // 9. Save order and clear cart
+    // 9. Finalize Order and Clear Cart
     await order.save();
     cart.items = [];
     cart.cartTotal = 0;
     await cart.save();
 
-    // 10. Mark coupon as used (non-fatal)
-    if (couponData?.code && finalPaymentStatus === 'Paid') {
-        Coupon.findOneAndUpdate(
+    // 10. Mark coupon used (Only if payment is immediate like Wallet/COD)
+    // For Razorpay, we do this after verification.
+    if (couponData?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
+        await Coupon.updateOne(
             { code: couponData.code },
             { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
-        ).catch(err => console.error('Coupon usedBy update failed:', err));
+        );
     }
 
-    return { success: true, orderId: order._id };
+    return { success: true, orderId: order._id, totalAmount: order.totalAmount };
 };
 
 export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', search = {}) => {
@@ -252,6 +285,25 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
             }
         ])
     ]);
+
+    // Robust Batch Expiry Check for the current page
+    for (const order of orders) {
+        const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
+        const hasExpiry = order.paymentDetails?.retryExpiryTime;
+        if (isRzpPending && hasExpiry && new Date() > order.paymentDetails.retryExpiryTime && order.orderStatus !== 'Expired') {
+            order.orderStatus = 'Expired';
+            order.paymentStatus = 'Expired';
+            for (const item of order.items) {
+                item.itemStatus = 'Expired';
+                await Product.updateOne(
+                    { _id: item.product },
+                    { $inc: { 'variants.$[v].stock': item.quantity } },
+                    { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+                );
+            }
+            await order.save();
+        }
+    }
 
     const stats = {
         Processing: 0,

@@ -14,165 +14,54 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET || 'test_secret'
 });
 
+import * as orderService from '../../services/user/orderService.js';
+
 export const initiateCheckout = async (req, res) => {
     try {
         const userId = req.currentUser?._id || req.session?.user?._id;
         const { addressId } = req.body;
 
-        // 1. Fetch Cart
-        const cart = await Cart.findOne({ user: userId }).populate('items.product');
-        if (!cart || cart.items.length === 0) {
-            return res.status(400).json({ success: false, message: 'Your cart is empty' });
+        if (!addressId) {
+            return res.status(400).json({ success: false, message: 'Please select a shipping address' });
         }
 
-        // 2. Fetch Address
-        const address = await Address.findOne({ _id: addressId, userId });
-        if (!address) {
-            return res.status(400).json({ success: false, message: 'Address not found' });
-        }
+        // 1. Centralized Order Placement (Handles stock, coupons, offers, and initial Pending status)
+        const couponData = req.session.appliedCoupon || null;
+        const result = await orderService.placeOrder(userId, addressId, 'Razorpay', couponData);
 
-        // 3. Pre-flight stock check
-        const orderItems = [];
-        let subtotal = 0;
-
-        for (const item of cart.items) {
-            const product = item.product;
-            if (!product || product.isDeleted || !product.isActive) {
-                return res.status(400).json({ success: false, message: 'Some products are unavailable' });
-            }
-            const variant = product.variants.find(v => v.size === item.size && v.color.name === item.color);
-            if (!variant || variant.stock < item.quantity) {
-                return res.status(400).json({ success: false, message: `Insufficient stock for ${product.name}` });
-            }
-
-            // Recalculate Offer
-            const categoryId = product.category?._id || product.category;
-            const bestOffer = await offerHelper.getBestOffer(product._id, categoryId, variant.price);
-            
-            const originalPrice = variant.price;
-            const finalPrice = bestOffer ? bestOffer.finalPrice : originalPrice;
-            const discountPerUnit = originalPrice - finalPrice;
-            const itemTotal = finalPrice * item.quantity;
-            
-            subtotal += itemTotal;
-            orderItems.push({ 
-                product: product._id, 
-                quantity: item.quantity, 
-                size: item.size, 
-                color: item.color, 
-                price: finalPrice, 
-                originalPrice,
-                discountAmount: discountPerUnit,
-                totalPrice: itemTotal, 
-                offerApplied: bestOffer ? {
-                    offerId: bestOffer.offerId,
-                    offerName: bestOffer.offerName,
-                    offerType: bestOffer.offerType,
-                    discountType: bestOffer.discountType,
-                    discountAmount: bestOffer.discountAmount * item.quantity
-                } : undefined,
-                itemStatus: 'Payment Pending' 
+        if (!result.success) {
+            return res.status(400).json({ 
+                success: false, 
+                message: result.message, 
+                affectedItems: result.affectedItems || [] 
             });
         }
 
-        let originalSubtotal = 0;
-        orderItems.forEach(item => { originalSubtotal += (item.originalPrice * item.quantity); });
-        const totalOfferDiscount = originalSubtotal - subtotal;
+        const { orderId, totalAmount } = result;
 
-        // 4. Calculate Final Totals
-        const shippingFee = subtotal > 999 ? 0 : 50;
-        const tax = 0;
-        
-        let discount = 0;
-        let couponAppliedData = null;
-
-        if (req.session.appliedCoupon) {
-            try {
-                const result = await couponHelper.validateAndCalculateDiscount(
-                    req.session.appliedCoupon.code,
-                    subtotal,
-                    userId
-                );
-                discount = result.discountAmount;
-                couponAppliedData = {
-                    code: result.coupon.code,
-                    discountAmount: discount,
-                    discountType: result.coupon.discountType
-                };
-            } catch (error) {
-                delete req.session.appliedCoupon;
-                req.session.save();
-                return res.status(400).json({ success: false, message: `Coupon Error: ${error.message}` });
-            }
-        }
-
-        const totalAmount = subtotal - discount + shippingFee + tax;
-
-        // 5. Initialize Razorpay Order
+        // 2. Initialize Razorpay Gateway Order
         const rzpOrder = await razorpay.orders.create({
-            amount: totalAmount * 100, // paise
+            amount: Math.round(totalAmount * 100), // paise
             currency: 'INR',
-            receipt: `receipt_${Date.now()}`
+            receipt: `order_rcpt_${orderId.toString().slice(-6)}`
         });
 
-        // 6. Create local Order document
-        const orderIdObj = new mongoose.Types.ObjectId();
-        const retryExpiryTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-        const order = new Order({
-            _id: orderIdObj,
-            orderId: `SP-${orderIdObj.toString().slice(-6).toUpperCase()}`,
-            user: userId,
-            items: orderItems,
-            shippingAddress: {
-                fullName: address.fullName,
-                phone: address.phone,
-                addressLine1: `${address.house}, ${address.locality}, ${address.area}`,
-                addressLine2: '',
-                city: address.city,
-                state: address.state,
-                postalCode: address.pincode,
-                country: address.country
-            },
-            originalSubtotal,
-            totalOfferDiscount,
-            subtotal,
-            shippingFee,
-            tax,
-            discount,
-            totalAmount,
-            paymentMethod: 'Razorpay',
-            paymentStatus: 'Pending',
-            orderStatus: 'Payment Pending',
-            couponApplied: couponAppliedData,
-            paymentDetails: {
-                razorpayOrderId: rzpOrder.id,
-                retryExpiryTime,
-                failedAttempts: 0
-            }
+        // 3. Update Order with Gateway ID
+        await Order.findByIdAndUpdate(orderId, {
+            'paymentDetails.razorpayOrderId': rzpOrder.id
         });
 
-        // 7. Atomic inventory decrement (locking stock during payment window)
-        for (const item of orderItems) {
-            await Product.updateOne(
-                { _id: item.product },
-                { $inc: { 'variants.$[v].stock': -item.quantity } },
-                { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
-            );
-        }
-
-        await order.save();
-
-        // 8. Robust background task to auto-release stock if unpaid after 5 mins
+        // 4. Stock Safety Timeout (Redundant if cron/middleware exists, but good for UX)
+        // This will auto-expire and restock if user closes browser and never comes back.
         setTimeout(async () => {
             try {
-                const currentOrder = await Order.findById(orderIdObj);
-                if (currentOrder && currentOrder.paymentStatus !== 'Paid' && currentOrder.orderStatus !== 'Expired') {
+                const currentOrder = await Order.findById(orderId);
+                if (currentOrder && currentOrder.paymentStatus === 'Pending' && currentOrder.orderStatus === 'Payment Pending') {
                     currentOrder.orderStatus = 'Expired';
                     currentOrder.paymentStatus = 'Expired';
                     for (const item of currentOrder.items) {
                         item.itemStatus = 'Expired';
-                        // Release held stock back to inventory
+                        // Release held stock
                         await Product.updateOne(
                             { _id: item.product },
                             { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -184,11 +73,11 @@ export const initiateCheckout = async (req, res) => {
             } catch (err) {
                 console.error("Auto-expire stock release error:", err);
             }
-        }, 5 * 60 * 1000 + 2000); // 5 mins + 2 seconds buffer
+        }, 5 * 60 * 1000 + 5000); 
 
         return res.status(200).json({
             success: true,
-            orderId: order._id,
+            orderId,
             razorpayOrderId: rzpOrder.id,
             amount: totalAmount,
             key: process.env.RAZORPAY_KEY_ID
@@ -259,6 +148,14 @@ export const verifyPayment = async (req, res) => {
 
         // Cleanup Cart
         await Cart.deleteOne({ user: userId });
+
+        // Finalize Coupon Usage
+        if (order.couponApplied?.code) {
+            await Coupon.updateOne(
+                { code: order.couponApplied.code },
+                { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
+            ).catch(err => console.error('Coupon final usage update failed:', err));
+        }
 
         // Trigger referral reward non-fatally
         processReferralReward(userId).catch(err => 

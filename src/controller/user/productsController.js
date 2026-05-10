@@ -23,12 +23,7 @@ export const loadProducts = async (req, res) => {
     } = data;
 
     // Enrich products with best offer info
-    products = await Promise.all(products.map(async (p) => {
-      const basePrice = Math.min(...p.variants.map(v => v.price));
-      const categoryId = p.category?._id || p.category;
-      const bestOffer = await offerHelper.getBestOffer(p._id, categoryId, basePrice);
-      return { ...p, bestOffer };
-    }));
+    products = await offerHelper.applyOffersToProducts(products);
 
     const startItem = totalProducts === 0 ? 0 : (currentPage - 1) * 6 + 1;
     const endItem = Math.min(currentPage * 6, totalProducts);
@@ -100,8 +95,11 @@ export const loadProductDetails = async (req, res) => {
     const relatedProducts = await userProductService.getRelatedProducts(
       product.category._id,
       product._id,
-      4
+      3
     );
+
+    // Enrich related products with offers
+    const enrichedRelated = await offerHelper.applyOffersToProducts(relatedProducts);
 
     // Wishlist status
     let isInWishlist = false;
@@ -116,7 +114,7 @@ export const loadProductDetails = async (req, res) => {
     res.render('user/products/details', {
       title: `${product.name} — SmartPick`,
       product,
-      relatedProducts,
+      relatedProducts: enrichedRelated,
       isInWishlist,
       bestOffer
     });

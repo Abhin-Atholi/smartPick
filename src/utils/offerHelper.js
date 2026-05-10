@@ -107,3 +107,23 @@ export const applyOffersToItems = async (items) => {
         };
     }));
 };
+
+/**
+ * Apply best offer to an array of raw Product documents/objects.
+ * @param {Array} products 
+ * @returns {Promise<Array>} - Enriched products with .bestOffer
+ */
+export const applyOffersToProducts = async (products) => {
+    return await Promise.all(products.map(async (p) => {
+        if (!p.variants || p.variants.length === 0) return p;
+        
+        // Use min price of variants as the baseline for the grid display
+        const basePrice = Math.min(...p.variants.map(v => v.price));
+        const categoryId = p.category?._id || p.category;
+
+        const bestOffer = await getBestOffer(p._id, categoryId, basePrice);
+        
+        // Return enriched product
+        return { ...p, bestOffer };
+    }));
+};
