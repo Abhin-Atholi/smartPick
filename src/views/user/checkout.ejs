@@ -190,7 +190,7 @@
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-bold">Tax</span>
-                            <span class="text-gray-900 font-black">₹0</span>
+                            <span class="text-gray-900 font-black">₹<span id="summaryTax"><%= (typeof tax !== 'undefined' ? tax : 0).toLocaleString() %></span></span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-bold">Shipping</span>
@@ -276,7 +276,7 @@
     }
 
     function updateSummary(b) {
-        // b: { originalSubtotal, totalOfferDiscount, subtotal, discount, shippingFee, finalTotal }
+        // b: { originalSubtotal, totalOfferDiscount, subtotal, discount, tax, shippingFee, finalTotal }
         document.getElementById('summarySubtotal').textContent = '₹' + b.originalSubtotal.toLocaleString('en-IN');
         
         // Offer Discount Row
@@ -301,6 +301,8 @@
 
         const shipping = b.shippingFee;
         document.getElementById('summaryShipping').textContent = shipping === 0 ? 'Free' : '₹' + shipping.toLocaleString('en-IN');
+        const summaryTax = document.getElementById('summaryTax');
+        if (summaryTax) summaryTax.textContent = b.tax.toLocaleString('en-IN');
         document.getElementById('summaryTotal').textContent = '₹' + b.finalTotal.toLocaleString('en-IN');
     }
 

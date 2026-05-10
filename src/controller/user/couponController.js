@@ -1,6 +1,7 @@
 import * as couponHelper from '../../utils/couponHelper.js';
 import * as cartService from '../../services/user/cartService.js';
 import Coupon from '../../model/couponModel.js';
+import * as taxHelper from '../../utils/taxHelper.js';
 
 export const applyCoupon = async (req, res) => {
     try {
@@ -45,7 +46,9 @@ export const applyCoupon = async (req, res) => {
         };
 
         const shippingFee = effectiveSubtotal > 499 ? 0 : 50;
-        const finalTotal = effectiveSubtotal - result.discountAmount + shippingFee;
+        const taxableAmount = taxHelper.calculateTaxableAmount(effectiveSubtotal, result.discountAmount);
+        const tax = taxHelper.calculateTax(taxableAmount);
+        const finalTotal = effectiveSubtotal - result.discountAmount + shippingFee + tax;
 
         return res.status(200).json({
             success: true,
@@ -55,6 +58,7 @@ export const applyCoupon = async (req, res) => {
                 totalOfferDiscount: originalSubtotal - effectiveSubtotal,
                 subtotal: effectiveSubtotal,
                 discount: result.discountAmount,
+                tax,
                 shippingFee,
                 finalTotal
             }
@@ -90,7 +94,9 @@ export const removeCoupon = async (req, res) => {
         }
 
         const shippingFee = effectiveSubtotal > 499 ? 0 : 50;
-        const finalTotal = effectiveSubtotal + shippingFee;
+        const taxableAmount = taxHelper.calculateTaxableAmount(effectiveSubtotal, 0);
+        const tax = taxHelper.calculateTax(taxableAmount);
+        const finalTotal = effectiveSubtotal + shippingFee + tax;
 
         return res.status(200).json({
             success: true,
@@ -100,6 +106,7 @@ export const removeCoupon = async (req, res) => {
                 totalOfferDiscount: originalSubtotal - effectiveSubtotal,
                 subtotal: effectiveSubtotal,
                 discount: 0,
+                tax,
                 shippingFee,
                 finalTotal
             }

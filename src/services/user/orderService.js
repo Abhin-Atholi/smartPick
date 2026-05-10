@@ -7,6 +7,7 @@ import Wallet from '../../model/walletModel.js';
 import Coupon from '../../model/couponModel.js';
 import * as walletService from './walletService.js';
 import * as offerHelper from '../../utils/offerHelper.js';
+import * as taxHelper from '../../utils/taxHelper.js';
 import cron from 'node-cron';
 
 const processRefund = async (userId, amount, description, orderId) => {
@@ -33,14 +34,13 @@ export const getOrderById = async (userId, orderId) => {
     // Robust Expiry Check: If order is still pending/failed but retry window closed
     const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
     const hasExpiry = order.retryExpiresAt;
-    
+
     if (isRzpPending && hasExpiry && new Date() > order.retryExpiresAt && !order.stockRestored) {
         order.stockRestored = true;
         order.orderStatus = 'Expired';
         order.paymentStatus = 'Expired';
         for (const item of order.items) {
             item.itemStatus = 'Expired';
-            // Restore stock
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -90,12 +90,12 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         // Recalculate Offer
         const categoryId = product.category?._id || product.category;
         const bestOffer = await offerHelper.getBestOffer(product._id, categoryId, variant.price);
-        
+
         const originalPrice = variant.price;
         const finalPrice = bestOffer ? bestOffer.finalPrice : originalPrice;
         const discountPerUnit = originalPrice - finalPrice;
         const itemTotal = finalPrice * item.quantity;
-        
+
         subtotal += itemTotal;
         orderItems.push({
             product: product._id,
@@ -121,12 +121,13 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
     }
 
-    // 4. Calculate Totals
+    // 4. Calculate Totals (Tax is applied AFTER discounts)
     const shippingFee = subtotal > 499 ? 0 : 50;
-    const tax = 0;
     const couponDiscount = couponData?.discountAmount || 0;
+    const taxableAmount = taxHelper.calculateTaxableAmount(subtotal, couponDiscount);
+    const tax = taxHelper.calculateTax(taxableAmount);
     const totalAmount = Math.max(1, subtotal - couponDiscount + shippingFee + tax);
-    
+
     let originalSubtotal = 0;
     orderItems.forEach(item => { originalSubtotal += (item.originalPrice * item.quantity); });
     const totalOfferDiscount = originalSubtotal - subtotal;
@@ -189,7 +190,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         };
     }
 
-    // 7. STOCK RESERVATION (Crucial: lock stock before payment gateway opens)
+    // 7. STOCK RESERVATION
     for (const item of orderItems) {
         await Product.updateOne(
             { _id: item.product },
@@ -215,8 +216,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
     cart.cartTotal = 0;
     await cart.save();
 
-    // 10. Mark coupon used (Only if payment is immediate like Wallet/COD)
-    // For Razorpay, we do this after verification.
+    // 10. Mark coupon used (Only for immediate payment methods)
     if (couponData?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
         await Coupon.updateOne(
             { code: couponData.code },
@@ -231,7 +231,6 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
     const skip = (page - 1) * limit;
     const query = { user: userId, orderStatus: { $ne: 'Expired' } };
 
-    // Status filter
     if (filter && filter !== 'All') {
         if (filter === 'Processing') {
             query.orderStatus = { $in: ['Processing', 'Shipped', 'Out for Delivery'] };
@@ -240,23 +239,14 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
         }
     }
 
-    // ── Search filters ──────────────────────────────────────────────────────
     const { q, date } = search;
 
     if (q && q.trim()) {
         const term = q.trim();
-        // Try matching orderId first
-        const orderIdCondition   = { orderId: { $regex: term, $options: 'i' } };
-        // Also search item names by looking up products
-        const matchingProducts   = await Product.find(
-            { name: { $regex: term, $options: 'i' } },
-            '_id'
-        ).lean();
+        const orderIdCondition = { orderId: { $regex: term, $options: 'i' } };
+        const matchingProducts = await Product.find({ name: { $regex: term, $options: 'i' } }, '_id').lean();
         const productIds = matchingProducts.map(p => p._id);
-        const itemNameCondition  = productIds.length > 0
-            ? { 'items.product': { $in: productIds } }
-            : null;
-
+        const itemNameCondition = productIds.length > 0 ? { 'items.product': { $in: productIds } } : null;
         const orClauses = [orderIdCondition];
         if (itemNameCondition) orClauses.push(itemNameCondition);
         query.$or = orClauses;
@@ -269,7 +259,6 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
         end.setHours(23, 59, 59, 999);
         query.createdAt = { $gte: start, $lte: end };
     }
-    // ────────────────────────────────────────────────────────────────────────
 
     const [orders, totalOrders, statsArray] = await Promise.all([
         Order.find(query)
@@ -280,12 +269,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
         Order.countDocuments(query),
         Order.aggregate([
             { $match: { user: new mongoose.Types.ObjectId(userId) } },
-            {
-                $group: {
-                    _id: '$orderStatus',
-                    count: { $sum: 1 }
-                }
-            }
+            { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
         ])
     ]);
 
@@ -310,30 +294,15 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
     }
 
     const stats = {
-        Processing: 0,
-        Shipped: 0,
-        'Out for Delivery': 0,
-        Cancelled: 0,
-        'Return Requested': 0,
-        Returned: 0,
-        Delivered: 0,
-        totalAll: 0
+        Processing: 0, Shipped: 0, 'Out for Delivery': 0,
+        Cancelled: 0, 'Return Requested': 0, Returned: 0, Delivered: 0, totalAll: 0
     };
-
     statsArray.forEach(s => {
-        if (stats.hasOwnProperty(s._id)) {
-            stats[s._id] = s.count;
-        }
+        if (Object.prototype.hasOwnProperty.call(stats, s._id)) stats[s._id] = s.count;
         stats.totalAll += s.count;
     });
 
-    return {
-        orders,
-        totalOrders,
-        totalPages: Math.ceil(totalOrders / limit),
-        currentPage: page,
-        stats
-    };
+    return { orders, totalOrders, totalPages: Math.ceil(totalOrders / limit), currentPage: page, stats };
 };
 
 export const cancelOrder = async (userId, orderId, reason) => {
@@ -351,7 +320,6 @@ export const cancelOrder = async (userId, orderId, reason) => {
         if (item.itemStatus !== 'Cancelled' && item.itemStatus !== 'Returned') {
             item.itemStatus = 'Cancelled';
             item.cancelReason = reason;
-            // Increment stock using arrayFilters
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -359,10 +327,10 @@ export const cancelOrder = async (userId, orderId, reason) => {
             );
         }
     }
-    
-    
+
     if (order.paymentStatus === 'Paid') {
-        order.paymentStatus = 'Refunded'; 
+        order.paymentStatus = 'Refunded';
+        // Full order totalAmount already includes tax — refund the whole thing
         await processRefund(userId, order.totalAmount, `Refund for cancelled Order ${order.orderId}`, orderId);
     }
 
@@ -412,27 +380,23 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
     item.itemStatus = 'Cancelled';
     item.cancelReason = reason;
 
-    // Increment stock using arrayFilters
     await Product.updateOne(
         { _id: item.product },
         { $inc: { 'variants.$[v].stock': item.quantity } },
         { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
     );
 
-    // Check if all items are cancelled
     const activeItems = order.items.filter(i => i.itemStatus !== 'Cancelled' && i.itemStatus !== 'Returned');
-    if (activeItems.length === 0) {
-        order.orderStatus = 'Cancelled';
-    }
+    if (activeItems.length === 0) order.orderStatus = 'Cancelled';
 
     if (order.paymentStatus === 'Paid') {
-        // Refund the specific item amount
-        await processRefund(userId, item.totalPrice, `Refund for cancelled item in Order ${order.orderId}`, orderId);
-        
-        // If whole order is now cancelled, mark payment as refunded
-        if (order.orderStatus === 'Cancelled') {
-            order.paymentStatus = 'Refunded';
-        }
+        // Proportional tax refund: refund item amount + its share of the total tax
+        const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
+        const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
+        const refundAmount = item.totalPrice + itemTaxRefund;
+        await processRefund(userId, refundAmount, `Refund for cancelled item in Order ${order.orderId}`, orderId);
+
+        if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
     }
 
     await order.save();
@@ -453,7 +417,6 @@ export const returnOrderItem = async (userId, orderId, itemId, reason) => {
     item.itemStatus = 'Return Requested';
     item.returnReason = reason;
 
-    // Check if all items are Return Requested / Returned / Cancelled
     const allReturnedOrCancelled = order.items.every(i => ['Return Requested', 'Returned', 'Cancelled'].includes(i.itemStatus));
     if (allReturnedOrCancelled && order.orderStatus !== 'Returned') {
         order.orderStatus = 'Return Requested';
@@ -466,7 +429,7 @@ export const returnOrderItem = async (userId, orderId, itemId, reason) => {
 export const checkPaymentStatus = async (userId, orderId) => {
     const order = await getOrderById(userId, orderId);
     if (!order) return { success: false, message: 'Order not found' };
-    
+
     return {
         success: true,
         orderStatus: order.orderStatus,
@@ -474,14 +437,11 @@ export const checkPaymentStatus = async (userId, orderId) => {
         isExpired: order.orderStatus === 'Expired' || order.paymentStatus === 'Expired'
     };
 };
+
 // ── Background Cleanup Task ──────────────────────────────────────────────────
-/**
- * Periodically cleans up expired orders and restores stock.
- * This handles cases where the user closes the tab and the server might have restarted.
- */
 export const startStockCleanupTask = () => {
     console.log('📦 Cron: Order cleanup task initialized (Every 30s)');
-    
+
     cron.schedule('*/30 * * * * *', async () => {
         try {
             const now = new Date();
@@ -497,15 +457,12 @@ export const startStockCleanupTask = () => {
             console.log(`🧹 Cron: Auto-restoring stock for ${expiredOrders.length} expired order(s)...`);
 
             for (const order of expiredOrders) {
-                // Double check to prevent race conditions
                 order.stockRestored = true;
-
                 order.orderStatus = 'Expired';
                 order.paymentStatus = 'Expired';
-                
+
                 for (const item of order.items) {
                     item.itemStatus = 'Expired';
-                    // Atomic stock restoration
                     await Product.updateOne(
                         { _id: item.product },
                         { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -517,5 +474,5 @@ export const startStockCleanupTask = () => {
         } catch (err) {
             console.error('Order cleanup task failed:', err);
         }
-    }, 60 * 1000); // Every minute
+    }, 60 * 1000);
 };

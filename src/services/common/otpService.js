@@ -2,6 +2,10 @@ import User from "../../model/userModel.js";
 import TempUser from "../../model/tempUserModel.js";
 import Otp from "../../model/otpModel.js";
 import { sendOtpEmail } from "./emailService.js";
+import * as walletService from "../user/walletService.js";
+
+const REFERRER_REWARD = 100;
+const REFERRED_REWARD = 50;
 
 const genOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -109,6 +113,31 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
   });
 
   await TempUser.deleteOne({ _id: tempUser._id });
+
+  // ── Referral Reward: Credit both wallets immediately on verified signup ──
+  if (referredById && referredById.toString() !== newUser._id.toString()) {
+      try {
+          await Promise.all([
+              walletService.creditWallet(
+                  referredById,
+                  REFERRER_REWARD,
+                  `Referral reward — ${newUser.fullName} joined SmartPick`,
+                  'Referral'
+              ),
+              walletService.creditWallet(
+                  newUser._id,
+                  REFERRED_REWARD,
+                  'Welcome bonus — Referral signup reward',
+                  'Referral'
+              )
+          ]);
+          // Mark reward as claimed so it won't fire again
+          await newUser.updateOne({ referralRewardClaimed: true });
+      } catch (err) {
+          console.error('Referral wallet credit failed (non-fatal):', err);
+      }
+  }
+
   return { type: "REGISTRATION", user: newUser };
 };
 

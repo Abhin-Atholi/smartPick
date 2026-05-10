@@ -167,14 +167,14 @@
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-bold">Tax Estimate</span>
-                            <span class="text-gray-900 font-black">₹0.00</span>
+                            <span class="text-gray-900 font-black">₹<span id="summaryTax"><%= (typeof estimatedTax !== 'undefined' ? estimatedTax : 0).toLocaleString() %></span></span>
                         </div>
                     </div>
                     
                     <div class="pt-6 border-t border-dashed border-gray-200 mb-8">
                         <div class="flex justify-between items-end">
                             <span class="text-base font-black text-gray-900 uppercase tracking-widest">Total</span>
-                            <span class="text-3xl font-black text-indigo-600">₹<span id="summaryTotal"><%= activeSubtotal.toLocaleString() %></span></span>
+                            <span class="text-3xl font-black text-indigo-600">₹<span id="summaryTotal"><%= (activeSubtotal + (typeof estimatedTax !== 'undefined' ? estimatedTax : 0)).toLocaleString() %></span></span>
                         </div>
                     </div>
 
@@ -245,7 +245,7 @@
 
             if (response.data.success) {
                 qtyEl.innerText = newQty;
-                updateSummary(response.data.cartTotal);
+                updateSummary(response.data.cartTotal, response.data.estimatedTax);
                 
                 // Update button states
                 const plusBtn = document.getElementById(`plus-btn-${productId}-${size}-${color}`);
@@ -296,7 +296,7 @@
                     itemEl.style.transform = 'translateX(20px)';
                     setTimeout(() => {
                         itemEl.remove();
-                        updateSummary(response.data.cartTotal);
+                        updateSummary(response.data.cartTotal, response.data.estimatedTax);
                         document.getElementById('cartItemCount').innerText = response.data.itemCount;
                         const badge = document.getElementById('cartBadge');
                         if (badge) badge.innerText = response.data.itemCount;
@@ -309,10 +309,10 @@
         }
     }
 
-    function updateSummary(total) {
-        const formatted = total.toLocaleString();
-        document.getElementById('summarySubtotal').innerText = formatted;
-        document.getElementById('summaryTotal').innerText = formatted;
+    function updateSummary(total, estimatedTax = 0) {
+        document.getElementById('summarySubtotal').innerText = total.toLocaleString();
+        document.getElementById('summaryTax').innerText = estimatedTax.toLocaleString();
+        document.getElementById('summaryTotal').innerText = (total + estimatedTax).toLocaleString();
     }
 
     // Pagination Bridge for the partial

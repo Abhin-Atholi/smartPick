@@ -6,7 +6,6 @@ import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
 import * as couponHelper from '../../utils/couponHelper.js';
-import { processReferralReward } from '../../utils/referralHelper.js';
 import * as offerHelper from '../../utils/offerHelper.js';
 
 const razorpay = new Razorpay({
@@ -120,11 +119,6 @@ export const verifyPayment = async (req, res) => {
                 { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
             ).catch(err => console.error('Coupon final usage update failed:', err));
         }
-
-        // Trigger referral reward non-fatally
-        processReferralReward(userId).catch(err => 
-            console.error('Referral reward trigger failed (non-fatal):', err)
-        );
 
         return res.status(200).json({ success: true, redirectUrl: `/order/success?orderId=${order._id}` });
 

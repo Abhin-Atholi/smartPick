@@ -1,4 +1,5 @@
 import * as cartService from '../../services/user/cartService.js';
+import * as taxHelper from '../../utils/taxHelper.js';
 
 export const loadCart = async (req, res, next) => {
     try {
@@ -9,9 +10,12 @@ export const loadCart = async (req, res, next) => {
         const limit = 4; // Show 4 items per page in cart
 
         const cartData = await cartService.getCart(userId, page, limit);
+        const estimatedTax = taxHelper.calculateTax(cartData.cartTotal);
+
         res.render("user/products/cart", {
             title: "Shopping Cart — SmartPick",
             cart: cartData, // This now contains { items, cartTotal, totalPages, currentPage, etc. }
+            estimatedTax,
             activePath: "/cart"
         });
     } catch (err) {
@@ -54,6 +58,7 @@ export const updateQuantity = async (req, res, next) => {
         res.json({ 
             success: true, 
             cartTotal: result.cartTotal,
+            estimatedTax: taxHelper.calculateTax(result.cartTotal),
             itemTotal: result.items.find(i => i.product.toString() === productId && i.size === size && i.color === color).totalPrice
         });
     } catch (err) {
@@ -74,6 +79,7 @@ export const removeItem = async (req, res, next) => {
         res.json({ 
             success: true, 
             cartTotal: cart.cartTotal,
+            estimatedTax: taxHelper.calculateTax(cart.cartTotal),
             itemCount: cart.items.length
         });
     } catch (err) {

@@ -268,20 +268,20 @@
               <span class="text-rose-600 font-bold">-₹<%= order.totalOfferDiscount.toLocaleString() %></span>
             </div>
             <% } %>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-400 font-semibold">Shipping</span>
-              <span class="text-gray-800 font-bold"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-400 font-semibold">Tax</span>
-              <span class="text-gray-800 font-bold">₹<%= order.tax || 0 %></span>
-            </div>
             <% if (order.discount > 0) { %>
             <div class="flex justify-between text-sm">
               <span class="text-indigo-400 font-semibold">Coupon</span>
               <span class="text-indigo-600 font-bold">-₹<%= order.discount.toLocaleString() %></span>
             </div>
             <% } %>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400 font-semibold">Tax</span>
+              <span class="text-gray-800 font-bold">₹<%= (order.tax || 0).toLocaleString() %></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400 font-semibold">Shipping</span>
+              <span class="text-gray-800 font-bold"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span>
+            </div>
           </div>
           <div class="mt-5 pt-4 border-t border-dashed border-gray-200 flex justify-between items-end">
             <span class="text-sm font-black text-gray-900 uppercase tracking-wide">Total</span>

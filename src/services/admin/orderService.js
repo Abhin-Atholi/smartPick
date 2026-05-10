@@ -1,6 +1,7 @@
 import Order from '../../model/orderModel.js';
 import Product from '../../model/productModel.js';
 import Wallet from '../../model/walletModel.js';
+import * as taxHelper from '../../utils/taxHelper.js';
 
 const processRefund = async (userId, amount, description, orderId) => {
     let wallet = await Wallet.findOne({ userId });
@@ -189,7 +190,10 @@ export const cancelOrderItem = async (orderId, itemId) => {
     if (active.length === 0) order.orderStatus = 'Cancelled';
 
     if (order.paymentStatus === 'Paid') {
-        await processRefund(order.user, item.totalPrice, `Refund for admin-cancelled item in Order ${order.orderId}`, orderId);
+        const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
+        const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
+        const refundAmount = item.totalPrice + itemTaxRefund;
+        await processRefund(order.user, refundAmount, `Refund for admin-cancelled item in Order ${order.orderId}`, orderId);
         if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
     }
 
@@ -235,7 +239,10 @@ export const handleReturnDecision = async (orderId, itemId, decision) => {
         if (nonReturned.length === 0) order.orderStatus = 'Returned';
 
         if (order.paymentStatus === 'Paid') {
-            await processRefund(order.user, item.totalPrice, `Refund for returned item in Order ${order.orderId}`, orderId);
+            const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
+            const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
+            const refundAmount = item.totalPrice + itemTaxRefund;
+            await processRefund(order.user, refundAmount, `Refund for returned item in Order ${order.orderId}`, orderId);
             if (order.orderStatus === 'Returned') order.paymentStatus = 'Refunded';
         }
     } else {

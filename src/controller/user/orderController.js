@@ -3,8 +3,8 @@ import * as cartService from '../../services/user/cartService.js';
 import Address from '../../model/addressModel.js';
 import { generateInvoice } from '../../utils/invoiceGenerator.js';
 import * as couponHelper from '../../utils/couponHelper.js';
-import { processReferralReward } from '../../utils/referralHelper.js';
 import * as walletService from '../../services/user/walletService.js';
+import * as taxHelper from '../../utils/taxHelper.js';
 
 export const loadCheckout = async (req, res, next) => {
     try {
@@ -74,7 +74,9 @@ export const loadCheckout = async (req, res, next) => {
             }
         }
 
-        const totalAmount = subtotal - couponDiscount + shippingFee;
+        const taxableAmount = taxHelper.calculateTaxableAmount(subtotal, couponDiscount);
+        const tax = taxHelper.calculateTax(taxableAmount);
+        const totalAmount = subtotal - couponDiscount + shippingFee + tax;
 
         res.render('user/checkout', {
             title: "Checkout — SmartPick",
@@ -85,6 +87,7 @@ export const loadCheckout = async (req, res, next) => {
             totalOfferDiscount,
             shippingFee,
             couponDiscount,
+            tax,
             appliedCoupon,
             totalAmount,
             hasStockIssue,
@@ -120,10 +123,6 @@ export const placeOrder = async (req, res, next) => {
             if (req.session.appliedCoupon) {
                 delete req.session.appliedCoupon;
             }
-            // Trigger referral reward for COD orders (non-fatal)
-            processReferralReward(userId).catch(err =>
-                console.error('Referral reward trigger failed (non-fatal):', err)
-            );
             res.json({ success: true, message: "Order placed successfully", orderId: result.orderId });
         } else {
             res.status(400).json({ success: false, message: result.message, affectedItems: result.affectedItems || [] });

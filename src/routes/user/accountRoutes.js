@@ -3,6 +3,7 @@ const router = express.Router();
 import * as accountController  from "../../controller/user/accountController.js";
 import { protectRoute } from "../../middleware/user/isAuth.js";
 import { profileUploadMiddleware } from "../../middleware/user/profileUpload.js";
+import * as referralController from "../../controller/user/referralController.js";
 
 router.use(protectRoute);
 
@@ -17,5 +18,7 @@ router.delete("/addresses/:id", accountController.deleteAddress);
 
 router.get("/security", accountController.loadSecurity);
 router.put("/update-password", accountController.updatePassword);
+
+router.get("/referrals", referralController.loadReferrals);
 
 export default router;
