@@ -111,12 +111,17 @@ export const loadProductDetails = async (req, res) => {
     const minPrice = Math.min(...product.variants.map(v => v.price));
     const bestOffer = await offerHelper.getBestOffer(product._id, product.category._id, minPrice);
 
+    // Fetch Reviews
+    const reviewService = await import("../../services/user/reviewService.js");
+    const reviewsData = await reviewService.getProductReviews(product._id, 'newest', 1, 5); // Load 5 initially
+
     res.render('user/products/details', {
       title: `${product.name} — SmartPick`,
       product,
       relatedProducts: enrichedRelated,
       isInWishlist,
-      bestOffer
+      bestOffer,
+      reviewsData
     });
   } catch (err) {
     console.error("Product details error:", err);

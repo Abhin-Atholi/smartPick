@@ -151,7 +151,7 @@ export const updateOrderStatus = async (orderId, newStatus) => {
                 item.itemStatus = 'Cancelled';
             }
         }
-        if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+        if (order.paymentStatus === 'Paid') {
             order.paymentStatus = 'Refunded';
             await processRefund(order.user, order.totalAmount, `Refund for admin-cancelled Order ${order.orderId}`, orderId);
         }
@@ -188,7 +188,7 @@ export const cancelOrderItem = async (orderId, itemId) => {
     const active = order.items.filter(i => !['Cancelled','Returned'].includes(i.itemStatus));
     if (active.length === 0) order.orderStatus = 'Cancelled';
 
-    if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+    if (order.paymentStatus === 'Paid') {
         await processRefund(order.user, item.totalPrice, `Refund for admin-cancelled item in Order ${order.orderId}`, orderId);
         if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
     }
@@ -234,7 +234,7 @@ export const handleReturnDecision = async (orderId, itemId, decision) => {
         const nonReturned = order.items.filter(i => !['Returned','Cancelled', 'Return Rejected'].includes(i.itemStatus));
         if (nonReturned.length === 0) order.orderStatus = 'Returned';
 
-        if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+        if (order.paymentStatus === 'Paid') {
             await processRefund(order.user, item.totalPrice, `Refund for returned item in Order ${order.orderId}`, orderId);
             if (order.orderStatus === 'Returned') order.paymentStatus = 'Refunded';
         }

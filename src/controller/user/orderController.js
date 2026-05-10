@@ -50,7 +50,7 @@ export const loadCheckout = async (req, res, next) => {
                 return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };
             });
 
-        const shippingFee = subtotal > 999 ? 0 : 50;
+        const shippingFee = subtotal > 499 ? 0 : 50;
         
         let couponDiscount = 0;
         let appliedCoupon = null;
@@ -251,10 +251,20 @@ export const getOrderDetails = async (req, res, next) => {
             return res.status(404).render('error', { message: 'Order not found' });
         }
 
+        // Fetch user reviews for products in this order
+        const ProductReview = (await import("../../model/reviewModel.js")).default;
+        const productIds = order.items.map(item => item.product._id || item.product);
+        const reviews = await ProductReview.find({ userId, productId: { $in: productIds } });
+        
+        // Create a map of productId -> review
+        const userReviews = {};
+        reviews.forEach(r => userReviews[r.productId.toString()] = r);
+
         res.render('user/orders/details', {
             title: `Order ${order.orderId || '#' + id.slice(-6).toUpperCase()} — SmartPick`,
             activePath: '/orders',
-            order
+            order,
+            userReviews
         });
     } catch (err) {
         console.error('getOrderDetails error:', err);

@@ -1,4 +1,4 @@
-<!-- Static Output for Product Reviews -->
+<!-- Dynamic Output for Product Reviews -->
 <section id="reviews" class="mt-16 pt-12 border-t border-gray-100">
   <div class="mb-10">
     <h2 class="text-2xl font-black text-slate-900 mb-2">Customer Reviews</h2>
@@ -9,110 +9,84 @@
     <!-- Left: Rating Summary -->
     <div class="lg:col-span-4 flex flex-col">
       <div class="p-8 rounded-3xl bg-gray-50 flex flex-col items-center justify-center text-center">
-        <div class="text-6xl font-black text-slate-900 tracking-tighter mb-2">4.1</div>
+        <div class="text-6xl font-black text-slate-900 tracking-tighter mb-2"><%= product.averageRating > 0 ? product.averageRating.toFixed(1) : '0.0' %></div>
         <div class="flex items-center text-amber-400 mb-3 gap-0.5">
-          <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-          <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-          <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-          <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-          <svg class="w-5 h-5 text-gray-200 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+          <% for (let i = 1; i <= 5; i++) { %>
+            <% if (product.averageRating >= i) { %>
+              <svg class="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+            <% } else if (product.averageRating >= i - 0.5) { %>
+              <svg class="w-5 h-5 text-amber-400" viewBox="0 0 20 20">
+                 <defs>
+                   <linearGradient id="half-rating-big-<%= i %>">
+                     <stop offset="50%" stop-color="currentColor"/>
+                     <stop offset="50%" stop-color="#E5E7EB" stop-opacity="1"/>
+                   </linearGradient>
+                 </defs>
+                 <path fill="url(#half-rating-big-<%= i %>)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            <% } else { %>
+              <svg class="w-5 h-5 text-gray-200 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+            <% } %>
+          <% } %>
         </div>
-        <p class="text-xs font-semibold text-gray-400">Based on 128 Reviews</p>
+        <p class="text-xs font-semibold text-gray-400">Based on <%= product.reviewCount %> Reviews</p>
       </div>
       
       <!-- Rating Bars -->
       <div class="mt-8 space-y-3">
-        <!-- 5 Star -->
+        <% [5, 4, 3, 2, 1].forEach(star => { 
+            const count = reviewsData?.ratingBreakdown ? (reviewsData.ratingBreakdown[star] || 0) : 0;
+            const percentage = reviewsData?.ratingPercentages ? (reviewsData.ratingPercentages[star] || 0) : 0;
+        %>
         <div class="flex items-center gap-3">
-          <span class="text-xs font-bold text-slate-700 w-12 shrink-0">5 Star</span>
+          <span class="text-xs font-bold text-slate-700 w-12 shrink-0"><%= star %> Star</span>
           <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div class="h-full bg-slate-900 rounded-full" style="width: 65%;"></div>
+            <div class="h-full bg-slate-900 rounded-full" style="width: <%= percentage %>%;"></div>
           </div>
-          <span class="text-[10px] font-bold text-gray-400 w-8 text-right">65%</span>
+          <span class="text-[10px] font-bold text-gray-400 w-8 text-right"><%= percentage %>%</span>
         </div>
-        <!-- 4 Star -->
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-bold text-slate-700 w-12 shrink-0">4 Star</span>
-          <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div class="h-full bg-slate-900 rounded-full" style="width: 20%;"></div>
-          </div>
-          <span class="text-[10px] font-bold text-gray-400 w-8 text-right">20%</span>
-        </div>
-        <!-- 3 Star -->
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-bold text-slate-700 w-12 shrink-0">3 Star</span>
-          <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div class="h-full bg-slate-400 rounded-full" style="width: 10%;"></div>
-          </div>
-          <span class="text-[10px] font-bold text-gray-400 w-8 text-right">10%</span>
-        </div>
-        <!-- 2 Star -->
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-bold text-slate-700 w-12 shrink-0">2 Star</span>
-          <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div class="h-full bg-slate-300 rounded-full" style="width: 3%;"></div>
-          </div>
-          <span class="text-[10px] font-bold text-gray-400 w-8 text-right">3%</span>
-        </div>
-        <!-- 1 Star -->
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-bold text-slate-700 w-12 shrink-0">1 Star</span>
-          <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div class="h-full bg-slate-200 rounded-full" style="width: 2%;"></div>
-          </div>
-          <span class="text-[10px] font-bold text-gray-400 w-8 text-right">2%</span>
-        </div>
+        <% }) %>
       </div>
     </div>
 
     <!-- Right: Review Testimonials -->
     <div class="lg:col-span-8 flex flex-col gap-6">
       
-      <!-- Review 1 -->
-      <div class="p-6 rounded-2xl border border-gray-100 bg-white">
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <h4 class="text-sm font-black text-slate-900">Arjun K.</h4>
-            <p class="text-[10px] font-bold text-gray-400 mt-0.5">Verified Purchase • 2 weeks ago</p>
+      <% if (reviewsData && reviewsData.reviews.length > 0) { %>
+        <% reviewsData.reviews.forEach(review => { %>
+          <div class="p-6 rounded-2xl border border-gray-100 bg-white">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h4 class="text-sm font-black text-slate-900"><%= (review.userNameSnapshot && review.userNameSnapshot !== "undefined undefined") ? review.userNameSnapshot : (review.userId && review.userId.fullName ? review.userId.fullName : 'A Customer') %></h4>
+                <p class="text-[10px] font-bold text-gray-400 mt-0.5">
+                  Verified Purchase • <%= new Date(review.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                  <% if (review.isEdited) { %> (Edited) <% } %>
+                </p>
+              </div>
+              <div class="flex text-amber-400 gap-0.5">
+                <% for (let i = 1; i <= 5; i++) { %>
+                  <svg class="w-3.5 h-3.5 <%= review.rating >= i ? 'fill-current' : 'text-gray-200 fill-current' %>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                <% } %>
+              </div>
+            </div>
+            <% if (review.reviewText) { %>
+              <p class="text-sm text-gray-600 leading-relaxed"><%= review.reviewText %></p>
+            <% } %>
           </div>
-          <div class="flex text-amber-400 gap-0.5">
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="p-10 rounded-2xl border border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-center h-full">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-300 mb-3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <h3 class="text-sm font-black text-gray-900 mb-1">No reviews yet</h3>
+          <p class="text-xs text-gray-500">Be the first to review this product!</p>
         </div>
-        <h5 class="text-sm font-bold text-slate-800 mb-2">Excellent Quality and Fit</h5>
-        <p class="text-xs text-gray-500 leading-relaxed">
-          I was skeptical at first, but this product completely exceeded my expectations. The material feels premium, and it perfectly matches the description. Will definitely be purchasing more from SmartPick.
-        </p>
-      </div>
+      <% } %>
 
-      <!-- Review 2 -->
-      <div class="p-6 rounded-2xl border border-gray-100 bg-white">
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <h4 class="text-sm font-black text-slate-900">Priya M.</h4>
-            <p class="text-[10px] font-bold text-gray-400 mt-0.5">Verified Purchase • 1 month ago</p>
-          </div>
-          <div class="flex text-amber-400 gap-0.5">
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            <svg class="w-3.5 h-3.5 text-gray-200 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-          </div>
-        </div>
-        <h5 class="text-sm font-bold text-slate-800 mb-2">Good, but sizing is tricky</h5>
-        <p class="text-xs text-gray-500 leading-relaxed">
-          Product quality is very good. Fast shipping. However, the size runs slightly large for me. I would recommend referring carefully to the size chart before placing order.
-        </p>
-      </div>
-      
-      <button class="w-full py-4 rounded-xl border-2 border-indigo-50 text-xs font-black text-indigo-600 hover:bg-indigo-50 transition-colors uppercase tracking-widest">
-        View All 128 Reviews
-      </button>
+      <% if (product.reviewCount > 5) { %>
+        <button class="w-full py-4 rounded-xl border-2 border-indigo-50 text-xs font-black text-indigo-600 hover:bg-indigo-50 transition-colors uppercase tracking-widest mt-2">
+          View All <%= product.reviewCount %> Reviews
+        </button>
+      <% } %>
 
     </div>
   </div>

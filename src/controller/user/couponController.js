@@ -44,7 +44,7 @@ export const applyCoupon = async (req, res) => {
             discountAmount: result.discountAmount
         };
 
-        const shippingFee = effectiveSubtotal > 999 ? 0 : 50;
+        const shippingFee = effectiveSubtotal > 499 ? 0 : 50;
         const finalTotal = effectiveSubtotal - result.discountAmount + shippingFee;
 
         return res.status(200).json({
@@ -89,7 +89,7 @@ export const removeCoupon = async (req, res) => {
             });
         }
 
-        const shippingFee = effectiveSubtotal > 999 ? 0 : 50;
+        const shippingFee = effectiveSubtotal > 499 ? 0 : 50;
         const finalTotal = effectiveSubtotal + shippingFee;
 
         return res.status(200).json({

@@ -122,7 +122,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
     }
 
     // 4. Calculate Totals
-    const shippingFee = subtotal > 999 ? 0 : 50;
+    const shippingFee = subtotal > 499 ? 0 : 50;
     const tax = 0;
     const couponDiscount = couponData?.discountAmount || 0;
     const totalAmount = Math.max(1, subtotal - couponDiscount + shippingFee + tax);
@@ -361,7 +361,7 @@ export const cancelOrder = async (userId, orderId, reason) => {
     }
     
     
-    if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+    if (order.paymentStatus === 'Paid') {
         order.paymentStatus = 'Refunded'; 
         await processRefund(userId, order.totalAmount, `Refund for cancelled Order ${order.orderId}`, orderId);
     }
@@ -425,7 +425,7 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
         order.orderStatus = 'Cancelled';
     }
 
-    if (order.paymentMethod !== 'COD' && order.paymentStatus === 'Paid') {
+    if (order.paymentStatus === 'Paid') {
         // Refund the specific item amount
         await processRefund(userId, item.totalPrice, `Refund for cancelled item in Order ${order.orderId}`, orderId);
         

@@ -154,10 +154,10 @@
               </div>
            </div>
            <div class="flex items-center gap-4">
-              <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs">🚚</div>
+              <div id="deliveryStatusIcon" class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs">🚚</div>
               <div>
-                <p class="text-[10px] font-black text-slate-900 uppercase tracking-widest">Free Delivery</p>
-                <p class="text-[9px] text-gray-400 font-bold">Premium shipping included</p>
+                <p id="deliveryStatusText" class="text-[10px] font-black text-slate-900 uppercase tracking-widest">Free Delivery</p>
+                <p id="deliveryStatusSubtext" class="text-[9px] text-gray-400 font-bold">Premium shipping included</p>
               </div>
            </div>
         </div>
@@ -341,6 +341,7 @@
           b.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
 
           updateStockStatus(v);
+          updateShippingStatus(finalPrice);
           updateCTA();
         };
       }
@@ -415,6 +416,24 @@
       text.innerText = 'In Stock';
       text.className = 'text-[10px] font-black text-slate-800 uppercase tracking-widest mb-0.5';
       subtext.innerText = 'Ready for immediate dispatch';
+    }
+  }
+
+  function updateShippingStatus(price) {
+    const text = document.getElementById('deliveryStatusText');
+    const subtext = document.getElementById('deliveryStatusSubtext');
+    const icon = document.getElementById('deliveryStatusIcon');
+
+    if (price > 499) {
+      text.innerText = 'Free Delivery';
+      text.className = 'text-[10px] font-black text-slate-900 uppercase tracking-widest';
+      subtext.innerText = 'Premium shipping included';
+      icon.className = 'w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs';
+    } else {
+      text.innerText = 'Delivery: ₹50';
+      text.className = 'text-[10px] font-black text-indigo-600 uppercase tracking-widest';
+      subtext.innerText = 'Add more to get free shipping';
+      icon.className = 'w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs';
     }
   }
 
