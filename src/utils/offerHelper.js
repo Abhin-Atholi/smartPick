@@ -62,6 +62,7 @@ export const getBestOffer = async (productId, categoryId, basePrice) => {
         discountType: bestOffer.discountType,
         discountValue: bestOffer.discountValue,
         discountAmount,
+        originalPrice: basePrice,
         finalPrice: Math.max(finalPrice, 1)
     };
 };
@@ -89,6 +90,7 @@ export const applyOffersToItems = async (items) => {
                 effectivePrice: offer.finalPrice,
                 effectiveTotalPrice: parseFloat((offer.finalPrice * item.quantity).toFixed(2)),
                 offerApplied: {
+                    offerId: offer.offerId,
                     offerName: offer.offerName,
                     offerType: offer.offerType,
                     discountType: offer.discountType,

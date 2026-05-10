@@ -5,13 +5,16 @@ const orderItemSchema = new mongoose.Schema({
     quantity: { type: Number, required: true },
     size: { type: String, required: true },
     color: { type: String, required: true },
-    price: { type: Number, required: true },
-    totalPrice: { type: Number, required: true },
+    price: { type: Number, required: true }, // This will store the final price per unit
+    originalPrice: { type: Number }, // Original price before any offer
+    discountAmount: { type: Number, default: 0 }, // Discount per unit
+    totalPrice: { type: Number, required: true }, // Final price * quantity
     offerApplied: {
+        offerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Offer' },
         offerName: { type: String },
         offerType: { type: String },
         discountType: { type: String },
-        discountAmount: { type: Number }
+        discountAmount: { type: Number } // This is the total discount for all units of this item
     },
     itemStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested',"Out for Delivery", 'Returned', 'Return Rejected'], default: 'Processing' },
     cancelReason: { type: String },
@@ -32,10 +35,12 @@ const orderSchema = new mongoose.Schema({
         postalCode: String,
         country: String
     },
-    subtotal: { type: Number, required: true },
+    originalSubtotal: { type: Number }, // Sum of (item.originalPrice * quantity)
+    totalOfferDiscount: { type: Number, default: 0 }, // Sum of offer discounts
+    subtotal: { type: Number, required: true }, // After offers, before coupon
     shippingFee: { type: Number, required: true },
     tax: { type: Number, required: true },
-    discount: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 }, // Coupon discount
     walletAmountUsed: { type: Number, default: 0 },
     totalAmount: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['COD', 'Razorpay', 'Wallet'], required: true },

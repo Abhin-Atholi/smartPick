@@ -119,8 +119,12 @@
 
                 <!-- Price & Qty -->
                 <div class="text-right flex-shrink-0">
-                  <p class="text-base font-black text-indigo-600">₹<%= item.totalPrice.toLocaleString() %></p>
-                  <p class="text-xs text-gray-400 mt-0.5">Qty: <%= item.quantity %></p>
+                  <p class="text-base font-black text-indigo-600">₹<%= item.price.toLocaleString() %></p>
+                  <% if (item.originalPrice && item.originalPrice > item.price) { %>
+                    <p class="text-[11px] text-gray-400 line-through">₹<%= item.originalPrice.toLocaleString() %></p>
+                    <p class="text-[10px] text-rose-500 font-bold"><%= item.offerApplied?.offerName %></p>
+                  <% } %>
+                  <p class="text-xs text-gray-400 mt-1">Qty: <%= item.quantity %></p>
                 </div>
               </div>
             <% }) %>
@@ -194,8 +198,14 @@
           <div class="space-y-3">
             <div class="flex justify-between text-sm">
               <span class="text-gray-400 font-semibold">Subtotal</span>
-              <span class="text-gray-800 font-bold">₹<%= order.subtotal.toLocaleString() %></span>
+              <span class="text-gray-800 font-bold">₹<%= (order.originalSubtotal || order.subtotal).toLocaleString() %></span>
             </div>
+            <% if (order.totalOfferDiscount > 0) { %>
+            <div class="flex justify-between text-sm">
+              <span class="text-rose-400 font-semibold">Offer Save</span>
+              <span class="text-rose-600 font-bold">-₹<%= order.totalOfferDiscount.toLocaleString() %></span>
+            </div>
+            <% } %>
             <div class="flex justify-between text-sm">
               <span class="text-gray-400 font-semibold">Shipping</span>
               <span class="text-gray-800 font-bold"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span>
@@ -206,8 +216,8 @@
             </div>
             <% if (order.discount > 0) { %>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-400 font-semibold">Discount</span>
-              <span class="text-green-600 font-bold">-₹<%= order.discount.toLocaleString() %></span>
+              <span class="text-indigo-400 font-semibold">Coupon</span>
+              <span class="text-indigo-600 font-bold">-₹<%= order.discount.toLocaleString() %></span>
             </div>
             <% } %>
           </div>

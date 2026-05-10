@@ -8,4 +8,8 @@ router.get("/", productsController.loadProducts);
 // Product details page
 router.get("/details/:id", productsController.loadProductDetails);
 
+// Offers & Coupons APIs
+router.get("/:id/offers", productsController.getProductOffers);
+router.get("/:id/coupons", productsController.getEligibleCoupons);
+
 export default router;

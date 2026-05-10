@@ -1,5 +1,9 @@
 import * as userProductService from "../../services/user/productService.js";
 import * as wishlistService from "../../services/user/wishlistService.js";
+import Offer from "../../model/offerModel.js";
+import Coupon from "../../model/couponModel.js";
+import * as cartService from "../../services/user/cartService.js";
+import * as offerHelper from "../../utils/offerHelper.js";
 
 const PER_PAGE = 9;
 
@@ -13,10 +17,18 @@ export const loadProducts = async (req, res) => {
       wishlistProductIds = await wishlistService.getWishlistProductIds(req.session.user._id);
     }
 
-    const { 
+    let { 
       products, totalProducts, totalPages, currentPage, 
       currentCategory, sidebarSubcategories, filterData 
     } = data;
+
+    // Enrich products with best offer info
+    products = await Promise.all(products.map(async (p) => {
+      const basePrice = Math.min(...p.variants.map(v => v.price));
+      const categoryId = p.category?._id || p.category;
+      const bestOffer = await offerHelper.getBestOffer(p._id, categoryId, basePrice);
+      return { ...p, bestOffer };
+    }));
 
     const startItem = totalProducts === 0 ? 0 : (currentPage - 1) * 6 + 1;
     const endItem = Math.min(currentPage * 6, totalProducts);
@@ -97,11 +109,16 @@ export const loadProductDetails = async (req, res) => {
       isInWishlist = await wishlistService.isInWishlist(req.session.user._id, product._id);
     }
 
+    // Fetch best offer for initial display (using min price variant)
+    const minPrice = Math.min(...product.variants.map(v => v.price));
+    const bestOffer = await offerHelper.getBestOffer(product._id, product.category._id, minPrice);
+
     res.render('user/products/details', {
       title: `${product.name} — SmartPick`,
       product,
       relatedProducts,
-      isInWishlist
+      isInWishlist,
+      bestOffer
     });
   } catch (err) {
     console.error("Product details error:", err);
@@ -109,5 +126,130 @@ export const loadProductDetails = async (req, res) => {
       return res.status(404).render('user/404', { title: 'Product Not Found' });
     }
     res.status(500).send("Server Error");
+  }
+};
+
+/**
+ * Fetch all eligible offers for a product
+ */
+export const getProductOffers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await userProductService.getProductById(id);
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+
+    const categoryId = product.category?._id || product.category;
+    const now = new Date();
+
+    const offers = await Offer.find({
+      isActive: true,
+      isDeleted: false,
+      startDate: { $lte: now },
+      expiryDate: { $gt: now },
+      $or: [
+        { offerType: 'product', applicableTo: id },
+        { offerType: 'category', applicableTo: categoryId }
+      ]
+    }).lean();
+
+    // Base price for calculations (using min price of variants)
+    const basePrice = Math.min(...product.variants.map(v => v.price));
+
+    let bestDiscountAmount = 0;
+    let bestOfferId = null;
+
+    const processedOffers = offers.map(offer => {
+      let discount = 0;
+      if (offer.discountType === 'flat') {
+        discount = offer.discountValue;
+      } else {
+        discount = (basePrice * offer.discountValue) / 100;
+      }
+
+      // Cap discount
+      discount = Math.min(discount, basePrice - 1);
+
+      if (discount > bestDiscountAmount) {
+        bestDiscountAmount = discount;
+        bestOfferId = offer._id;
+      }
+
+      return {
+        ...offer,
+        discountAmount: parseFloat(discount.toFixed(2))
+      };
+    });
+
+    return res.json({ 
+      success: true, 
+      offers: processedOffers, 
+      bestOfferId,
+      basePrice 
+    });
+  } catch (err) {
+    console.error("getProductOffers error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * Fetch all eligible coupons for the product/cart context
+ */
+export const getEligibleCoupons = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    const product = await userProductService.getProductById(id);
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+
+    const now = new Date();
+    const coupons = await Coupon.find({
+      isActive: true,
+      isDeleted: false,
+      startDate: { $lte: now },
+      expiryDate: { $gt: now },
+      $expr: { $lt: ['$usedCount', '$usageLimit'] }
+    }).lean();
+
+    // Logic: If on product page, we consider the product's price as the baseline.
+    // If the user has a cart, we should ideally use the cart total.
+    let cartTotal = 0;
+    if (userId) {
+      const cartData = await cartService.getCart(userId, 1, 100);
+      if (cartData && cartData.items.length > 0) {
+        cartData.items.forEach(item => {
+          // getCart already filters deleted/inactive mostly, but let's be safe
+          cartTotal += item.effectiveTotalPrice;
+        });
+      }
+    }
+
+    // If cart is empty or user not logged in, use product price as "potential" total
+    const productPrice = Math.min(...product.variants.map(v => v.price));
+    const comparisonTotal = Math.max(cartTotal, productPrice);
+
+    const processedCoupons = coupons.map(coupon => {
+      const isEligible = comparisonTotal >= coupon.minimumAmount;
+      const alreadyUsed = userId && coupon.usedBy && coupon.usedBy.some(id => id.toString() === userId.toString());
+      
+      return {
+        ...coupon,
+        isEligible,
+        alreadyUsed,
+        potentialDiscount: coupon.discountType === 'flat' 
+          ? coupon.discountValue 
+          : parseFloat(((comparisonTotal * coupon.discountValue) / 100).toFixed(2))
+      };
+    });
+
+    return res.json({ 
+      success: true, 
+      coupons: processedCoupons,
+      currentTotal: comparisonTotal,
+      appliedCoupon: req.session.appliedCoupon || null
+    });
+  } catch (err) {
+    console.error("getEligibleCoupons error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

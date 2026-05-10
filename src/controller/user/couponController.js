@@ -20,24 +20,23 @@ export const applyCoupon = async (req, res) => {
             return res.status(400).json({ success: false, message: "Your cart is empty." });
         }
 
-        let subtotal = 0;
+        // Filter valid items (stock issues already handled in getCart for the totals mostly, but let's be safe)
+        let effectiveSubtotal = 0;
+        let originalSubtotal = 0;
         cartData.items.forEach(item => {
-            if (item.product.isActive && !item.product.isDeleted) {
-                const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
-                const availableStock = variant ? variant.stock : 0;
-                const isLowStock = availableStock > 0 && availableStock < item.quantity;
-                const isOutOfStock = availableStock === 0;
-                if (!isLowStock && !isOutOfStock) {
-                    subtotal += item.totalPrice;
-                }
+            const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
+            const availableStock = variant ? variant.stock : 0;
+            if (availableStock >= item.quantity) {
+                effectiveSubtotal += item.effectiveTotalPrice;
+                originalSubtotal += item.price * item.quantity;
             }
         });
 
-        if (subtotal === 0) {
+        if (effectiveSubtotal === 0) {
             return res.status(400).json({ success: false, message: "No valid items in cart to apply coupon." });
         }
 
-        const result = await couponHelper.validateAndCalculateDiscount(couponCode, subtotal, userId);
+        const result = await couponHelper.validateAndCalculateDiscount(couponCode, effectiveSubtotal, userId);
 
         req.session.appliedCoupon = {
             code: result.coupon.code,
@@ -45,14 +44,16 @@ export const applyCoupon = async (req, res) => {
             discountAmount: result.discountAmount
         };
 
-        const shippingFee = subtotal > 999 ? 0 : 50;
-        const finalTotal = subtotal - result.discountAmount + shippingFee;
+        const shippingFee = effectiveSubtotal > 999 ? 0 : 50;
+        const finalTotal = effectiveSubtotal - result.discountAmount + shippingFee;
 
         return res.status(200).json({
             success: true,
             message: "Coupon applied successfully!",
             breakdown: {
-                subtotal,
+                originalSubtotal,
+                totalOfferDiscount: originalSubtotal - effectiveSubtotal,
+                subtotal: effectiveSubtotal,
                 discount: result.discountAmount,
                 shippingFee,
                 finalTotal
@@ -75,27 +76,29 @@ export const removeCoupon = async (req, res) => {
         delete req.session.appliedCoupon;
 
         const cartData = await cartService.getCart(userId, 1, 100);
-        let subtotal = 0;
+        let effectiveSubtotal = 0;
+        let originalSubtotal = 0;
         if (cartData && cartData.items.length > 0) {
             cartData.items.forEach(item => {
-                if (item.product.isActive && !item.product.isDeleted) {
-                    const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
-                    const availableStock = variant ? variant.stock : 0;
-                    if (availableStock >= item.quantity) {
-                        subtotal += item.totalPrice;
-                    }
+                const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
+                const availableStock = variant ? variant.stock : 0;
+                if (availableStock >= item.quantity) {
+                    effectiveSubtotal += item.effectiveTotalPrice;
+                    originalSubtotal += item.price * item.quantity;
                 }
             });
         }
 
-        const shippingFee = subtotal > 999 ? 0 : 50;
-        const finalTotal = subtotal + shippingFee;
+        const shippingFee = effectiveSubtotal > 999 ? 0 : 50;
+        const finalTotal = effectiveSubtotal + shippingFee;
 
         return res.status(200).json({
             success: true,
             message: "Coupon removed successfully!",
             breakdown: {
-                subtotal,
+                originalSubtotal,
+                totalOfferDiscount: originalSubtotal - effectiveSubtotal,
+                subtotal: effectiveSubtotal,
                 discount: 0,
                 shippingFee,
                 finalTotal

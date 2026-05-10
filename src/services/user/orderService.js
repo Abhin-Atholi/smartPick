@@ -6,6 +6,7 @@ import Address from '../../model/addressModel.js';
 import Wallet from '../../model/walletModel.js';
 import Coupon from '../../model/couponModel.js';
 import * as walletService from './walletService.js';
+import * as offerHelper from '../../utils/offerHelper.js';
 
 const processRefund = async (userId, amount, description, orderId) => {
     let wallet = await Wallet.findOne({ userId });
@@ -60,15 +61,33 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             affectedItems.push({ name: product.name, reason: `Only ${variant.stock} unit(s) left (you need ${item.quantity})` });
             continue;
         }
-        const itemTotal = variant.price * item.quantity;
+
+        // Recalculate Offer
+        const categoryId = product.category?._id || product.category;
+        const bestOffer = await offerHelper.getBestOffer(product._id, categoryId, variant.price);
+        
+        const originalPrice = variant.price;
+        const finalPrice = bestOffer ? bestOffer.finalPrice : originalPrice;
+        const discountPerUnit = originalPrice - finalPrice;
+        const itemTotal = finalPrice * item.quantity;
+        
         subtotal += itemTotal;
         orderItems.push({
             product: product._id,
             quantity: item.quantity,
             size: item.size,
             color: item.color,
-            price: variant.price,
-            totalPrice: itemTotal
+            price: finalPrice,
+            originalPrice: originalPrice,
+            discountAmount: discountPerUnit,
+            totalPrice: itemTotal,
+            offerApplied: bestOffer ? {
+                offerId: bestOffer.offerId,
+                offerName: bestOffer.offerName,
+                offerType: bestOffer.offerType,
+                discountType: bestOffer.discountType,
+                discountAmount: bestOffer.discountAmount * item.quantity
+            } : undefined
         });
     }
 
@@ -81,6 +100,10 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
     const tax = 0;
     const couponDiscount = couponData?.discountAmount || 0;
     const totalAmount = Math.max(1, subtotal - couponDiscount + shippingFee + tax);
+    
+    let originalSubtotal = 0;
+    orderItems.forEach(item => { originalSubtotal += (item.originalPrice * item.quantity); });
+    const totalOfferDiscount = originalSubtotal - subtotal;
 
     // 5. Wallet payment handling
     let walletAmountUsed = 0;
@@ -113,6 +136,8 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             postalCode: address.pincode,
             country: address.country
         },
+        originalSubtotal,
+        totalOfferDiscount,
         subtotal,
         shippingFee,
         tax,

@@ -52,13 +52,38 @@
           
           <%- include("../partials/productRatings") %>
 
-          <div class="flex items-baseline gap-4">
+          <div class="flex items-center gap-4">
              <% 
                const minPrice = Math.min(...product.variants.map(v => v.price));
                const maxPrice = Math.max(...product.variants.map(v => v.price));
-               const displayPrice = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+               
+               let displayPrice = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+               let hasOffer = locals.bestOffer;
+               let finalMin = minPrice;
+               let finalMax = maxPrice;
+               
+               if (hasOffer) {
+                 finalMin = Math.max(minPrice - (hasOffer.discountType === 'flat' ? hasOffer.discountValue : (minPrice * hasOffer.discountValue / 100)), 1);
+                 finalMax = Math.max(maxPrice - (hasOffer.discountType === 'flat' ? hasOffer.discountValue : (maxPrice * hasOffer.discountValue / 100)), 1);
+                 displayPrice = minPrice === maxPrice ? `₹${finalMin.toFixed(0)}` : `₹${finalMin.toFixed(0)} - ₹${finalMax.toFixed(0)}`;
+               }
              %>
-             <p id="activePrice" class="text-2xl font-black text-slate-900"><%= displayPrice %></p>
+             <div class="flex flex-col">
+               <div class="flex items-baseline gap-3">
+                 <p id="activePrice" class="text-2xl font-black text-slate-900"><%= displayPrice %></p>
+                 <% if (hasOffer) { %>
+                   <p id="originalPrice" class="text-sm font-bold text-gray-400 line-through">₹<%= minPrice === maxPrice ? minPrice : minPrice + ' - ₹' + maxPrice %></p>
+                 <% } %>
+               </div>
+               <% if (hasOffer) { %>
+                 <div class="flex items-center gap-2 mt-1">
+                   <span class="px-2 py-0.5 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-md">
+                     <%= hasOffer.discountType === 'flat' ? '₹' + hasOffer.discountValue + ' OFF' : hasOffer.discountValue + '% OFF' %>
+                   </span>
+                   <span class="text-[10px] text-emerald-600 font-bold uppercase tracking-widest animate-pulse">Best Offer Applied</span>
+                 </div>
+               <% } %>
+             </div>
           </div>
         </header>
 
@@ -162,11 +187,58 @@
   </div>
 </main>
 
+<!-- ── OFFERS MODAL ──────────────────────────────────── -->
+<div id="offersModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="offersModalContent">
+    <div class="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 uppercase tracking-widest">Product Offers</h3>
+        <p class="text-[10px] text-gray-400 font-bold mt-0.5">ELIGIBLE DEALS FOR YOU</p>
+      </div>
+      <button onclick="closeModal('offersModal')" class="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:border-rose-100 transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <div class="p-8 max-h-[60vh] overflow-y-auto no-scrollbar space-y-4" id="offersList">
+      <!-- Offers will be injected here -->
+      <div class="flex flex-col items-center justify-center py-10 opacity-40">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest">Fetching best deals...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── COUPONS MODAL ─────────────────────────────────── -->
+<div id="couponsModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="couponsModalContent">
+    <div class="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 uppercase tracking-widest">Available Coupons</h3>
+        <p class="text-[10px] text-gray-400 font-bold mt-0.5">COLLECT & SAVE MORE</p>
+      </div>
+      <button onclick="closeModal('couponsModal')" class="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:border-rose-100 transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <div class="p-8 max-h-[60vh] overflow-y-auto no-scrollbar space-y-4" id="couponsList">
+      <!-- Coupons will be injected here -->
+      <div class="flex flex-col items-center justify-center py-10 opacity-40">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest">Scanning active coupons...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <%- include("../partials/footer") %>
 <%- include("../partials/drawer") %>
 
 <script>
   const productData = <%- JSON.stringify(product) %>;
+  const initialBestOffer = <%- locals.bestOffer ? JSON.stringify(locals.bestOffer) : 'null' %>;
   let selectedColor = null;
   let selectedSize = null;
   let currentSKU = null;
@@ -245,7 +317,19 @@
           selectedSize = v.size;
           currentSKU = v.sku;
           document.getElementById('sizeNameLabel').innerText = v.size;
-          document.getElementById('activePrice').innerText = `₹${v.price}`;
+          let finalPrice = v.price;
+          if (initialBestOffer) {
+            const discount = initialBestOffer.discountType === 'flat' 
+              ? initialBestOffer.discountValue 
+              : (v.price * initialBestOffer.discountValue / 100);
+            finalPrice = Math.max(v.price - discount, 1);
+            
+            document.getElementById('activePrice').innerText = `₹${finalPrice.toFixed(0)}`;
+            const originalPriceEl = document.getElementById('originalPrice');
+            if (originalPriceEl) originalPriceEl.innerText = `₹${v.price}`;
+          } else {
+            document.getElementById('activePrice').innerText = `₹${v.price}`;
+          }
           
           document.querySelectorAll('#sizeGrid button').forEach(el => {
             if (!el.classList.contains('cursor-not-allowed')) {
@@ -255,6 +339,7 @@
           });
           b.classList.remove('bg-white', 'text-slate-800', 'border-gray-100');
           b.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+
           updateStockStatus(v);
           updateCTA();
         };
@@ -410,6 +495,156 @@
             if (firstColorBtn) firstColorBtn.click();
         }
     });
+
+    // ── MODAL LOGIC ───────────────────────────────────────────────────────────
+
+    function openOffersModal() {
+        const modal = document.getElementById('offersModal');
+        const content = document.getElementById('offersModalContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        fetchOffers();
+    }
+
+    function openCouponsModal() {
+        const modal = document.getElementById('couponsModal');
+        const content = document.getElementById('couponsModalContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        fetchCoupons();
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        const content = document.getElementById(id + 'Content');
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    // Close on backdrop click
+    window.onclick = function(event) {
+        if (event.target.id === 'offersModal') closeModal('offersModal');
+        if (event.target.id === 'couponsModal') closeModal('couponsModal');
+    }
+
+    async function fetchOffers() {
+        const list = document.getElementById('offersList');
+        try {
+            const res = await axios.get(`/products/${productData._id}/offers`);
+            if (res.data.success && res.data.offers.length > 0) {
+                list.innerHTML = res.data.offers.map(offer => `
+                    <div class="relative group p-5 rounded-2xl border-2 transition-all ${offer._id === res.data.bestOfferId ? 'border-indigo-600 bg-indigo-50/30' : 'border-gray-50 bg-white hover:border-indigo-100'}">
+                        ${offer._id === res.data.bestOfferId ? '<span class="absolute -top-2.5 right-4 px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-sm">Best Deal</span>' : ''}
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full ${offer._id === res.data.bestOfferId ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600'} flex items-center justify-center shrink-0">
+                                <span class="font-black text-xs">%</span>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest mb-1">${offer.name}</h4>
+                                <p class="text-[10px] text-gray-500 font-bold mb-3 leading-relaxed">${offer.description || 'Limited time discount on this product.'}</p>
+                                <div class="flex items-center justify-between">
+                                    <div class="px-2.5 py-1 bg-white border border-dashed border-indigo-200 rounded-lg">
+                                        <p class="text-[11px] font-black text-indigo-600">${offer.discountType === 'flat' ? '₹' + offer.discountValue + ' OFF' : offer.discountValue + '% OFF'}</p>
+                                    </div>
+                                    <p class="text-[9px] text-gray-400 font-black uppercase">Expires: ${new Date(offer.expiryDate).toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'})}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = `
+                    <div class="py-12 flex flex-col items-center justify-center opacity-30 text-center">
+                        <svg class="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="text-xs font-black uppercase tracking-widest">No active offers available</p>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            list.innerHTML = `<p class="text-center text-rose-500 text-xs font-bold py-10">Failed to load offers. Try again.</p>`;
+        }
+    }
+
+    async function fetchCoupons() {
+        const list = document.getElementById('couponsList');
+        try {
+            const res = await axios.get(`/products/${productData._id}/coupons`);
+            if (res.data.success && res.data.coupons.length > 0) {
+                list.innerHTML = res.data.coupons.map(coupon => {
+                    const isApplied = res.data.appliedCoupon && res.data.appliedCoupon.code === coupon.code;
+                    return `
+                    <div class="relative group p-6 rounded-3xl border-2 transition-all ${isApplied ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-50 bg-white hover:border-emerald-100'}">
+                        ${isApplied ? '<span class="absolute -top-2.5 right-4 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-sm">Coupon Applied</span>' : ''}
+                        <div class="flex items-start gap-4 mb-5">
+                            <div class="w-10 h-10 rounded-full ${isApplied ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'} flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h4 class="text-xs font-black text-slate-900 tracking-wider">${coupon.code}</h4>
+                                    <button onclick="copyToClipboard('${coupon.code}')" class="text-indigo-600 hover:text-indigo-800">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-gray-500 font-bold leading-relaxed mb-1">${coupon.description}</p>
+                                <p class="text-[9px] text-indigo-500 font-black uppercase tracking-widest">${coupon.discountType === 'flat' ? '₹' + coupon.discountValue : coupon.discountValue + '%'} OFF • Min purchase ₹${coupon.minimumAmount}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-50 pt-4">
+                            <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest">Valid till ${new Date(coupon.expiryDate).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</p>
+                            <button onclick="applyCouponFromModal('${coupon.code}')" 
+                                ${!coupon.isEligible || isApplied || res.data.appliedCoupon ? 'disabled' : ''}
+                                class="px-5 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm transition-all
+                                ${isApplied ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                                  !coupon.isEligible ? 'bg-gray-50 text-gray-400 cursor-not-allowed' :
+                                  res.data.appliedCoupon ? 'bg-gray-50 text-gray-400 cursor-not-allowed' :
+                                  'bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-100 hover:shadow-lg active:scale-95'}">
+                                ${isApplied ? 'Applied' : !coupon.isEligible ? 'Below Min' : res.data.appliedCoupon ? 'Locked' : 'Apply'}
+                            </button>
+                        </div>
+                    </div>
+                `}).join('');
+            } else {
+                list.innerHTML = `
+                    <div class="py-12 flex flex-col items-center justify-center opacity-30 text-center">
+                        <svg class="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <p class="text-xs font-black uppercase tracking-widest">No active coupons available</p>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            list.innerHTML = `<p class="text-center text-rose-500 text-xs font-bold py-10">Failed to load coupons. Try again.</p>`;
+        }
+    }
+
+    async function applyCouponFromModal(code) {
+        try {
+            const res = await axios.post('/coupons/apply', { couponCode: code });
+            if (res.data.success) {
+                Swal.fire({ icon: 'success', title: 'Coupon Applied!', text: res.data.message, timer: 1500, showConfirmButton: false });
+                closeModal('couponsModal');
+                // Refresh modal content if opened again
+                fetchCoupons();
+            }
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Oops...', text: err.response?.data?.message || 'Failed to apply coupon' });
+        }
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            Swal.fire({ icon: 'success', title: 'Copied!', text: 'Coupon code copied to clipboard', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+        });
+    }
 
 </script>
 

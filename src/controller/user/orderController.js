@@ -28,7 +28,9 @@ export const loadCheckout = async (req, res, next) => {
 
         // Calculate totals and check stock
         let subtotal = 0;
+        let totalOfferDiscount = 0;
         let hasStockIssue = false;
+        
         const cartItemsWithStock = cartData.items
             .filter(i => i.product.isActive && !i.product.isDeleted)
             .map(item => {
@@ -38,13 +40,19 @@ export const loadCheckout = async (req, res, next) => {
                 const isOutOfStock = availableStock === 0;
                 const stockIssue = isLowStock || isOutOfStock;
                 if (stockIssue) hasStockIssue = true;
-                if (!stockIssue) subtotal += item.totalPrice;
+                
+                if (!stockIssue) {
+                    subtotal += item.effectiveTotalPrice || item.totalPrice;
+                    if (item.offerApplied) {
+                        totalOfferDiscount += (item.price - item.effectivePrice) * item.quantity;
+                    }
+                }
                 return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };
             });
 
         const shippingFee = subtotal > 999 ? 0 : 50;
         
-        let discount = 0;
+        let couponDiscount = 0;
         let appliedCoupon = null;
 
         // Revalidate coupon on page load just in case it expired while browsing
@@ -55,10 +63,10 @@ export const loadCheckout = async (req, res, next) => {
                     subtotal,
                     userId
                 );
-                discount = result.discountAmount;
+                couponDiscount = result.discountAmount;
                 appliedCoupon = req.session.appliedCoupon;
                 // Update session accurately
-                req.session.appliedCoupon.discountAmount = discount;
+                req.session.appliedCoupon.discountAmount = couponDiscount;
             } catch (err) {
                 // If invalid, drop from session
                 delete req.session.appliedCoupon;
@@ -66,16 +74,17 @@ export const loadCheckout = async (req, res, next) => {
             }
         }
 
-        const totalAmount = subtotal - discount + shippingFee;
+        const totalAmount = subtotal - couponDiscount + shippingFee;
 
         res.render('user/checkout', {
             title: "Checkout — SmartPick",
             activePath: "/checkout",
             addresses,
             cartItems: cartItemsWithStock,
-            subtotal,
+            subtotal: subtotal + totalOfferDiscount, // Show original subtotal before offers
+            totalOfferDiscount,
             shippingFee,
-            discount,
+            couponDiscount,
             appliedCoupon,
             totalAmount,
             hasStockIssue,

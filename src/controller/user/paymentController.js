@@ -7,6 +7,7 @@ import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
 import * as couponHelper from '../../utils/couponHelper.js';
 import { processReferralReward } from '../../utils/referralHelper.js';
+import * as offerHelper from '../../utils/offerHelper.js';
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'test_key',
@@ -43,10 +44,40 @@ export const initiateCheckout = async (req, res) => {
             if (!variant || variant.stock < item.quantity) {
                 return res.status(400).json({ success: false, message: `Insufficient stock for ${product.name}` });
             }
-            const itemTotal = variant.price * item.quantity;
+
+            // Recalculate Offer
+            const categoryId = product.category?._id || product.category;
+            const bestOffer = await offerHelper.getBestOffer(product._id, categoryId, variant.price);
+            
+            const originalPrice = variant.price;
+            const finalPrice = bestOffer ? bestOffer.finalPrice : originalPrice;
+            const discountPerUnit = originalPrice - finalPrice;
+            const itemTotal = finalPrice * item.quantity;
+            
             subtotal += itemTotal;
-            orderItems.push({ product: product._id, quantity: item.quantity, size: item.size, color: item.color, price: variant.price, totalPrice: itemTotal, itemStatus: 'Payment Pending' });
+            orderItems.push({ 
+                product: product._id, 
+                quantity: item.quantity, 
+                size: item.size, 
+                color: item.color, 
+                price: finalPrice, 
+                originalPrice,
+                discountAmount: discountPerUnit,
+                totalPrice: itemTotal, 
+                offerApplied: bestOffer ? {
+                    offerId: bestOffer.offerId,
+                    offerName: bestOffer.offerName,
+                    offerType: bestOffer.offerType,
+                    discountType: bestOffer.discountType,
+                    discountAmount: bestOffer.discountAmount * item.quantity
+                } : undefined,
+                itemStatus: 'Payment Pending' 
+            });
         }
+
+        let originalSubtotal = 0;
+        orderItems.forEach(item => { originalSubtotal += (item.originalPrice * item.quantity); });
+        const totalOfferDiscount = originalSubtotal - subtotal;
 
         // 4. Calculate Final Totals
         const shippingFee = subtotal > 999 ? 0 : 50;
@@ -103,6 +134,8 @@ export const initiateCheckout = async (req, res) => {
                 postalCode: address.pincode,
                 country: address.country
             },
+            originalSubtotal,
+            totalOfferDiscount,
             subtotal,
             shippingFee,
             tax,

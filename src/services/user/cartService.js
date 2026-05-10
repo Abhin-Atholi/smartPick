@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
 import Wishlist from '../../model/wishlistModel.js';
+import * as offerHelper from '../../utils/offerHelper.js';
 
 export const getCart = async (userId, page = 1, limit = 4) => {
     const skip = (page - 1) * limit;
@@ -34,8 +35,15 @@ export const getCart = async (userId, page = 1, limit = 4) => {
         ]
     });
 
+    // Apply best offers to each item
+    populatedCart.items = await offerHelper.applyOffersToItems(populatedCart.items);
+
+    // Recalculate cart total based on effective prices
+    const cartTotal = populatedCart.items.reduce((total, item) => total + item.effectiveTotalPrice, 0);
+
     return {
         ...populatedCart,
+        cartTotal: Number(cartTotal.toFixed(2)),
         totalPages: Math.ceil(cart.totalItems / limit),
         currentPage: page
     };

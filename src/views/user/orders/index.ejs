@@ -279,7 +279,13 @@
                       <div class="flex-grow min-w-0">
                         <p class="text-sm font-black text-gray-900 truncate"><%= item.product?.name || 'Unavailable' %></p>
                         <p class="text-xs text-gray-400 mt-0.5">Qty: <%= item.quantity %> &bull; Size: <%= item.size %> &bull; Color: <%= item.color %></p>
-                        <p class="text-sm font-black text-indigo-600 mt-1">₹<%= item.totalPrice.toLocaleString() %></p>
+                        <div class="flex items-center gap-2 mt-1">
+                          <p class="text-sm font-black text-indigo-600">₹<%= item.price.toLocaleString() %></p>
+                          <% if (item.originalPrice && item.originalPrice > item.price) { %>
+                            <p class="text-[10px] text-gray-400 line-through">₹<%= (item.originalPrice).toLocaleString() %></p>
+                            <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest"><%= item.offerApplied?.offerName %></span>
+                          <% } %>
+                        </div>
                       </div>
                       <div class="flex flex-col items-end gap-2 flex-shrink-0">
                         <span class="text-xs font-bold px-2 py-1 rounded-full
@@ -301,29 +307,25 @@
                 </div>
 
                 <!-- Shipping Summary -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-indigo-50/30 rounded-xl border border-indigo-100 mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-indigo-50/30 rounded-xl border border-indigo-100 mb-4">
                   <div>
-                    <p class="text-xs text-gray-400 font-bold uppercase">Subtotal</p>
-                    <p class="text-sm font-black text-gray-800">₹<%= order.subtotal.toLocaleString() %></p>
+                    <p class="text-xs text-gray-400 font-bold uppercase tracking-tighter">Subtotal</p>
+                    <p class="text-sm font-black text-gray-800">₹<%= (order.originalSubtotal || order.subtotal).toLocaleString() %></p>
                   </div>
                   <div>
-                    <p class="text-xs text-gray-400 font-bold uppercase">Shipping</p>
+                    <p class="text-xs text-rose-400 font-bold uppercase tracking-tighter">Offer Save</p>
+                    <p class="text-sm font-black text-rose-600">-₹<%= (order.totalOfferDiscount || 0).toLocaleString() %></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-indigo-400 font-bold uppercase tracking-tighter">Coupon</p>
+                    <p class="text-sm font-black text-indigo-600">-₹<%= (order.discount || 0).toLocaleString() %></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase tracking-tighter">Shipping</p>
                     <p class="text-sm font-black text-gray-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></p>
                   </div>
                   <div>
-                    <p class="text-xs text-gray-400 font-bold uppercase">Payment</p>
-                    <p class="text-sm font-black text-gray-800">
-                      <%= order.paymentMethod %>
-                      <span class="text-[10px] px-1.5 py-0.5 rounded-md ml-1 font-bold inline-block mt-0.5
-                        <%= order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 
-                            order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'bg-red-100 text-red-700' : 
-                            'bg-yellow-100 text-yellow-700' %>">
-                        <%= order.paymentStatus %>
-                      </span>
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-gray-400 font-bold uppercase">Total</p>
+                    <p class="text-xs text-gray-400 font-bold uppercase tracking-tighter">Total</p>
                     <p class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></p>
                   </div>
                 </div>

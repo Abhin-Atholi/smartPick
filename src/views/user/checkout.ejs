@@ -178,9 +178,15 @@
                             <span class="text-gray-500 font-bold">Subtotal</span>
                             <span class="text-gray-900 font-black" id="summarySubtotal">₹<%= subtotal.toLocaleString() %></span>
                         </div>
-                        <div id="discountRow" class="flex justify-between text-sm <%= !appliedCoupon || discount === 0 ? 'hidden' : '' %>">
-                            <span class="text-green-600 font-bold">Coupon Discount</span>
-                            <span class="text-green-600 font-black" id="summaryDiscount">-₹<%= (discount || 0).toLocaleString() %></span>
+                        <!-- Offer Discount Row -->
+                        <div id="offerDiscountRow" class="flex justify-between text-sm <%= totalOfferDiscount === 0 ? 'hidden' : '' %>">
+                            <span class="text-rose-600 font-bold">Offer Discount</span>
+                            <span class="text-rose-600 font-black" id="summaryOfferDiscount">-₹<%= (totalOfferDiscount || 0).toLocaleString() %></span>
+                        </div>
+                        <!-- Coupon Discount Row -->
+                        <div id="discountRow" class="flex justify-between text-sm <%= !appliedCoupon || couponDiscount === 0 ? 'hidden' : '' %>">
+                            <span class="text-indigo-600 font-bold">Coupon Discount</span>
+                            <span class="text-indigo-600 font-black" id="summaryDiscount">-₹<%= (couponDiscount || 0).toLocaleString() %></span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-bold">Tax</span>
@@ -270,18 +276,32 @@
     }
 
     function updateSummary(b) {
-        document.getElementById('summarySubtotal').textContent = '\u20b9' + b.subtotal.toLocaleString('en-IN');
+        // b: { originalSubtotal, totalOfferDiscount, subtotal, discount, shippingFee, finalTotal }
+        document.getElementById('summarySubtotal').textContent = '₹' + b.originalSubtotal.toLocaleString('en-IN');
+        
+        // Offer Discount Row
+        const offerRow = document.getElementById('offerDiscountRow');
+        const summaryOfferDiscount = document.getElementById('summaryOfferDiscount');
+        if (b.totalOfferDiscount > 0) {
+            summaryOfferDiscount.textContent = '-₹' + b.totalOfferDiscount.toLocaleString('en-IN');
+            offerRow.classList.remove('hidden');
+        } else {
+            offerRow.classList.add('hidden');
+        }
+
+        // Coupon Discount Row
         const discountRow = document.getElementById('discountRow');
         const summaryDiscount = document.getElementById('summaryDiscount');
         if (b.discount > 0) {
-            summaryDiscount.textContent = '-\u20b9' + b.discount.toLocaleString('en-IN');
+            summaryDiscount.textContent = '-₹' + b.discount.toLocaleString('en-IN');
             discountRow.classList.remove('hidden');
         } else {
             discountRow.classList.add('hidden');
         }
+
         const shipping = b.shippingFee;
-        document.getElementById('summaryShipping').textContent = shipping === 0 ? 'Free' : '\u20b9' + shipping.toLocaleString('en-IN');
-        document.getElementById('summaryTotal').textContent = '\u20b9' + b.finalTotal.toLocaleString('en-IN');
+        document.getElementById('summaryShipping').textContent = shipping === 0 ? 'Free' : '₹' + shipping.toLocaleString('en-IN');
+        document.getElementById('summaryTotal').textContent = '₹' + b.finalTotal.toLocaleString('en-IN');
     }
 
     async function handleApplyCoupon() {
