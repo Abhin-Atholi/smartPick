@@ -62,6 +62,9 @@ app.use(async (req, res, next) => {
   next();
 });
 
+import * as orderService from "./src/services/user/orderService.js";
+orderService.startStockCleanupTask();
+
 mountRoutes(app);
 
 

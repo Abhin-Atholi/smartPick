@@ -56,8 +56,10 @@ const orderSchema = new mongoose.Schema({
         razorpayPaymentId: { type: String },
         razorpaySignature: { type: String },
         failedAttempts: { type: Number, default: 0 },
-        retryExpiryTime: { type: Date }
+        retryExpiryTime: { type: Date } // legacy field
     },
+    retryExpiresAt: { type: Date },
+    stockRestored: { type: Boolean, default: false },
     cancelReason: { type: String },
     returnReason: { type: String }
 }, { timestamps: true });

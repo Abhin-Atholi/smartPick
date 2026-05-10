@@ -54,6 +54,30 @@
     const expiredBtn = document.getElementById('expiredBtn');
     const statusMessage = document.getElementById('statusMessage');
 
+    // Backend Polling Logic
+    const pollingInterval = setInterval(async () => {
+        try {
+            const response = await axios.get(`/order/status/${orderId}`);
+            if (response.data.isExpired) {
+                clearInterval(pollingInterval);
+                clearInterval(timerInterval);
+                
+                // Force UI update to Expired state
+                countdownHUD.innerHTML = "00:00";
+                retryBtn.classList.add('hidden');
+                cancelBtn.classList.add('hidden');
+                expiredBtn.classList.remove('hidden');
+                statusMessage.innerHTML = "Retry session expired. Please place the order again.";
+                statusMessage.classList.add('text-red-500');
+                countdownHUD.classList.replace('text-indigo-600', 'text-red-600');
+                countdownHUD.parentElement.classList.replace('bg-indigo-50', 'bg-red-50');
+                countdownHUD.parentElement.classList.replace('border-indigo-100', 'border-red-100');
+            }
+        } catch (error) {
+            console.error("Polling failed:", error);
+        }
+    }, 10000); // Every 10 seconds
+
     // Countdown Timer Logic
     const timerInterval = setInterval(() => {
         const now = new Date().getTime();

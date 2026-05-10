@@ -15,5 +15,6 @@ router.get("/orders/:id/view-invoice", orderController.viewInvoice);
 router.get("/orders/:id/download-invoice", orderController.downloadInvoice);
 router.post("/order/cancel", orderController.cancelOrder);
 router.post("/order/return", orderController.returnOrder);
+router.get("/order/status/:id", orderController.checkPaymentStatus);
 
 export default router;

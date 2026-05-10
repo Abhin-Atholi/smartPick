@@ -262,6 +262,18 @@ export const getOrderDetails = async (req, res, next) => {
     }
 };
 
+export const checkPaymentStatus = async (req, res, next) => {
+    try {
+        const userId = req.currentUser?._id || req.session?.user?._id;
+        const { id } = req.params;
+        const result = await orderService.checkPaymentStatus(userId, id);
+        res.json(result);
+    } catch (err) {
+        console.error('checkPaymentStatus error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
 // ── Shared helper for both invoice routes ────────────────────────────────────
 const serveInvoice = async (req, res, next, disposition) => {
     try {

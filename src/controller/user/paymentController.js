@@ -51,30 +51,7 @@ export const initiateCheckout = async (req, res) => {
             'paymentDetails.razorpayOrderId': rzpOrder.id
         });
 
-        // 4. Stock Safety Timeout (Redundant if cron/middleware exists, but good for UX)
-        // This will auto-expire and restock if user closes browser and never comes back.
-        setTimeout(async () => {
-            try {
-                const currentOrder = await Order.findById(orderId);
-                if (currentOrder && currentOrder.paymentStatus === 'Pending' && currentOrder.orderStatus === 'Payment Pending') {
-                    currentOrder.orderStatus = 'Expired';
-                    currentOrder.paymentStatus = 'Expired';
-                    for (const item of currentOrder.items) {
-                        item.itemStatus = 'Expired';
-                        // Release held stock
-                        await Product.updateOne(
-                            { _id: item.product },
-                            { $inc: { 'variants.$[v].stock': item.quantity } },
-                            { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
-                        );
-                    }
-                    await currentOrder.save();
-                }
-            } catch (err) {
-                console.error("Auto-expire stock release error:", err);
-            }
-        }, 5 * 60 * 1000 + 5000); 
-
+        // Note: Stock restoration is now handled automatically by node-cron and getOrderById fail-safes using the stockRestored flag.
         return res.status(200).json({
             success: true,
             orderId,
@@ -94,33 +71,20 @@ export const verifyPayment = async (req, res) => {
         const userId = req.currentUser?._id || req.session?.user?._id;
         const { orderId, razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
 
-        const order = await Order.findOne({ _id: orderId, user: userId });
-        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    const order = await orderService.getOrderById(userId, orderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-        if (order.paymentStatus === 'Paid') {
-            return res.status(400).json({ success: false, message: 'Payment already verified' });
-        }
+    if (order.orderStatus === 'Expired') {
+        return res.status(400).json({ success: false, message: 'Order session has expired and stock has been released.' });
+    }
 
-        // Expiry check
-        if (new Date() > order.paymentDetails.retryExpiryTime) {
-            for (const item of order.items) {
-                item.itemStatus = 'Expired';
-                // Stock is already released by the background setTimeout, or we do it here if background task failed/delayed
-                // Actually to be safe and idempotent, we should check if it was already expired, but our check `order.orderStatus !== 'Expired'` handles that if we just let the setTimeout do it. 
-                // But if they manually hit verify right at expiry before setTimeout, we should restore it.
-            }
-            if (order.orderStatus !== 'Expired') {
-                for (const item of order.items) {
-                    await Product.updateOne(
-                        { _id: item.product },
-                        { $inc: { 'variants.$[v].stock': item.quantity } },
-                        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
-                    );
-                }
-                order.orderStatus = 'Expired';
-                order.paymentStatus = 'Expired';
-                await order.save();
-            }
+    if (order.paymentStatus === 'Paid') {
+        return res.status(400).json({ success: false, message: 'Payment already verified' });
+    }
+
+        // Expiry check - getOrderById handles the actual DB update and stock release,
+        // but we double-check the status here just in case.
+        if (order.orderStatus === 'Expired') {
             return res.status(400).json({ success: false, message: 'Payment session expired' });
         }
 
@@ -175,7 +139,7 @@ export const handlePaymentFailure = async (req, res) => {
         const userId = req.currentUser?._id || req.session?.user?._id;
         const { orderId } = req.body;
 
-        const order = await Order.findOne({ _id: orderId, user: userId });
+        const order = await orderService.getOrderById(userId, orderId);
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
         order.orderStatus = 'Payment Failed';
@@ -201,25 +165,10 @@ export const retryPayment = async (req, res) => {
         const userId = req.currentUser?._id || req.session?.user?._id;
         const { orderId } = req.body;
 
-        const order = await Order.findOne({ _id: orderId, user: userId }).populate('items.product');
+        const order = await orderService.getOrderById(userId, orderId);
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-        if (new Date() > order.paymentDetails.retryExpiryTime) {
-            for (const item of order.items) {
-                item.itemStatus = 'Expired';
-            }
-            if (order.orderStatus !== 'Expired') {
-                for (const item of order.items) {
-                    await Product.updateOne(
-                        { _id: item.product },
-                        { $inc: { 'variants.$[v].stock': item.quantity } },
-                        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
-                    );
-                }
-                order.orderStatus = 'Expired';
-                order.paymentStatus = 'Expired';
-                await order.save();
-            }
+        if (order.orderStatus === 'Expired') {
             return res.status(400).json({ success: false, message: 'Payment session expired' });
         }
 
@@ -254,7 +203,7 @@ export const renderPaymentFailurePage = async (req, res) => {
         const userId = req.currentUser?._id || req.session?.user?._id;
         const { orderId } = req.params;
 
-        const order = await Order.findOne({ _id: orderId, user: userId });
+        const order = await orderService.getOrderById(userId, orderId);
         if (!order) return res.redirect('/orders');
 
         res.render('user/payments/payment-failure', {

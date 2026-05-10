@@ -7,6 +7,7 @@ import Wallet from '../../model/walletModel.js';
 import Coupon from '../../model/couponModel.js';
 import * as walletService from './walletService.js';
 import * as offerHelper from '../../utils/offerHelper.js';
+import cron from 'node-cron';
 
 const processRefund = async (userId, amount, description, orderId) => {
     let wallet = await Wallet.findOne({ userId });
@@ -31,9 +32,10 @@ export const getOrderById = async (userId, orderId) => {
 
     // Robust Expiry Check: If order is still pending/failed but retry window closed
     const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
-    const hasExpiry = order.paymentDetails?.retryExpiryTime;
+    const hasExpiry = order.retryExpiresAt;
     
-    if (isRzpPending && hasExpiry && new Date() > order.paymentDetails.retryExpiryTime && order.orderStatus !== 'Expired') {
+    if (isRzpPending && hasExpiry && new Date() > order.retryExpiresAt && !order.stockRestored) {
+        order.stockRestored = true;
         order.orderStatus = 'Expired';
         order.paymentStatus = 'Expired';
         for (const item of order.items) {
@@ -180,8 +182,9 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
     });
 
     if (paymentMethod === 'Razorpay') {
+        order.retryExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
         order.paymentDetails = {
-            retryExpiryTime: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes window
+            retryExpiryTime: new Date(Date.now() + 5 * 60 * 1000),
             failedAttempts: 0
         };
     }
@@ -289,8 +292,9 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
     // Robust Batch Expiry Check for the current page
     for (const order of orders) {
         const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
-        const hasExpiry = order.paymentDetails?.retryExpiryTime;
-        if (isRzpPending && hasExpiry && new Date() > order.paymentDetails.retryExpiryTime && order.orderStatus !== 'Expired') {
+        const hasExpiry = order.retryExpiresAt;
+        if (isRzpPending && hasExpiry && new Date() > order.retryExpiresAt && !order.stockRestored) {
+            order.stockRestored = true;
             order.orderStatus = 'Expired';
             order.paymentStatus = 'Expired';
             for (const item of order.items) {
@@ -457,4 +461,61 @@ export const returnOrderItem = async (userId, orderId, itemId, reason) => {
 
     await order.save();
     return { success: true, message: "Item return requested successfully" };
+};
+
+export const checkPaymentStatus = async (userId, orderId) => {
+    const order = await getOrderById(userId, orderId);
+    if (!order) return { success: false, message: 'Order not found' };
+    
+    return {
+        success: true,
+        orderStatus: order.orderStatus,
+        paymentStatus: order.paymentStatus,
+        isExpired: order.orderStatus === 'Expired' || order.paymentStatus === 'Expired'
+    };
+};
+// ── Background Cleanup Task ──────────────────────────────────────────────────
+/**
+ * Periodically cleans up expired orders and restores stock.
+ * This handles cases where the user closes the tab and the server might have restarted.
+ */
+export const startStockCleanupTask = () => {
+    console.log('📦 Cron: Order cleanup task initialized (Every 30s)');
+    
+    cron.schedule('*/30 * * * * *', async () => {
+        try {
+            const now = new Date();
+            const expiredOrders = await Order.find({
+                orderStatus: { $in: ['Payment Pending', 'Payment Failed'] },
+                paymentStatus: { $ne: 'Paid' },
+                stockRestored: false,
+                retryExpiresAt: { $lt: now }
+            }).populate('items.product');
+
+            if (expiredOrders.length === 0) return;
+
+            console.log(`🧹 Cron: Auto-restoring stock for ${expiredOrders.length} expired order(s)...`);
+
+            for (const order of expiredOrders) {
+                // Double check to prevent race conditions
+                order.stockRestored = true;
+
+                order.orderStatus = 'Expired';
+                order.paymentStatus = 'Expired';
+                
+                for (const item of order.items) {
+                    item.itemStatus = 'Expired';
+                    // Atomic stock restoration
+                    await Product.updateOne(
+                        { _id: item.product },
+                        { $inc: { 'variants.$[v].stock': item.quantity } },
+                        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+                    ).catch(err => console.error(`Cron Failed to restore stock for ${item.product}:`, err));
+                }
+                await order.save().catch(err => console.error(`Cron Failed to save expired order ${order._id}:`, err));
+            }
+        } catch (err) {
+            console.error('Order cleanup task failed:', err);
+        }
+    }, 60 * 1000); // Every minute
 };
