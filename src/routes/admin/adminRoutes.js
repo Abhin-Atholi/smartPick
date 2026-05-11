@@ -7,6 +7,12 @@ import {
 } from "../../controller/admin/adminController.js";
 
 import { renderDashboard, getDashboardData } from "../../controller/admin/dashboardController.js";
+import { 
+    getSalesReportsPage, 
+    getSalesReportData, 
+    exportExcelReport, 
+    exportPdfReport 
+} from "../../controller/admin/reportController.js";
 
 import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.js";
 
@@ -27,6 +33,12 @@ router.use(isAdmin);
 // --- Dashboard ---
 router.get("/dashboard", renderDashboard);
 router.get("/dashboard/data", getDashboardData);
+
+// --- Sales Reports ---
+router.get("/sales-reports", getSalesReportsPage);
+router.get("/sales-reports/data", getSalesReportData);
+router.get("/sales-reports/export/excel", exportExcelReport);
+router.get("/sales-reports/export/pdf", exportPdfReport);
 
 // --- Customers ---
 router.get("/customers", getCustomers);

@@ -13,7 +13,10 @@
     <p class="text-gray-500 mt-2 font-medium">Here's your store's performance at a glance.</p>
   </div>
 
-  <div class="flex flex-col sm:flex-row items-center gap-3">
+  <div class="flex flex-wrap items-center gap-3">
+    <a href="/admin/sales-reports" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all flex items-center gap-2">
+      <span>📈</span> View Sales Reports
+    </a>
     <!-- Filter Dropdown -->
     <select id="timeFilter" onchange="handleFilterChange()" class="bg-white border border-gray-200 text-slate-700 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-auto px-4 py-2.5 font-bold shadow-sm">
       <option value="Daily">Daily</option>
@@ -58,6 +61,20 @@
     <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Avg Order Value</p>
     <h3 id="valAvgOrderValue" class="text-2xl font-black text-slate-800">₹0</h3>
   </div>
+
+  <a href="/admin/sales-reports" class="sm:col-span-2 lg:col-span-4 bg-gradient-to-r from-indigo-600 to-violet-600 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 flex items-center justify-between group overflow-hidden relative transition-all hover:scale-[1.01]">
+    <div class="relative z-10">
+      <h2 class="text-2xl font-black text-white mb-2">Advanced Sales Reports</h2>
+      <p class="text-indigo-100 font-medium opacity-90">Deep dive into revenue analytics, coupon usage, and exportable reports.</p>
+      <div class="mt-6 inline-flex items-center gap-2 bg-white text-indigo-600 px-6 py-3 rounded-2xl text-sm font-black shadow-lg group-hover:bg-indigo-50 transition-colors">
+        Open Module <span class="group-hover:translate-x-1 transition-transform">→</span>
+      </div>
+    </div>
+    <div class="text-7xl opacity-20 group-hover:scale-110 transition-transform relative z-10">📈</div>
+    <!-- Decorative circles -->
+    <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+    <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-black/10 rounded-full blur-2xl"></div>
+  </a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
