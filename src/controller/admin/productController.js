@@ -40,7 +40,8 @@ export const getProducts = async (req, res) => {
             currentOrder: req.query.order || 'desc',
             currentPage: page,
             totalPages: result.totalPages,
-            ...result.stats
+            ...result.stats,
+            activePath: "/admin/products"
         });
     } catch (error) {
         console.error("Error fetching products:", error);
@@ -55,7 +56,8 @@ export const getAddProduct = async (req, res) => {
         const categories = await categoryService.getAllActiveCategories();
         res.render("admin/products/add-product", {
             title: "Add Product",
-            categories
+            categories,
+            activePath: "/admin/products"
         });
     } catch (error) {
         console.error("Error loading add product page:", error);
@@ -150,7 +152,8 @@ export const getEditProduct = async (req, res) => {
             title: "Edit Product",
             product,
             categories,
-            subcategories
+            subcategories,
+            activePath: "/admin/products"
         });
     } catch (error) {
         console.error("Error loading edit product page:", error);

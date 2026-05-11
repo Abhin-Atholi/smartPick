@@ -61,7 +61,8 @@ export const getCustomers = async (req, res) => {
             currentSearch: search || "",
             currentStatus: status || "All",
             currentPage: page,
-            totalPages: totalPages
+            totalPages: totalPages,
+            activePath: "/admin/customers"
         });
     } catch (error) {
         res.status(500).send("Server Error");

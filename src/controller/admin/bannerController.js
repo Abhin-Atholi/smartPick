@@ -8,7 +8,8 @@ export const getBanners = async (req, res) => {
         res.render("admin/banners", {
             title: "Banner Management",
             banners,
-            activeBanner
+            activeBanner,
+            activePath: "/admin/banners"
         });
     } catch (error) {
         console.error("Error fetching banners:", error);

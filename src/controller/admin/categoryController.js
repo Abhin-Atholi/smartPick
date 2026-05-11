@@ -27,7 +27,8 @@ export const getCategories = async (req, res) => {
             totalCategories: result.stats.totalCategories,
             activeCategories: result.stats.activeCategories,
             hiddenCategories: result.stats.hiddenCategories,
-            totalSubcategories: result.stats.totalSubcategories
+            totalSubcategories: result.stats.totalSubcategories,
+            activePath: "/admin/category"
         });
     } catch (error) {
         console.error("Error fetching categories:", error);

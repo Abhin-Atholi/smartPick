@@ -21,7 +21,8 @@ export const getOffers = async (req, res) => {
             offerType: offerType || '',
             status: status || '',
             products,
-            categories
+            categories,
+            activePath: "/admin/offers"
         });
     } catch (error) {
         console.error('getOffers Error:', error);

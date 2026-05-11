@@ -8,7 +8,8 @@ export const getOrders = async (req, res, next) => {
         res.render('admin/orders', {
             title: 'Orders — Admin | SmartPick',
             ...data,
-            filters: { search, status, dateFrom, dateTo, sort }
+            filters: { search, status, dateFrom, dateTo, sort },
+            activePath: "/admin/orders"
         });
     } catch (err) {
         console.error('Admin getOrders error:', err);
@@ -22,7 +23,8 @@ export const getOrderDetails = async (req, res, next) => {
         if (!order) return res.status(404).render('error', { message: 'Order not found' });
         res.render('admin/orderDetails', {
             title: `Order ${order.orderId || order._id} — Admin | SmartPick`,
-            order
+            order,
+            activePath: "/admin/orders"
         });
     } catch (err) {
         console.error('Admin getOrderDetails error:', err);
@@ -56,7 +58,8 @@ export const getReturnRequests = async (req, res, next) => {
         const data = await orderService.getReturnRequests({ page, limit: 10 });
         res.render('admin/returnRequests', {
             title: 'Return Requests — Admin | SmartPick',
-            ...data
+            ...data,
+            activePath: "/admin/orders"
         });
     } catch (err) {
         console.error('Admin getReturnRequests error:', err);

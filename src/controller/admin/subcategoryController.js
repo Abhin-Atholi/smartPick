@@ -35,7 +35,8 @@ export const getSubcategories = async (req, res) => {
             // Stats blocks
             totalSubcategories: result.stats.totalSubcategories,
             activeSubcategories: result.stats.activeSubcategories,
-            hiddenSubcategories: result.stats.hiddenSubcategories
+            hiddenSubcategories: result.stats.hiddenSubcategories,
+            activePath: "/admin/subcategory"
         });
     } catch (error) {
         console.error("Error fetching subcategories:", error);

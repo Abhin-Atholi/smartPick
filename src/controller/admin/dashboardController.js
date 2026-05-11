@@ -8,7 +8,8 @@ export const renderDashboard = async (req, res) => {
         
         res.render("admin/dashboard", { 
             title: "Admin Dashboard",
-            inventoryAlerts
+            inventoryAlerts,
+            activePath: "/admin/dashboard"
         });
     } catch (error) {
         console.error("Error rendering dashboard:", error);
