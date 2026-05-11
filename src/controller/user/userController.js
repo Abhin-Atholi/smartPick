@@ -2,6 +2,7 @@ import * as userService from "../../services/user/userService.js"; // Ensure thi
 
 import * as productService from "../../services/user/productService.js";
 import * as offerHelper from "../../utils/offerHelper.js";
+import Banner from "../../model/bannerModel.js";
 
 export const loadHome = async (req, res) => {
   try {
@@ -10,14 +11,18 @@ export const loadHome = async (req, res) => {
     // Enrich latest products with offers
     const enrichedProducts = await offerHelper.applyOffersToProducts(latestProducts);
 
+    // Fetch active banner
+    const activeBanner = await Banner.findOne({ isActive: true });
+
     res.render("user/home", { 
       title: "SmartPick | Premium Fashion", 
       categories, 
-      latestProducts: enrichedProducts 
+      latestProducts: enrichedProducts,
+      activeBanner
     });
   } catch (error) {
     console.error("Home load error:", error);
-    res.render("user/home", { title: "SmartPick", categories: [], latestProducts: [] });
+    res.render("user/home", { title: "SmartPick", categories: [], latestProducts: [], activeBanner: null });
   }
 };
 

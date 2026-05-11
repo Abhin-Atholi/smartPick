@@ -2,9 +2,11 @@ import express from "express";
 const router = express.Router();
 
 import {
-    getLogin, postLogin, getDashboard,
+    getLogin, postLogin,
     getCustomers, toggleCustomerStatus, adminLogout
 } from "../../controller/admin/adminController.js";
+
+import { renderDashboard, getDashboardData } from "../../controller/admin/dashboardController.js";
 
 import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.js";
 
@@ -14,6 +16,7 @@ import productRoutes from "./productRoutes.js";
 import couponRoutes from "./couponRoutes.js";
 import orderRoutes from "./orderRoutes.js";
 import offerRoutes from "./offerRoutes.js";
+import bannerRoutes from "./bannerRoutes.js";
 // --- Auth ---
 router.get("/login", redirectIfAdminAuth, getLogin);
 router.post("/login", postLogin);
@@ -22,7 +25,8 @@ router.post("/login", postLogin);
 router.use(isAdmin);
 
 // --- Dashboard ---
-router.get("/dashboard", getDashboard);
+router.get("/dashboard", renderDashboard);
+router.get("/dashboard/data", getDashboardData);
 
 // --- Customers ---
 router.get("/customers", getCustomers);
@@ -36,6 +40,7 @@ router.use("/subcategory", subcategoryRoutes);
 router.use("/products", productRoutes);
 router.use("/coupons", couponRoutes);
 router.use("/offers", offerRoutes);
+router.use("/banners", bannerRoutes);
 
 // --- Order Management ---
 router.use("/orders", orderRoutes);

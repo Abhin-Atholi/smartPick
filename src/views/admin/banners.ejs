@@ -1,0 +1,246 @@
+<nav class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
+  Admin / <span class="text-indigo-600">Banners</span>
+</nav>
+
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+  <div>
+    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Banner Management</h1>
+    <p class="text-gray-500 mt-2 font-medium">Manage your homepage hero banners</p>
+  </div>
+  <button onclick="document.getElementById('uploadBannerModal').classList.remove('hidden')" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+    + Upload New Banner
+  </button>
+</div>
+
+<!-- Active Banner Section -->
+<div class="mb-12">
+  <h2 class="text-lg font-black text-slate-800 mb-4">Current Active Banner</h2>
+  <% if (activeBanner) { %>
+    <div class="relative rounded-2xl overflow-hidden shadow-lg border border-gray-100 group">
+      <img src="<%= activeBanner.imageUrl %>" alt="<%= activeBanner.title %>" class="w-full h-[300px] object-cover">
+      <div class="absolute top-4 left-4">
+        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1">
+          <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span> Active
+        </span>
+      </div>
+      <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm">
+        <p class="font-bold text-slate-800"><%= activeBanner.title %></p>
+        <p class="text-xs text-gray-500">Uploaded: <%= new Date(activeBanner.createdAt).toLocaleDateString() %></p>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-12 text-center">
+      <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <span class="text-2xl">🖼️</span>
+      </div>
+      <h3 class="font-bold text-slate-700">No Active Banner</h3>
+      <p class="text-gray-400 text-sm mt-1">Upload and activate a banner to show it on the homepage.</p>
+    </div>
+  <% } %>
+</div>
+
+<!-- All Banners Grid -->
+<div>
+  <h2 class="text-lg font-black text-slate-800 mb-4">Banner Library</h2>
+  <% if (banners && banners.length > 0) { %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% banners.forEach(banner => { %>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+          <div class="relative h-40">
+            <img src="<%= banner.imageUrl %>" alt="<%= banner.title %>" class="w-full h-full object-cover">
+            <% if (banner.isActive) { %>
+              <div class="absolute top-2 right-2">
+                <span class="bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">Active</span>
+              </div>
+            <% } %>
+          </div>
+          <div class="p-4 flex-1 flex flex-col">
+            <h3 class="font-bold text-slate-800 truncate"><%= banner.title %></h3>
+            <p class="text-xs text-gray-400 mt-1 mb-4">Added: <%= new Date(banner.createdAt).toLocaleDateString() %></p>
+            
+            <div class="mt-auto flex gap-2">
+              <% if (!banner.isActive) { %>
+                <button onclick="activateBanner('<%= banner._id %>')" class="flex-1 bg-indigo-50 text-indigo-600 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
+                  Activate
+                </button>
+              <% } else { %>
+                <button disabled class="flex-1 bg-gray-100 text-gray-400 py-2 rounded-xl text-xs font-bold cursor-not-allowed">
+                  Currently Active
+                </button>
+              <% } %>
+              
+              <button onclick="deleteBanner('<%= banner._id %>')" class="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="text-gray-500">No banners uploaded yet.</p>
+  <% } %>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadBannerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeUploadModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-black text-lg text-slate-800">Upload Banner</h3>
+      <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 transition">✕</button>
+    </div>
+    
+    <form id="uploadBannerForm" onsubmit="handleBannerUpload(event)">
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Banner Title</label>
+        <input type="text" id="bannerTitle" name="title" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" placeholder="e.g. Summer Sale 2026" required>
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Banner Image (12:5 ratio)</label>
+        <input type="file" id="bannerImageInput" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="handleImageSelect(event)">
+        
+        <div id="imagePreviewContainer" class="hidden relative w-full h-32 bg-gray-100 rounded-xl overflow-hidden mb-2 border border-gray-200">
+          <img id="imagePreview" src="" class="w-full h-full object-cover">
+          <button type="button" onclick="clearImageSelection()" class="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow">✕</button>
+        </div>
+
+        <button type="button" id="selectImageBtn" onclick="document.getElementById('bannerImageInput').click()" class="w-full border-2 border-dashed border-gray-300 rounded-xl py-8 flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-indigo-300 transition">
+          <span class="text-2xl mb-2">📸</span>
+          <span class="text-sm font-bold">Click to select image</span>
+          <span class="text-xs text-gray-400 mt-1">JPEG, PNG, WEBP (Max 2MB)</span>
+        </button>
+      </div>
+
+      <button type="submit" id="uploadBtn" class="w-full bg-indigo-600 text-white font-black py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex justify-center items-center gap-2">
+        Upload & Activate
+      </button>
+    </form>
+  </div>
+</div>
+
+<%- include('../admin/partials/image-cropper') %>
+
+<script>
+  let croppedImageFile = null;
+
+  function closeUploadModal() {
+    document.getElementById('uploadBannerModal').classList.add('hidden');
+    clearImageSelection();
+    document.getElementById('uploadBannerForm').reset();
+  }
+
+  function clearImageSelection() {
+    croppedImageFile = null;
+    document.getElementById('bannerImageInput').value = "";
+    document.getElementById('imagePreviewContainer').classList.add('hidden');
+    document.getElementById('selectImageBtn').classList.remove('hidden');
+  }
+
+  async function handleImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate type and size
+    if (!file.type.startsWith('image/')) {
+      Swal.fire({ icon: 'error', title: 'Invalid File', text: 'Please select an image file.' });
+      return clearImageSelection();
+    }
+    
+    // We expect the banner to be 12:5 ratio (e.g. 1200x500)
+    try {
+      const croppedBlob = await window.cropImage(file, { aspectRatio: 12 / 5 });
+      croppedImageFile = croppedBlob;
+      
+      const previewUrl = URL.createObjectURL(croppedBlob);
+      document.getElementById('imagePreview').src = previewUrl;
+      document.getElementById('imagePreviewContainer').classList.remove('hidden');
+      document.getElementById('selectImageBtn').classList.add('hidden');
+    } catch (err) {
+      console.log('Crop cancelled or failed', err);
+      clearImageSelection();
+    }
+  }
+
+  async function handleBannerUpload(event) {
+    event.preventDefault();
+    
+    if (!croppedImageFile) {
+      return Swal.fire({ icon: 'warning', title: 'Missing Image', text: 'Please select and crop an image for the banner.' });
+    }
+
+    const title = document.getElementById('bannerTitle').value;
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('image', croppedImageFile);
+
+    const btn = document.getElementById('uploadBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Uploading...`;
+    btn.disabled = true;
+
+    try {
+      const response = await axios.post('/admin/banners/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.data.success) {
+        window.location.href = `/admin/banners?msg=${encodeURIComponent(response.data.message)}`;
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Failed to upload banner';
+      Swal.fire({ icon: 'error', title: 'Upload Failed', text: msg });
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  function activateBanner(id) {
+    Swal.fire({
+      title: "Activate Banner?",
+      text: "This will replace the current active banner on the homepage.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#4F46E5",
+      cancelButtonColor: "#9CA3AF",
+      confirmButtonText: "Yes, Activate"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await axios.patch(`/admin/banners/activate/${id}`);
+          if (response.data.success) {
+            window.location.href = `/admin/banners?msg=${encodeURIComponent(response.data.message)}`;
+          }
+        } catch (error) {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to activate banner' });
+        }
+      }
+    });
+  }
+
+  function deleteBanner(id) {
+    Swal.fire({
+      title: "Delete Banner?",
+      text: "This action cannot be undone. The image will be permanently removed.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#9CA3AF",
+      confirmButtonText: "Yes, Delete"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await axios.delete(`/admin/banners/delete/${id}`);
+          if (response.data.success) {
+            window.location.href = `/admin/banners?msg=${encodeURIComponent(response.data.message)}`;
+          }
+        } catch (error) {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete banner' });
+        }
+      }
+    });
+  }
+</script>

@@ -2,8 +2,8 @@
 
 <section class="relative overflow-hidden">
   <img 
-    src="/images/banners/hero-banner.png" 
-    alt="SmartPick Fashion Banner — Style for Everyone" 
+    src="<%= (typeof activeBanner !== 'undefined' && activeBanner) ? activeBanner.imageUrl : '/images/banners/hero-banner.png' %>" 
+    alt="<%= (typeof activeBanner !== 'undefined' && activeBanner) ? activeBanner.title : 'SmartPick Fashion Banner — Style for Everyone' %>" 
     class="w-full h-[280px] sm:h-[360px] md:h-[420px] lg:h-[480px] object-cover"
   >
   <!-- Gradient overlay for readability -->
