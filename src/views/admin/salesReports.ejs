@@ -57,36 +57,28 @@
             <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-indigo-600 group-hover:scale-110 transition-transform">💰</div>
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Revenue</p>
             <h3 id="statRevenue" class="text-2xl font-black text-slate-900">₹0</h3>
-            <div class="mt-2 flex items-center gap-1 text-[10px] font-bold text-emerald-500">
-                <span>↑ 12.5%</span> <span class="text-slate-400">vs last period</span>
-            </div>
+            <div id="growthRevenue" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
         </div>
 
         <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
             <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-amber-500 group-hover:scale-110 transition-transform">📦</div>
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Orders</p>
             <h3 id="statOrders" class="text-2xl font-black text-slate-900">0</h3>
-            <div class="mt-2 flex items-center gap-1 text-[10px] font-bold text-amber-500">
-                <span>84%</span> <span class="text-slate-400">delivery rate</span>
-            </div>
+            <div id="growthOrders" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
         </div>
 
         <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
             <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-emerald-500 group-hover:scale-110 transition-transform">✨</div>
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Products Sold</p>
             <h3 id="statProducts" class="text-2xl font-black text-slate-900">0</h3>
-            <div class="mt-2 flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                <span class="text-slate-600">Top:</span> <span>Smartphone X</span>
-            </div>
+            <div id="growthProducts" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
         </div>
 
         <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
             <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-rose-500 group-hover:scale-110 transition-transform">🏷️</div>
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Discount</p>
             <h3 id="statDiscount" class="text-2xl font-black text-slate-900">₹0</h3>
-            <div class="mt-2 flex items-center gap-1 text-[10px] font-bold text-rose-400">
-                <span>- ₹450</span> <span class="text-slate-400">coupon savings</span>
-            </div>
+            <div id="growthDiscount" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
         </div>
     </div>
 
@@ -224,6 +216,12 @@
         document.getElementById('statProducts').innerText = data.summary.productsSold.toLocaleString();
         document.getElementById('statDiscount').innerText = `₹${data.summary.totalDiscount.toLocaleString()}`;
 
+        // Update Growth Indicators
+        updateGrowthIndicator('growthRevenue', data.summary.revenueGrowth);
+        updateGrowthIndicator('growthOrders', data.summary.orderGrowth);
+        updateGrowthIndicator('growthProducts', data.summary.productsGrowth);
+        updateGrowthIndicator('growthDiscount', data.summary.discountGrowth);
+
         // Update Chart
         updateChart(data.chart);
 
@@ -285,6 +283,15 @@
                 `;
             });
         }
+    }
+
+    function updateGrowthIndicator(elementId, growth) {
+        const el = document.getElementById(elementId);
+        const isPositive = growth >= 0;
+        const colorClass = isPositive ? 'text-emerald-500' : 'text-rose-500';
+        const arrow = isPositive ? '↑' : '↓';
+        el.className = `mt-2 flex items-center gap-1 text-[10px] font-bold ${colorClass}`;
+        el.innerHTML = `<span>${arrow} ${Math.abs(growth).toFixed(1)}%</span> <span class="text-slate-400">vs last period</span>`;
     }
 
     function getStatusClass(status) {

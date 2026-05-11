@@ -5,60 +5,22 @@ import Product from '../../model/productModel.js';
 import Category from '../../model/categoryModel.js';
 import Subcategory from '../../model/subcategoryModel.js';
 
-const validOrderStatuses = ['Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Return Requested', 'Return Rejected'];
-
-// Helper to get date boundaries based on filter
-const getDateFilter = (filter, customFrom, customTo) => {
-    const now = new Date();
-    let startDate = new Date();
-    let endDate = new Date();
-
-    switch (filter) {
-        case 'Daily':
-            startDate.setHours(0, 0, 0, 0);
-            endDate.setHours(23, 59, 59, 999);
-            break;
-        case 'Weekly':
-            const day = now.getDay();
-            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-            startDate = new Date(now.setDate(diff));
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 6);
-            endDate.setHours(23, 59, 59, 999);
-            break;
-        case 'Monthly':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-            break;
-        case 'Yearly':
-            startDate = new Date(now.getFullYear(), 0, 1);
-            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-            break;
-        case 'Custom':
-            if (customFrom && customTo) {
-                startDate = new Date(customFrom);
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(customTo);
-                endDate.setHours(23, 59, 59, 999);
-            }
-            break;
-        default:
-            // Default to Yearly if unknown
-            startDate = new Date(now.getFullYear(), 0, 1);
-            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-            break;
-    }
-
-    return { startDate, endDate };
-};
+import { getDateRange, getPreviousDateRange, getGroupByFormat, validOrderStatuses } from '../../utils/dateFilterHelper.js';
 
 export const getDashboardData = async (filter, customFrom, customTo) => {
-    const { startDate, endDate } = getDateFilter(filter, customFrom, customTo);
+    const { startDate, endDate } = getDateRange(filter, customFrom, customTo);
+    const { startDate: prevStart, endDate: prevEnd } = getPreviousDateRange(filter, startDate, endDate);
 
     const matchStage = {
         createdAt: { $gte: startDate, $lte: endDate },
-        orderStatus: { $in: validOrderStatuses }
+        orderStatus: { $in: validOrderStatuses },
+        paymentStatus: { $nin: ['Failed', 'Expired'] }
+    };
+
+    const prevMatchStage = {
+        createdAt: { $gte: prevStart, $lte: prevEnd },
+        orderStatus: { $in: validOrderStatuses },
+        paymentStatus: { $nin: ['Failed', 'Expired'] }
     };
 
     // 1. Summary Cards
@@ -74,27 +36,36 @@ export const getDashboardData = async (filter, customFrom, customTo) => {
         }
     ]);
 
+    const prevSummaryData = await Order.aggregate([
+        { $match: prevMatchStage },
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: '$totalAmount' },
+                totalOrders: { $sum: 1 }
+            }
+        }
+    ]);
+
     const totalCustomers = await User.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } });
     
     const summary = summaryData.length > 0 ? {
         totalRevenue: summaryData[0].totalRevenue,
         totalOrders: summaryData[0].totalOrders,
-        totalCustomers: summaryData[0].uniqueCustomers.length, // or use totalCustomers
+        totalCustomers: summaryData[0].uniqueCustomers.length,
         averageOrderValue: summaryData[0].totalRevenue / summaryData[0].totalOrders
     } : { totalRevenue: 0, totalOrders: 0, totalCustomers: 0, averageOrderValue: 0 };
 
+    // Calculate growth
+    const prevRevenue = prevSummaryData.length > 0 ? prevSummaryData[0].totalRevenue : 0;
+    const prevOrders = prevSummaryData.length > 0 ? prevSummaryData[0].totalOrders : 0;
+
+    summary.revenueGrowth = prevRevenue === 0 ? 100 : ((summary.totalRevenue - prevRevenue) / prevRevenue) * 100;
+    summary.orderGrowth = prevOrders === 0 ? 100 : ((summary.totalOrders - prevOrders) / prevOrders) * 100;
     summary.totalNewUsers = totalCustomers;
 
     // 2. Sales Chart Data
-    let groupByFormat;
-    switch (filter) {
-        case 'Daily': groupByFormat = "%H:00"; break; // Group by hour
-        case 'Weekly': groupByFormat = "%Y-%m-%d"; break; // Group by day
-        case 'Monthly': groupByFormat = "%Y-%m-%d"; break; // Group by day
-        case 'Yearly': groupByFormat = "%Y-%m"; break; // Group by month
-        case 'Custom': groupByFormat = "%Y-%m-%d"; break;
-        default: groupByFormat = "%Y-%m"; break;
-    }
+    const groupByFormat = getGroupByFormat(filter, startDate, endDate);
 
     const salesChart = await Order.aggregate([
         { $match: matchStage },
@@ -264,6 +235,12 @@ export const getDashboardData = async (filter, customFrom, customTo) => {
         }
     ]);
 
+    // 7. Recent Orders (Filtered by current range)
+    const recentOrders = await Order.find(matchStage)
+        .populate('user', 'fullName email')
+        .sort({ createdAt: -1 })
+        .limit(5);
+
     return {
         summary,
         chart: {
@@ -274,7 +251,8 @@ export const getDashboardData = async (filter, customFrom, customTo) => {
         topProducts,
         topCategories,
         topBrands,
-        topSubcategories
+        topSubcategories,
+        recentOrders
     };
 };
 

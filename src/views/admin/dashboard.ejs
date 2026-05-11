@@ -42,12 +42,14 @@
     <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-emerald-500">💰</div>
     <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Total Revenue</p>
     <h3 id="valTotalRevenue" class="text-2xl font-black text-slate-800">₹0</h3>
+    <p id="growthRevenue" class="text-[10px] font-bold mt-2"></p>
   </div>
   
   <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
     <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-blue-500">📦</div>
     <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Total Orders</p>
     <h3 id="valTotalOrders" class="text-2xl font-black text-slate-800">0</h3>
+    <p id="growthOrders" class="text-[10px] font-bold mt-2"></p>
   </div>
 
   <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
@@ -115,23 +117,8 @@
         <h2 class="text-lg font-black text-slate-800">Recent Orders</h2>
         <a href="/admin/orders" class="text-xs font-bold text-indigo-600 hover:underline">View All</a>
       </div>
-      <div class="space-y-4">
-        <% if(recentOrders && recentOrders.length > 0) { %>
-          <% recentOrders.forEach(order => { %>
-            <div class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
-              <div>
-                <p class="text-sm font-bold text-slate-800">#<%= order.orderId %></p>
-                <p class="text-xs text-gray-500"><%= order.user ? order.user.fullName : 'Guest' %></p>
-              </div>
-              <div class="text-right">
-                <p class="text-sm font-black text-indigo-600">₹<%= order.totalAmount %></p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider"><%= order.orderStatus %></p>
-              </div>
-            </div>
-          <% }) %>
-        <% } else { %>
-          <p class="text-sm text-gray-500">No recent orders.</p>
-        <% } %>
+      <div id="recentOrdersContainer" class="space-y-4">
+        <!-- Injected dynamically -->
       </div>
     </div>
   </div>
@@ -221,15 +208,57 @@
     document.getElementById('valTotalOrders').innerText = data.summary.totalOrders.toLocaleString();
     document.getElementById('valTotalCustomers').innerText = data.summary.totalCustomers.toLocaleString();
     document.getElementById('valAvgOrderValue').innerText = `₹${Math.round(data.summary.averageOrderValue || 0).toLocaleString()}`;
+    
+    // Update Growth Indicators
+    updateGrowthIndicator('growthRevenue', data.summary.revenueGrowth);
+    updateGrowthIndicator('growthOrders', data.summary.orderGrowth);
 
     // 2. Update Chart
     updateChart(data.chart);
 
-    // 3. Update Top Lists
+    // 3. Update Recent Orders
+    renderRecentOrders(data.recentOrders);
+
+    // 4. Update Top Lists
     renderTopList('topProductsContainer', data.topProducts, true);
     renderTopList('topCategoriesContainer', data.topCategories, false);
     renderTopList('topSubcategoriesContainer', data.topSubcategories, false);
     renderTopList('topBrandsContainer', data.topBrands, false);
+  }
+
+  function updateGrowthIndicator(elementId, growth) {
+    const el = document.getElementById(elementId);
+    const isPositive = growth >= 0;
+    const colorClass = isPositive ? 'text-emerald-500' : 'text-rose-500';
+    const arrow = isPositive ? '↑' : '↓';
+    el.className = `text-[10px] font-bold mt-2 ${colorClass}`;
+    el.innerHTML = `<span>${arrow} ${Math.abs(growth).toFixed(1)}%</span> <span class="text-gray-400">vs last period</span>`;
+  }
+
+  function renderRecentOrders(orders) {
+    const container = document.getElementById('recentOrdersContainer');
+    container.innerHTML = '';
+
+    if (!orders || orders.length === 0) {
+      container.innerHTML = '<p class="text-sm text-gray-500">No recent orders.</p>';
+      return;
+    }
+
+    orders.forEach(order => {
+      const customerName = order.user ? order.user.fullName : 'Guest';
+      container.innerHTML += `
+        <div class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+          <div>
+            <p class="text-sm font-bold text-slate-800">#${order.orderId || order._id.toString().slice(-6)}</p>
+            <p class="text-xs text-gray-500">${customerName}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-black text-indigo-600">₹${order.totalAmount.toLocaleString()}</p>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${order.orderStatus}</p>
+          </div>
+        </div>
+      `;
+    });
   }
 
   function updateChart(chartData) {

@@ -6,16 +6,9 @@ export const renderDashboard = async (req, res) => {
     try {
         const inventoryAlerts = await dashboardService.getInventoryAlerts();
         
-        // Fetch 5 recent orders for the UI
-        const recentOrders = await Order.find({})
-            .populate('user', 'fullName email')
-            .sort({ createdAt: -1 })
-            .limit(5);
-
         res.render("admin/dashboard", { 
             title: "Admin Dashboard",
-            inventoryAlerts,
-            recentOrders
+            inventoryAlerts
         });
     } catch (error) {
         console.error("Error rendering dashboard:", error);
