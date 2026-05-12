@@ -618,16 +618,12 @@
                                 <p class="text-[9px] text-indigo-500 font-black uppercase tracking-widest">${coupon.discountType === 'flat' ? '₹' + coupon.discountValue : coupon.discountValue + '%'} OFF • Min purchase ₹${coupon.minimumAmount}</p>
                             </div>
                         </div>
+                        </div>
                         <div class="flex items-center justify-between border-t border-gray-50 pt-4">
                             <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest">Valid till ${new Date(coupon.expiryDate).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</p>
-                            <button onclick="applyCouponFromModal('${coupon.code}')" 
-                                ${!coupon.isEligible || isApplied || res.data.appliedCoupon ? 'disabled' : ''}
-                                class="px-5 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm transition-all
-                                ${isApplied ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
-                                  !coupon.isEligible ? 'bg-gray-50 text-gray-400 cursor-not-allowed' :
-                                  res.data.appliedCoupon ? 'bg-gray-50 text-gray-400 cursor-not-allowed' :
-                                  'bg-indigo-600 text-white hover:bg-slate-900 shadow-indigo-100 hover:shadow-lg active:scale-95'}">
-                                ${isApplied ? 'Applied' : !coupon.isEligible ? 'Below Min' : res.data.appliedCoupon ? 'Locked' : 'Apply'}
+                            <button onclick="copyToClipboard('${coupon.code}')" 
+                                class="px-5 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl bg-gray-50 text-indigo-600 hover:bg-indigo-50 border border-gray-100 transition-all active:scale-95">
+                                Copy Code
                             </button>
                         </div>
                     </div>
@@ -645,19 +641,6 @@
         }
     }
 
-    async function applyCouponFromModal(code) {
-        try {
-            const res = await axios.post('/coupons/apply', { couponCode: code });
-            if (res.data.success) {
-                Swal.fire({ icon: 'success', title: 'Coupon Applied!', text: res.data.message, timer: 1500, showConfirmButton: false });
-                closeModal('couponsModal');
-                // Refresh modal content if opened again
-                fetchCoupons();
-            }
-        } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Oops...', text: err.response?.data?.message || 'Failed to apply coupon' });
-        }
-    }
 
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {

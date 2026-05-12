@@ -124,14 +124,16 @@ export const getAvailableCoupons = async (req, res) => {
         const coupons = await Coupon.find({
             isActive: true,
             isDeleted: false,
-            expiryDate: { $gt: now },
-            $expr: { $lt: ['$usedCount', '$usageLimit'] }
+            expiryDate: { $gt: now }
         })
-        .select('code description discountType discountValue minimumAmount maximumDiscount expiryDate')
+        .select('code description discountType discountValue minimumAmount maximumDiscount expiryDate usedCount usageLimit')
         .sort({ createdAt: -1 })
         .lean();
 
-        return res.status(200).json({ success: true, coupons });
+        // Filter out those that hit limit
+        const filteredCoupons = coupons.filter(c => (c.usedCount || 0) < (c.usageLimit || 0));
+
+        return res.status(200).json({ success: true, coupons: filteredCoupons });
     } catch (error) {
         console.error("getAvailableCoupons Error:", error);
         return res.status(500).json({ success: false, message: "Failed to fetch coupons." });

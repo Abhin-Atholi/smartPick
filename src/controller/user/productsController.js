@@ -206,12 +206,13 @@ export const getEligibleCoupons = async (req, res) => {
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
 
     const now = new Date();
+    
+    // Fetch all active, non-deleted coupons that haven't expired yet
     const coupons = await Coupon.find({
       isActive: true,
       isDeleted: false,
       startDate: { $lte: now },
-      expiryDate: { $gt: now },
-      $expr: { $lt: ['$usedCount', '$usageLimit'] }
+      expiryDate: { $gt: now }
     }).lean();
 
     // Logic: If on product page, we consider the product's price as the baseline.
@@ -219,29 +220,43 @@ export const getEligibleCoupons = async (req, res) => {
     let cartTotal = 0;
     if (userId) {
       const cartData = await cartService.getCart(userId, 1, 100);
-      if (cartData && cartData.items.length > 0) {
+      if (cartData && cartData.items && cartData.items.length > 0) {
         cartData.items.forEach(item => {
-          // getCart already filters deleted/inactive mostly, but let's be safe
-          cartTotal += item.effectiveTotalPrice;
+          cartTotal += (item.effectiveTotalPrice || (item.price * item.quantity));
         });
       }
     }
 
-    // If cart is empty or user not logged in, use product price as "potential" total
-    const productPrice = Math.min(...product.variants.map(v => v.price));
+    const productPrice = product.variants && product.variants.length > 0 
+      ? Math.min(...product.variants.map(v => v.price)) 
+      : 0;
+      
     const comparisonTotal = Math.max(cartTotal, productPrice);
 
-    const processedCoupons = coupons.map(coupon => {
+    const processedCoupons = coupons.filter(c => {
+      // Server-side filter for usage limit to keep query simple and robust
+      const uCount = c.usedCount || 0;
+      const uLimit = c.usageLimit || 0;
+      return uCount < uLimit;
+    }).map(coupon => {
       const isEligible = comparisonTotal >= coupon.minimumAmount;
       const alreadyUsed = userId && coupon.usedBy && coupon.usedBy.some(id => id.toString() === userId.toString());
       
+      let potentialDiscount = 0;
+      if (coupon.discountType === 'flat') {
+        potentialDiscount = coupon.discountValue;
+      } else {
+        potentialDiscount = (comparisonTotal * coupon.discountValue) / 100;
+        if (coupon.maximumDiscount && potentialDiscount > coupon.maximumDiscount) {
+          potentialDiscount = coupon.maximumDiscount;
+        }
+      }
+
       return {
         ...coupon,
         isEligible,
         alreadyUsed,
-        potentialDiscount: coupon.discountType === 'flat' 
-          ? coupon.discountValue 
-          : parseFloat(((comparisonTotal * coupon.discountValue) / 100).toFixed(2))
+        potentialDiscount: parseFloat(potentialDiscount.toFixed(2))
       };
     });
 

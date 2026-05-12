@@ -160,6 +160,14 @@
             <h3 class="text-lg font-black text-slate-800">No records found</h3>
             <p class="text-slate-500">Try adjusting your filters or date range.</p>
         </div>
+
+        <!-- Pagination -->
+        <div id="reportPagination" class="px-8 py-5 border-t border-slate-50 bg-slate-50/30 flex items-center justify-between">
+            <p id="paginationInfo" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Showing page 1 of 1</p>
+            <div class="flex items-center gap-2" id="paginationButtons">
+                <!-- Injected via JS -->
+            </div>
+        </div>
     </div>
 </div>
 
@@ -170,8 +178,10 @@
     let reportChart = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-        fetchReportData();
+        fetchReportData(1);
     });
+    
+    let currentPage = 1;
 
     function handleFilterChange() {
         const filter = document.getElementById('reportFilter').value;
@@ -183,13 +193,14 @@
         } else {
             customContainer.classList.add('hidden');
             customContainer.classList.remove('flex');
-            fetchReportData();
+            fetchReportData(1);
         }
     }
 
-    async function fetchReportData() {
+    async function fetchReportData(page = 1) {
+        currentPage = page;
         const filter = document.getElementById('reportFilter').value;
-        let url = `/admin/sales-reports/data?filter=${filter}`;
+        let url = `/admin/sales-reports/data?filter=${filter}&page=${page}`;
 
         if (filter === 'Custom') {
             const from = document.getElementById('dateFrom').value;
@@ -254,12 +265,34 @@
         // Update Table
         const tbody = document.getElementById('orderReportBody');
         const noData = document.getElementById('noDataMessage');
+        const pagination = document.getElementById('reportPagination');
         tbody.innerHTML = '';
 
         if (data.orders.length === 0) {
             noData.classList.remove('hidden');
+            pagination.classList.add('hidden');
         } else {
             noData.classList.add('hidden');
+            pagination.classList.remove('hidden');
+            
+            // Update Pagination Info
+            document.getElementById('paginationInfo').innerText = `Showing page ${data.currentPage} of ${data.totalPages} (${data.totalOrdersCount} orders)`;
+            
+            // Render Pagination Buttons
+            const btnContainer = document.getElementById('paginationButtons');
+            btnContainer.innerHTML = '';
+            
+            for (let i = 1; i <= data.totalPages; i++) {
+                const isActive = i === data.currentPage;
+                btnContainer.innerHTML += `
+                    <button onclick="fetchReportData(${i})" 
+                        class="w-8 h-8 rounded-lg text-xs font-black transition-all active:scale-90 
+                        ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'}">
+                        ${i}
+                    </button>
+                `;
+            }
+
             data.orders.forEach(order => {
                 const date = new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                 const offerDiscount = order.totalOfferDiscount || 0;

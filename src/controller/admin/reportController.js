@@ -17,7 +17,9 @@ export const getSalesReportsPage = async (req, res) => {
 export const getSalesReportData = async (req, res) => {
     try {
         const { filter, customFrom, customTo } = req.query;
-        const data = await reportService.getSalesReportData(filter, customFrom, customTo);
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const data = await reportService.getSalesReportData(filter, customFrom, customTo, page, limit);
         res.json({ success: true, data });
     } catch (error) {
         console.error('Error fetching report data:', error);

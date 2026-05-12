@@ -55,11 +55,10 @@ export const updateQuantity = async (req, res, next) => {
             return res.status(400).json({ success: false, message: result.message, code: result.code });
         }
 
-        res.json({ 
-            success: true, 
-            cartTotal: result.cartTotal,
-            estimatedTax: taxHelper.calculateTax(result.cartTotal),
-            itemTotal: result.items.find(i => i.product.toString() === productId && i.size === size && i.color === color).totalPrice
+        res.json({
+            success: true,
+            ...result,
+            estimatedTax: taxHelper.calculateTax(result.activeTotal)
         });
     } catch (err) {
         if (!err.message.includes("Maximum limit reached") && !err.message.includes("Units per product")) {
@@ -76,11 +75,11 @@ export const removeItem = async (req, res, next) => {
 
         const cart = await cartService.removeItem(userId, productId, size, color);
 
-        res.json({ 
-            success: true, 
-            cartTotal: cart.cartTotal,
-            estimatedTax: taxHelper.calculateTax(cart.cartTotal),
-            itemCount: cart.items.length
+        res.json({
+            success: true,
+            ...cart,
+            itemCount: cart.allItemsWithOffers.length,
+            estimatedTax: taxHelper.calculateTax(cart.activeTotal)
         });
     } catch (err) {
         console.error("removeItem error:", err);

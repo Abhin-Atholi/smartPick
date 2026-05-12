@@ -17,8 +17,8 @@ export const loadCheckout = async (req, res, next) => {
             walletService.getOrCreateWallet(userId)
         ]);
         const walletBalance = walletData?.balance || 0;
-        
-        
+
+
         // Fetch cart (use a high limit to get all items for checkout)
         const cartData = await cartService.getCart(userId, 1, 100);
 
@@ -30,7 +30,7 @@ export const loadCheckout = async (req, res, next) => {
         let subtotal = 0;
         let totalOfferDiscount = 0;
         let hasStockIssue = false;
-        
+
         const cartItemsWithStock = cartData.items
             .filter(i => i.product.isActive && !i.product.isDeleted)
             .map(item => {
@@ -40,7 +40,7 @@ export const loadCheckout = async (req, res, next) => {
                 const isOutOfStock = availableStock === 0;
                 const stockIssue = isLowStock || isOutOfStock;
                 if (stockIssue) hasStockIssue = true;
-                
+
                 if (!stockIssue) {
                     subtotal += item.effectiveTotalPrice || item.totalPrice;
                     if (item.offerApplied) {
@@ -51,7 +51,7 @@ export const loadCheckout = async (req, res, next) => {
             });
 
         const shippingFee = subtotal > 499 ? 0 : 50;
-        
+
         let couponDiscount = 0;
         let appliedCoupon = null;
 
@@ -116,7 +116,7 @@ export const placeOrder = async (req, res, next) => {
         }
 
         const couponData = req.session.appliedCoupon || null;
-        
+
         const result = await orderService.placeOrder(userId, addressId, paymentMethod, couponData);
 
         if (result.success) {
@@ -157,9 +157,9 @@ export const getOrders = async (req, res, next) => {
         const userId = req.currentUser?._id || req.session?.user?._id;
         if (!userId) return res.redirect('/login');
 
-        const page   = parseInt(req.query.page) || 1;
+        const page = parseInt(req.query.page) || 1;
         const filter = req.query.status || 'All';
-        const limit  = 5;
+        const limit = 5;
         const search = { q: req.query.q || '', date: req.query.date || '' };
 
         const orderData = await orderService.getOrders(userId, page, limit, filter, search);
@@ -254,7 +254,7 @@ export const getOrderDetails = async (req, res, next) => {
         const ProductReview = (await import("../../model/reviewModel.js")).default;
         const productIds = order.items.map(item => item.product._id || item.product);
         const reviews = await ProductReview.find({ userId, productId: { $in: productIds } });
-        
+
         // Create a map of productId -> review
         const userReviews = {};
         reviews.forEach(r => userReviews[r.productId.toString()] = r);

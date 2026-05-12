@@ -76,19 +76,20 @@ export const getBestOffer = async (productId, categoryId, basePrice) => {
  */
 export const applyOffersToItems = async (items) => {
     return await Promise.all(items.map(async (item) => {
-        const product = item.product;
-        if (!product) return item;
+        const itemObj = item.toObject ? item.toObject() : item;
+        const product = itemObj.product;
+        if (!product) return itemObj;
 
         const categoryId = product.category?._id || product.category;
-        const basePrice = item.price;
+        const basePrice = itemObj.price;
 
         const offer = await getBestOffer(product._id, categoryId, basePrice);
 
         if (offer) {
             return {
-                ...item,
+                ...itemObj,
                 effectivePrice: offer.finalPrice,
-                effectiveTotalPrice: parseFloat((offer.finalPrice * item.quantity).toFixed(2)),
+                effectiveTotalPrice: parseFloat((offer.finalPrice * itemObj.quantity).toFixed(2)),
                 offerApplied: {
                     offerId: offer.offerId,
                     offerName: offer.offerName,
@@ -100,9 +101,9 @@ export const applyOffersToItems = async (items) => {
         }
 
         return {
-            ...item,
+            ...itemObj,
             effectivePrice: basePrice,
-            effectiveTotalPrice: parseFloat((basePrice * item.quantity).toFixed(2)),
+            effectiveTotalPrice: parseFloat((basePrice * itemObj.quantity).toFixed(2)),
             offerApplied: null
         };
     }));

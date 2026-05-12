@@ -67,10 +67,9 @@
                                                 </button>
 
                                                 <!-- Availability Overlays -->
-                                                <% 
-                                                    const isUnavailable = !product.isCurrentlyAvailable;
-                                                    const outOfStock = product.variants && product.variants.length > 0 && product.variants[0].stock <= 0; 
-                                                %>
+                                                <% const isUnavailable=!product.isCurrentlyAvailable; const
+                                                    outOfStock=product.variants && product.variants.length> 0 &&
+                                                    product.variants[0].stock <= 0; %>
 
                                                         <% if (isUnavailable) { %>
                                                             <div
@@ -109,7 +108,8 @@
                                                 <% if (product.variants[0].regularPrice> product.variants[0].price) { %>
                                                     <span
                                                         class="block text-[10px] text-gray-400 line-through font-bold">₹
-                                                        <%= product.variants[0].regularPrice.toLocaleString() %></span>
+                                                        <%= product.variants[0].regularPrice.toLocaleString() %>
+                                                    </span>
                                                     <% } %>
                                                         <% } else { %>
                                                             <span class="text-sm font-black text-gray-400">Price
@@ -120,7 +120,8 @@
 
                                     <!-- Cart Action -->
                                     <% if (!isUnavailable && !outOfStock) { %>
-                                        <button onclick="addWishlistItemToCart('<%= product._id %>', this)" data-variants='<%= JSON.stringify(product.variants || []) %>'
+                                        <button onclick="addWishlistItemToCart('<%= product._id %>', this)"
+                                            data-variants='<%= JSON.stringify(product.variants || []) %>'
                                             class="w-full h-11 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 group-active:scale-95">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -221,10 +222,10 @@
 
                 async function addWishlistItemToCart(productId, btn) {
                     if (btn.disabled) return;
-                    
+
                     const variantsStr = btn.getAttribute('data-variants');
                     if (!variantsStr) return;
-                    
+
                     const variants = JSON.parse(variantsStr).filter(v => v.stock > 0);
                     if (variants.length === 0) {
                         Swal.fire({ icon: 'info', title: 'Out of Stock', text: 'All variants of this product are currently out of stock.' });
@@ -272,7 +273,7 @@
                             btn.innerHTML = '✓ Moved!';
                             const badge = document.getElementById('cartBadge');
                             if (badge && data.itemCount !== undefined) badge.innerText = data.itemCount;
-                            
+
                             const item = document.getElementById(`item-${productId}`);
                             if (item) {
                                 item.style.opacity = '0';

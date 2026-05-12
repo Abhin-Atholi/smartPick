@@ -29,7 +29,7 @@ export const getWishlistByUserId = async (userId, page, limit) => {
 
 export const toggleWishlist = async (userId, productId) => {
     let wishlist = await Wishlist.findOne({ user: userId });
-    
+
     if (!wishlist) {
         wishlist = new Wishlist({ user: userId, products: [productId] });
         await wishlist.save();

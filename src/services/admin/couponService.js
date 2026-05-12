@@ -28,6 +28,17 @@ export const getCoupons = async (search, status, page, limit) => {
         .limit(limit)
         .lean();
 
+    // Stats for HUD
+    const stats = {
+        totalCoupons: await Coupon.countDocuments({ isDeleted: false }),
+        activeCoupons: await Coupon.countDocuments({ isDeleted: false, isActive: true, expiryDate: { $gt: now } }),
+        expiredCoupons: await Coupon.countDocuments({ isDeleted: false, expiryDate: { $lte: now } }),
+        totalUsage: (await Coupon.aggregate([
+            { $match: { isDeleted: false } },
+            { $group: { _id: null, total: { $sum: "$usedCount" } } }
+        ]))[0]?.total || 0
+    };
+
     const processedCoupons = coupons.map(c => {
         let dynamicStatus = 'Active';
         if (new Date(c.expiryDate) <= now) {
@@ -41,7 +52,8 @@ export const getCoupons = async (search, status, page, limit) => {
     return {
         coupons: processedCoupons,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
+        stats
     };
 };
 

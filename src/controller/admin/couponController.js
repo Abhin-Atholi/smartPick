@@ -15,7 +15,8 @@ export const getCoupons = async (req, res) => {
             search: search || '',
             status: status || '',
             title: 'Coupon Management',
-            activePath: "/admin/coupons"
+            activePath: "/admin/coupons",
+            stats: result.stats
         });
     } catch (error) {
         console.error("getCoupons Error:", error);

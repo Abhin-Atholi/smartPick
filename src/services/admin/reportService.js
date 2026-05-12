@@ -4,7 +4,7 @@ import User from '../../model/userModel.js';
 
 import { getDateRange, getPreviousDateRange, getGroupByFormat, validOrderStatuses } from '../../utils/dateFilterHelper.js';
 
-export const getSalesReportData = async (filter, customFrom, customTo) => {
+export const getSalesReportData = async (filter, customFrom, customTo, page = 1, limit = 10) => {
     const { startDate, endDate } = getDateRange(filter, customFrom, customTo);
     const { startDate: prevStart, endDate: prevEnd } = getPreviousDateRange(filter, startDate, endDate);
 
@@ -84,11 +84,15 @@ export const getSalesReportData = async (filter, customFrom, customTo) => {
         { $sort: { _id: 1 } }
     ]);
 
-    // 3. Order Breakdown List
+    // 3. Order Breakdown List with Pagination
+    const skip = (page - 1) * limit;
     const orders = await Order.find(matchStage)
         .populate('user', 'fullName')
         .sort({ createdAt: -1 })
-        .limit(100);
+        .skip(skip)
+        .limit(limit);
+
+    const totalOrdersCount = await Order.countDocuments(matchStage);
 
     // 4. Coupon Usage
     const couponUsage = await Order.aggregate([
@@ -112,6 +116,9 @@ export const getSalesReportData = async (filter, customFrom, customTo) => {
             orders: chartData.map(d => d.orders)
         },
         orders,
+        totalOrdersCount,
+        totalPages: Math.ceil(totalOrdersCount / limit),
+        currentPage: page,
         couponUsage,
         period: { startDate, endDate }
     };
