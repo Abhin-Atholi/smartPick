@@ -12,13 +12,17 @@ const cartItemSchema = new mongoose.Schema({
         min: [1, 'Quantity cannot be less than 1.'],
         default: 1
     },
+    variantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: false // Not required to support old carts
+    },
     size: {
         type: String,
-        required: true
+        required: false
     },
     color: {
         type: String,
-        required: true
+        required: false
     },
     price: {
         type: Number,

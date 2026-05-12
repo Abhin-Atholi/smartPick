@@ -241,6 +241,7 @@ export const updateProduct = async (id, updateData, removedImageUrls) => {
   product.brand = updateData.brand;
   product.category = updateData.category;
   product.subcategory = updateData.subcategory || null;
+  product.colorOptions = updateData.colorOptions;
   product.variants = updateData.variants;
   product.isActive = updateData.isActive;
   product.isFeatured = updateData.isFeatured;

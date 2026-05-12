@@ -1,15 +1,27 @@
 import mongoose from "mongoose";
 
+const colorOptionSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  code: { type: String, required: true },
+  images: {
+    type: [String],
+    validate: {
+      validator: (arr) => arr.length >= 3,
+      message: "Minimum 3 images required per color"
+    }
+  }
+});
+
 const variantSchema = new mongoose.Schema({
   size: {
     type: String,
     required: true,
-    enum: ["S", "M", "L", "XL"],
+    enum: ["S", "M", "L", "XL", "XXL", "Free Size"], // Expanded standard sizes
     trim: true,
   },
   color: {
-    name: { type: String, required: true },
-    code: { type: String, required: true }
+    type: String, // Just the color name to map to colorOptions
+    required: true
   },
   price: {
     type: Number,
@@ -25,15 +37,8 @@ const variantSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-  },
-  images: {
-    type: [String],
-    validate: {
-      validator: (arr) => arr.length >= 3,
-      message: "Minimum 3 images required per variant"
-    }
   }
-}, { _id: false });
+});
 
 const productSchema = new mongoose.Schema({
   name: {
@@ -63,7 +68,22 @@ const productSchema = new mongoose.Schema({
     ref: "Subcategory",
   },
 
-
+  colorOptions: {
+    type: [colorOptionSchema],
+    validate: [
+      {
+        validator: (arr) => arr.length > 0,
+        message: "At least one color option is required"
+      },
+      {
+        validator: function(arr) {
+          const names = arr.map(c => c.name.toLowerCase());
+          return names.length === new Set(names).size;
+        },
+        message: "Duplicate color names are not allowed."
+      }
+    ]
+  },
 
   variants: {
     type: [variantSchema],
@@ -74,7 +94,7 @@ const productSchema = new mongoose.Schema({
       },
       {
         validator: function(arr) {
-          const keys = arr.map(v => `${v.size}-${v.color.name.toLowerCase()}`);
+          const keys = arr.map(v => `${v.size}-${v.color.toLowerCase()}`);
           return keys.length === new Set(keys).size;
         },
         message: "Duplicate variants (same size and color) are not allowed."
@@ -145,6 +165,15 @@ productSchema.virtual('isCurrentlyAvailable').get(function() {
     }
     
     return true;
+});
+
+/**
+ * VIRTUAL: Total Stock
+ * Sums up the stock of all variants.
+ */
+productSchema.virtual('totalStock').get(function() {
+    if (!this.variants || this.variants.length === 0) return 0;
+    return this.variants.reduce((total, variant) => total + (variant.stock || 0), 0);
 });
 
 // Ensure virtuals are included when converting to JSON/Object (crucial for EJS)

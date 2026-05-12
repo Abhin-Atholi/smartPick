@@ -31,8 +31,8 @@ export const addToCart = async (req, res, next) => {
             return res.status(401).json({ success: false, message: "Please login to add items to cart" });
         }
 
-        const { productId, quantity, size, color } = req.body;
-        const result = await cartService.addToCart(userId, productId, parseInt(quantity) || 1, size, color);
+        const { productId, quantity, variantId } = req.body;
+        const result = await cartService.addToCart(userId, productId, parseInt(quantity) || 1, variantId);
         if (result.isDuplicate) {
             return res.status(400).json({ success: false, message: result.message });
         }
@@ -48,9 +48,9 @@ export const addToCart = async (req, res, next) => {
 export const updateQuantity = async (req, res, next) => {
     try {
         const userId = req.currentUser?._id || req.session?.user?._id;
-        const { productId, size, color, quantity } = req.body;
+        const { productId, variantId, quantity } = req.body;
 
-        const result = await cartService.updateQuantity(userId, productId, size, color, parseInt(quantity));
+        const result = await cartService.updateQuantity(userId, productId, variantId, parseInt(quantity));
         if (result && result.code === "LIMIT_REACHED") {
             return res.status(400).json({ success: false, message: result.message, code: result.code });
         }
@@ -71,9 +71,9 @@ export const updateQuantity = async (req, res, next) => {
 export const removeItem = async (req, res, next) => {
     try {
         const userId = req.currentUser?._id || req.session?.user?._id;
-        const { productId, size, color } = req.body;
+        const { productId, variantId } = req.body;
 
-        const cart = await cartService.removeItem(userId, productId, size, color);
+        const cart = await cartService.removeItem(userId, productId, variantId);
 
         res.json({
             success: true,

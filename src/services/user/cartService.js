@@ -29,7 +29,13 @@ const _calculateBreakdown = async (fullCartItems) => {
         let isLowStock = false;
 
         if (product && product.variants) {
-            const variant = product.variants.find(v => v.size === item.size && (v.color && v.color.name === item.color));
+            let variant;
+            if (item.variantId) {
+                variant = product.variants.find(v => v._id.toString() === item.variantId.toString());
+            } else if (item.size && item.color) {
+                // Fallback for old carts
+                variant = product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
+            }
             const availableStock = variant ? variant.stock : 0;
             isOutOfStock = !isUnavailable && availableStock === 0;
             isLowStock = !isUnavailable && availableStock > 0 && availableStock < item.quantity;
@@ -80,20 +86,17 @@ export const getCart = async (userId, page = 1, limit = 4) => {
     };
 };
 
-export const addToCart = async (userId, productId, quantity, size, color) => {
+export const addToCart = async (userId, productId, quantity, variantId) => {
     const product = await Product.findById(productId).populate('category subcategory');
     if (!product || !product.isCurrentlyAvailable) throw new Error("This product is no longer available.");
 
-    // Fallback logic: If size/color not specified (e.g. from a grid "Add to Cart"), 
-    // pick the first variant that has stock.
     let variant;
-    if (!size || !color) {
+    if (!variantId) {
         variant = product.variants.find(v => v.stock > 0);
         if (!variant) throw new Error("This product is currently out of stock");
-        size = variant.size;
-        color = variant.color.name;
+        variantId = variant._id;
     } else {
-        variant = product.variants.find(v => v.size === size && v.color.name === color);
+        variant = product.variants.find(v => v._id.toString() === variantId.toString());
     }
 
     if (!variant) throw new Error("Requested product variant not found");
@@ -109,11 +112,10 @@ export const addToCart = async (userId, productId, quantity, size, color) => {
     const price = variant.price;
     const totalPrice = price * quantity;
 
-    // Check if item with same ID, size, and color already exists
+    // Check if item with same ID and variantId already exists
     const existingItemIndex = cart.items.findIndex(item =>
         item.product.toString() === productId &&
-        item.size === size &&
-        item.color === color
+        (item.variantId && item.variantId.toString() === variantId.toString())
     );
 
     const MAX_PER_PRODUCT = 5;
@@ -129,8 +131,7 @@ export const addToCart = async (userId, productId, quantity, size, color) => {
         cart.items.push({
             product: productId,
             quantity,
-            size,
-            color,
+            variantId: variant._id,
             price,
             totalPrice
         });
@@ -146,15 +147,14 @@ export const addToCart = async (userId, productId, quantity, size, color) => {
     return cart;
 };
 
-export const updateQuantity = async (userId, productId, size, color, quantity) => {
+export const updateQuantity = async (userId, productId, variantId, quantity) => {
     const MAX_PER_PRODUCT = 5;
     const cart = await Cart.findOne({ user: userId });
     if (!cart) throw new Error("Cart not found");
 
     const itemIndex = cart.items.findIndex(item =>
         item.product.toString() === productId &&
-        item.size === size &&
-        item.color === color
+        (item.variantId && item.variantId.toString() === variantId.toString())
     );
 
     if (itemIndex === -1) throw new Error("Item not found in cart");
@@ -163,18 +163,16 @@ export const updateQuantity = async (userId, productId, size, color, quantity) =
         return { success: false, message: `Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`, code: "LIMIT_REACHED" };
     }
 
-
-
     // Check product status and stock again
     const product = await Product.findById(productId).populate('category subcategory');
     if (!product || !product.isCurrentlyAvailable) {
         throw new Error("This product is no longer available.");
     }
 
-    const variant = product.variants.find(v => v.size === size && v.color.name === color);
+    const variant = product.variants.find(v => v._id.toString() === variantId.toString());
 
-    if (variant.stock < quantity) {
-        throw new Error(`Only ${variant.stock} items available in stock`);
+    if (!variant || variant.stock < quantity) {
+        throw new Error(`Only ${variant ? variant.stock : 0} items available in stock`);
     }
 
     cart.items[itemIndex].quantity = quantity;
@@ -190,12 +188,12 @@ export const updateQuantity = async (userId, productId, size, color, quantity) =
     return _calculateBreakdown(populated.items);
 };
 
-export const removeItem = async (userId, productId, size, color) => {
+export const removeItem = async (userId, productId, variantId) => {
     const cart = await Cart.findOne({ user: userId });
     if (!cart) throw new Error("Cart not found");
 
     cart.items = cart.items.filter(item =>
-        !(item.product.toString() === productId && item.size === size && item.color === color)
+        !(item.product.toString() === productId && item.variantId && item.variantId.toString() === variantId.toString())
     );
 
     await cart.save();

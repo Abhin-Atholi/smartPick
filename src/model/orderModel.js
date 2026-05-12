@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const orderItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     quantity: { type: Number, required: true },
+    variantId: { type: mongoose.Schema.Types.ObjectId, required: false },
     size: { type: String, required: true },
     color: { type: String, required: true },
     price: { type: Number, required: true }, // This will store the final price per unit

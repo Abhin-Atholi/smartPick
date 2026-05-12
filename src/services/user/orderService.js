@@ -41,10 +41,11 @@ export const getOrderById = async (userId, orderId) => {
         order.paymentStatus = 'Expired';
         for (const item of order.items) {
             item.itemStatus = 'Expired';
+            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
-                { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+                { arrayFilters: [arrayFilter] }
             );
         }
         await order.save();
@@ -77,9 +78,9 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             affectedItems.push({ name: product?.name || 'Unknown', reason: 'Product is unavailable' });
             continue;
         }
-        const variant = product.variants.find(v => v.size === item.size && v.color.name === item.color);
+        const variant = product.variants.find(v => v._id.toString() === item.variantId.toString());
         if (!variant) {
-            affectedItems.push({ name: product.name, reason: `Variant (Size: ${item.size}, Color: ${item.color}) not found` });
+            affectedItems.push({ name: product.name, reason: `Requested variant not found` });
             continue;
         }
         if (variant.stock < item.quantity) {
@@ -100,8 +101,9 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         orderItems.push({
             product: product._id,
             quantity: item.quantity,
-            size: item.size,
-            color: item.color,
+            variantId: item.variantId,
+            size: variant.size,
+            color: variant.color,
             price: finalPrice,
             originalPrice: originalPrice,
             discountAmount: discountPerUnit,
@@ -192,10 +194,11 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
 
     // 7. STOCK RESERVATION
     for (const item of orderItems) {
+        const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
         await Product.updateOne(
             { _id: item.product },
             { $inc: { 'variants.$[v].stock': -item.quantity } },
-            { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+            { arrayFilters: [arrayFilter] }
         );
     }
 
@@ -283,10 +286,11 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
             order.paymentStatus = 'Expired';
             for (const item of order.items) {
                 item.itemStatus = 'Expired';
+                const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
                 await Product.updateOne(
                     { _id: item.product },
                     { $inc: { 'variants.$[v].stock': item.quantity } },
-                    { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+                    { arrayFilters: [arrayFilter] }
                 );
             }
             await order.save();
@@ -320,10 +324,11 @@ export const cancelOrder = async (userId, orderId, reason) => {
         if (item.itemStatus !== 'Cancelled' && item.itemStatus !== 'Returned') {
             item.itemStatus = 'Cancelled';
             item.cancelReason = reason;
+            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
-                { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+                { arrayFilters: [arrayFilter] }
             );
         }
     }
@@ -380,10 +385,11 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
     item.itemStatus = 'Cancelled';
     item.cancelReason = reason;
 
+    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
     await Product.updateOne(
         { _id: item.product },
         { $inc: { 'variants.$[v].stock': item.quantity } },
-        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+        { arrayFilters: [arrayFilter] }
     );
 
     const activeItems = order.items.filter(i => i.itemStatus !== 'Cancelled' && i.itemStatus !== 'Returned');
@@ -463,10 +469,11 @@ export const startStockCleanupTask = () => {
 
                 for (const item of order.items) {
                     item.itemStatus = 'Expired';
+                    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
                     await Product.updateOne(
                         { _id: item.product },
                         { $inc: { 'variants.$[v].stock': item.quantity } },
-                        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+                        { arrayFilters: [arrayFilter] }
                     ).catch(err => console.error(`Cron Failed to restore stock for ${item.product}:`, err));
                 }
                 await order.save().catch(err => console.error(`Cron Failed to save expired order ${order._id}:`, err));

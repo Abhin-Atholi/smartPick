@@ -67,7 +67,7 @@ export const getAddProduct = async (req, res) => {
 
 export const addProduct = async (req, res) => {
     try {
-        const { name, description, brand, category, subcategory, isActive, isFeatured, variants } = req.body;
+        const { name, description, brand, category, subcategory, isActive, isFeatured, variants, colorOptions } = req.body;
 
         if (!name || name.trim().length < 2) {
             return res.status(400).json({ success: false, message: "Product name must be at least 2 characters." });
@@ -75,14 +75,18 @@ export const addProduct = async (req, res) => {
         if (!category) {
             return res.status(400).json({ success: false, message: "Category is required." });
         }
-        // We will validate images below per variant
 
-        // Parse variants sent as JSON string from the form
         let parsedVariants = [];
+        let parsedColorOptions = [];
         try {
             parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
+            parsedColorOptions = typeof colorOptions === 'string' ? JSON.parse(colorOptions) : colorOptions;
         } catch {
-            return res.status(400).json({ success: false, message: "Invalid variant data." });
+            return res.status(400).json({ success: false, message: "Invalid variant or color data." });
+        }
+
+        if (!parsedColorOptions || parsedColorOptions.length === 0) {
+            return res.status(400).json({ success: false, message: "At least one color option is required." });
         }
 
         if (!parsedVariants || parsedVariants.length === 0) {
@@ -92,11 +96,11 @@ export const addProduct = async (req, res) => {
         // Check for duplicate variants (Size + Color)
         const variantKeys = new Set();
         for (const v of parsedVariants) {
-            const key = `${v.size}-${v.color.name.toLowerCase()}`;
+            const key = `${v.size}-${v.color.toLowerCase()}`;
             if (variantKeys.has(key)) {
                 return res.status(400).json({ 
                     success: false, 
-                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color.name}.` 
+                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color}.` 
                 });
             }
             variantKeys.add(key);
@@ -107,14 +111,14 @@ export const addProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: "A product with this name already exists." });
         }
 
-        parsedVariants.forEach((variant, index) => {
-            const vFiles = (req.files || []).filter(f => f.fieldname === `variant_images_${index}`);
-            variant.images = vFiles.map(f => f.path);
+        parsedColorOptions.forEach((col, index) => {
+            const vFiles = (req.files || []).filter(f => f.fieldname === `color_images_${index}`);
+            col.images = vFiles.map(f => f.path);
         });
 
-        for (let i = 0; i < parsedVariants.length; i++) {
-            if (!parsedVariants[i].images || parsedVariants[i].images.length < 3) {
-                return res.status(400).json({ success: false, message: `Minimum 3 images are required for variant ${parsedVariants[i].size} - ${parsedVariants[i].color.name}.` });
+        for (let i = 0; i < parsedColorOptions.length; i++) {
+            if (!parsedColorOptions[i].images || parsedColorOptions[i].images.length < 3) {
+                return res.status(400).json({ success: false, message: `Minimum 3 images are required for color ${parsedColorOptions[i].name}.` });
             }
         }
 
@@ -124,6 +128,7 @@ export const addProduct = async (req, res) => {
       brand: brand?.trim(),
       category,
       subcategory: subcategory || null,
+      colorOptions: parsedColorOptions,
       variants: parsedVariants,
       isActive: isActive === 'true' || isActive === 'on' || isActive === true,
       isFeatured: isFeatured === 'true' || isFeatured === 'on'
@@ -164,7 +169,7 @@ export const getEditProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, brand, category, subcategory, isActive, isFeatured, variants, removedImages } = req.body;
+        const { name, description, brand, category, subcategory, isActive, isFeatured, variants, colorOptions, removedImages } = req.body;
 
         if (!name || name.trim().length < 2) {
             return res.status(400).json({ success: false, message: "Product name must be at least 2 characters." });
@@ -174,10 +179,16 @@ export const updateProduct = async (req, res) => {
         }
 
         let parsedVariants = [];
+        let parsedColorOptions = [];
         try {
             parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
+            parsedColorOptions = typeof colorOptions === 'string' ? JSON.parse(colorOptions) : colorOptions;
         } catch {
-            return res.status(400).json({ success: false, message: "Invalid variant data." });
+            return res.status(400).json({ success: false, message: "Invalid variant or color data." });
+        }
+
+        if (!parsedColorOptions || parsedColorOptions.length === 0) {
+            return res.status(400).json({ success: false, message: "At least one color option is required." });
         }
 
         if (!parsedVariants || parsedVariants.length === 0) {
@@ -187,11 +198,11 @@ export const updateProduct = async (req, res) => {
         // Check for duplicate variants (Size + Color)
         const variantKeys = new Set();
         for (const v of parsedVariants) {
-            const key = `${v.size}-${v.color.name.toLowerCase()}`;
+            const key = `${v.size}-${v.color.toLowerCase()}`;
             if (variantKeys.has(key)) {
                 return res.status(400).json({ 
                     success: false, 
-                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color.name}.` 
+                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color}.` 
                 });
             }
             variantKeys.add(key);
@@ -202,19 +213,19 @@ export const updateProduct = async (req, res) => {
             removedImageUrls = removedImages ? JSON.parse(removedImages) : [];
         } catch { removedImageUrls = []; }
 
-        // Mapped variant images
-         parsedVariants.forEach((variant, index) => {
-            const vFiles = (req.files || []).filter(f => f.fieldname === `variant_images_${index}`);
-            variant.newImageUrls = vFiles.map(f => f.path);
+        // Mapped color images
+         parsedColorOptions.forEach((col, index) => {
+            const vFiles = (req.files || []).filter(f => f.fieldname === `color_images_${index}`);
+            col.newImageUrls = vFiles.map(f => f.path);
             
-            // variant.existingImages should be passed from frontend
-            const existing = variant.existingImages || [];
-            variant.images = [...existing, ...variant.newImageUrls];
+            // col.existingImages should be passed from frontend
+            const existing = col.existingImages || [];
+            col.images = [...existing, ...col.newImageUrls];
         });
 
-        for (let i = 0; i < parsedVariants.length; i++) {
-            if (!parsedVariants[i].images || parsedVariants[i].images.length < 3) {
-                return res.status(400).json({ success: false, message: `Minimum 3 images are required for variant ${parsedVariants[i].size} - ${parsedVariants[i].color.name}.` });
+        for (let i = 0; i < parsedColorOptions.length; i++) {
+            if (!parsedColorOptions[i].images || parsedColorOptions[i].images.length < 3) {
+                return res.status(400).json({ success: false, message: `Minimum 3 images are required for color ${parsedColorOptions[i].name}.` });
             }
         }
 
@@ -224,6 +235,7 @@ export const updateProduct = async (req, res) => {
             brand: brand?.trim(),
             category,
             subcategory: subcategory || null,
+            colorOptions: parsedColorOptions,
             variants: parsedVariants,
             isActive: isActive === 'true' || isActive === 'on' || isActive === true,
             isFeatured: isFeatured === 'true' || isFeatured === 'on',
