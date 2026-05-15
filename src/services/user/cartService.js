@@ -4,25 +4,20 @@ import Product from '../../model/productModel.js';
 import Wishlist from '../../model/wishlistModel.js';
 import * as offerHelper from '../../utils/offerHelper.js';
 
+import * as pricingService from '../common/pricingService.js';
+
 // Internal helper to calculate full breakdown
 const _calculateBreakdown = async (fullCartItems) => {
     const allItemsWithOffers = await offerHelper.applyOffersToItems(fullCartItems);
 
-    let originalSubtotal = 0;
-    let totalOfferDiscount = 0;
-    let cartTotal = 0;
     let activeTotal = 0;
     let hasStockIssue = false;
+    
+    // We only want to include valid items in the cart total for checkout
+    // But we still show all items in the cart
+    const validItemsForPricing = [];
 
     allItemsWithOffers.forEach(item => {
-        const itemMRP = (item.price || 0) * item.quantity;
-        const itemEffectiveTotal = item.effectiveTotalPrice || 0;
-        const itemOfferDiscount = itemMRP - itemEffectiveTotal;
-
-        originalSubtotal += itemMRP;
-        totalOfferDiscount += itemOfferDiscount;
-        cartTotal += itemEffectiveTotal;
-
         const product = item.product;
         const isUnavailable = !product || !product.isCurrentlyAvailable;
         let isOutOfStock = false;
@@ -44,17 +39,20 @@ const _calculateBreakdown = async (fullCartItems) => {
         }
 
         if (!isUnavailable && !isOutOfStock && !isLowStock) {
-            activeTotal += itemEffectiveTotal;
+            validItemsForPricing.push(item);
+            activeTotal += item.effectiveTotalPrice;
         } else {
             hasStockIssue = true;
         }
     });
 
+    const pricingTotals = pricingService.calculateOrderTotals(allItemsWithOffers);
+
     return {
         allItemsWithOffers,
-        originalSubtotal,
-        totalOfferDiscount,
-        cartTotal,
+        originalSubtotal: pricingTotals.originalSubtotal,
+        totalOfferDiscount: pricingTotals.offerDiscount,
+        cartTotal: pricingTotals.subtotal,
         activeTotal,
         hasGlobalStockIssue: hasStockIssue
     };

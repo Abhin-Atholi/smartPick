@@ -157,7 +157,7 @@
                 </div>
 
                 <!-- Total Amount -->
-                <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
+                <span class="text-sm font-black text-indigo-600">₹<%= (isNaN(order.totalAmount) ? 0 : (order.totalAmount || 0)).toLocaleString() %></span>
 
                 <!-- Status Badge -->
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold w-fit
@@ -232,7 +232,7 @@
                 </div>
                 <div class="flex flex-col gap-3">
                   <div class="flex justify-between items-center">
-                    <span class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></span>
+                    <span class="text-sm font-black text-indigo-600">₹<%= (isNaN(order.totalAmount) ? 0 : (order.totalAmount || 0)).toLocaleString() %></span>
                     <a href="/orders/<%= order._id %>" class="text-sm font-bold text-indigo-600">View Details</a>
                   </div>
                   
@@ -280,8 +280,8 @@
                         <p class="text-sm font-black text-gray-900 truncate"><%= item.product?.name || 'Unavailable' %></p>
                         <p class="text-xs text-gray-400 mt-0.5">Qty: <%= item.quantity %> &bull; Size: <%= item.size %> &bull; Color: <%= item.color %></p>
                         <div class="flex items-center gap-2 mt-1">
-                          <p class="text-sm font-black text-indigo-600">₹<%= item.price.toLocaleString() %></p>
-                          <% if (item.originalPrice && item.originalPrice > item.price) { %>
+                          <p class="text-sm font-black text-indigo-600">₹<%= (isNaN(item.price) ? (item.totalPrice / item.quantity) || 0 : item.price).toLocaleString() %></p>
+                          <% if (item.originalPrice && !isNaN(item.originalPrice) && item.originalPrice > item.price) { %>
                             <p class="text-[10px] text-gray-400 line-through">₹<%= (item.originalPrice).toLocaleString() %></p>
                             <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest"><%= item.offerApplied?.offerName %></span>
                           <% } %>
@@ -310,23 +310,23 @@
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-indigo-50/30 rounded-xl border border-indigo-100 mb-4">
                   <div>
                     <p class="text-xs text-gray-400 font-bold uppercase tracking-tighter">Subtotal</p>
-                    <p class="text-sm font-black text-gray-800">₹<%= (order.originalSubtotal || order.subtotal).toLocaleString() %></p>
+                    <p class="text-sm font-black text-gray-800">₹<%= (isNaN(order.originalSubtotal) ? (order.subtotal || 0) : (order.originalSubtotal || order.subtotal || 0)).toLocaleString() %></p>
                   </div>
                   <div>
                     <p class="text-xs text-rose-400 font-bold uppercase tracking-tighter">Offer Save</p>
-                    <p class="text-sm font-black text-rose-600">-₹<%= (order.totalOfferDiscount || 0).toLocaleString() %></p>
+                    <p class="text-sm font-black text-rose-600">-₹<%= (isNaN(order.totalOfferDiscount) ? 0 : (order.totalOfferDiscount || 0)).toLocaleString() %></p>
                   </div>
                   <div>
                     <p class="text-xs text-indigo-400 font-bold uppercase tracking-tighter">Coupon</p>
-                    <p class="text-sm font-black text-indigo-600">-₹<%= (order.discount || 0).toLocaleString() %></p>
+                    <p class="text-sm font-black text-indigo-600">-₹<%= (isNaN(order.discount) ? 0 : (order.discount || 0)).toLocaleString() %></p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-400 font-bold uppercase tracking-tighter">Shipping</p>
-                    <p class="text-sm font-black text-gray-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></p>
+                    <p class="text-sm font-black text-gray-800"><%= order.shippingFee === 0 ? 'Free' : `₹${isNaN(order.shippingFee) ? 0 : order.shippingFee}` %></p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-400 font-bold uppercase tracking-tighter">Total</p>
-                    <p class="text-sm font-black text-indigo-600">₹<%= order.totalAmount.toLocaleString() %></p>
+                    <p class="text-sm font-black text-indigo-600">₹<%= (isNaN(order.totalAmount) ? 0 : (order.totalAmount || 0)).toLocaleString() %></p>
                   </div>
                 </div>
 

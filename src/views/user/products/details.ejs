@@ -53,32 +53,17 @@
           <%- include("../partials/productRatings") %>
 
           <div class="flex items-center gap-4">
-             <% 
-               const minPrice = Math.min(...product.variants.map(v => v.price));
-               const maxPrice = Math.max(...product.variants.map(v => v.price));
-               
-               let displayPrice = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
-               let hasOffer = locals.bestOffer;
-               let finalMin = minPrice;
-               let finalMax = maxPrice;
-               
-               if (hasOffer) {
-                 finalMin = Math.max(minPrice - (hasOffer.discountType === 'flat' ? hasOffer.discountValue : (minPrice * hasOffer.discountValue / 100)), 1);
-                 finalMax = Math.max(maxPrice - (hasOffer.discountType === 'flat' ? hasOffer.discountValue : (maxPrice * hasOffer.discountValue / 100)), 1);
-                 displayPrice = minPrice === maxPrice ? `₹${finalMin.toFixed(0)}` : `₹${finalMin.toFixed(0)} - ₹${finalMax.toFixed(0)}`;
-               }
-             %>
              <div class="flex flex-col">
                <div class="flex items-baseline gap-3">
-                 <p id="activePrice" class="text-2xl font-black text-slate-900"><%= displayPrice %></p>
-                 <% if (hasOffer) { %>
-                   <p id="originalPrice" class="text-sm font-bold text-gray-400 line-through">₹<%= minPrice === maxPrice ? minPrice : minPrice + ' - ₹' + maxPrice %></p>
+                 <p id="activePrice" class="text-2xl font-black text-slate-900"><%= locals.displayPrice %></p>
+                 <% if (locals.originalPriceStr) { %>
+                   <p id="originalPrice" class="text-sm font-bold text-gray-400 line-through"><%= locals.originalPriceStr %></p>
                  <% } %>
                </div>
-               <% if (hasOffer) { %>
+               <% if (locals.offerBadge) { %>
                  <div class="flex items-center gap-2 mt-1">
                    <span class="px-2 py-0.5 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-md">
-                     <%= hasOffer.discountType === 'flat' ? '₹' + hasOffer.discountValue + ' OFF' : hasOffer.discountValue + '% OFF' %>
+                     <%= locals.offerBadge %>
                    </span>
                    <span class="text-[10px] text-emerald-600 font-bold uppercase tracking-widest animate-pulse">Best Offer Applied</span>
                  </div>

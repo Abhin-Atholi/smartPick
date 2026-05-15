@@ -1,33 +1,15 @@
 import Offer from '../model/offerModel.js';
+import * as pricingService from '../services/common/pricingService.js';
 
 /**
- * Calculate discount amount from an offer given a base price.
- */
-const calcDiscount = (offer, basePrice) => {
-    if (!offer) return 0;
-    let discount = 0;
-    if (offer.discountType === 'flat') {
-        discount = offer.discountValue;
-    } else {
-        discount = (basePrice * offer.discountValue) / 100;
-    }
-    // Never discount more than (price - 1)
-    return Math.min(discount, basePrice - 1);
-};
-
-/**
- * Fetch the single best (highest discount) active offer for a product.
- * Checks both product-specific and category-wide offers.
- * 
+ * Fetch all active applicable offers for a product and category.
  * @param {ObjectId|string} productId 
  * @param {ObjectId|string} categoryId 
- * @param {number} basePrice - The base variant price to calculate against
- * @returns {Promise<{ offerName, offerType, discountType, discountValue, discountAmount, finalPrice }|null>}
+ * @returns {Promise<Array>} Array of active offers
  */
-export const getBestOffer = async (productId, categoryId, basePrice) => {
+export const getApplicableOffers = async (productId, categoryId) => {
     const now = new Date();
-
-    const offers = await Offer.find({
+    return await Offer.find({
         isActive: true,
         isDeleted: false,
         expiryDate: { $gt: now },
@@ -36,81 +18,67 @@ export const getBestOffer = async (productId, categoryId, basePrice) => {
             { offerType: 'category', applicableTo: categoryId }
         ]
     }).lean();
+};
 
+/**
+ * Fetch the single best active offer for a product variant based on basePrice.
+ * 
+ * @param {ObjectId|string} productId 
+ * @param {ObjectId|string} categoryId 
+ * @param {number} basePrice - The base variant price to calculate against
+ * @returns {Promise<{ originalPrice, finalPrice, discountAmount, effectiveDiscountPercent, appliedOffer }|null>}
+ */
+export const getBestOffer = async (productId, categoryId, basePrice) => {
+    const offers = await getApplicableOffers(productId, categoryId);
+    
     if (!offers || offers.length === 0) return null;
 
-    let bestOffer = null;
-    let bestDiscount = 0;
-
-    for (const offer of offers) {
-        const d = calcDiscount(offer, basePrice);
-        if (d > bestDiscount) {
-            bestDiscount = d;
-            bestOffer = offer;
-        }
-    }
-
-    if (!bestOffer || bestDiscount <= 0) return null;
-
-    const discountAmount = parseFloat(bestDiscount.toFixed(2));
-    const finalPrice = parseFloat((basePrice - discountAmount).toFixed(2));
-
-    return {
-        offerId: bestOffer._id,
-        offerName: bestOffer.name,
-        offerType: bestOffer.offerType,
-        discountType: bestOffer.discountType,
-        discountValue: bestOffer.discountValue,
-        discountAmount,
-        originalPrice: basePrice,
-        finalPrice: Math.max(finalPrice, 1)
-    };
+    const pricing = pricingService.calculateItemPrice(basePrice, offers);
+    
+    // Return null if no discount was actually applied
+    if (!pricing.appliedOffer) return null;
+    
+    return pricing;
 };
 
 /**
  * Apply best offer to an array of cart/order items.
- * Mutates items in-place, adding offerApplied, effectivePrice, effectiveTotalPrice.
+ * Mutates items in-place, adding standardized pricing fields.
  * 
- * @param {Array} items - Each item must have: product (populated), size, color, price
+ * @param {Array} items - Each item must have: product (populated), price (original base price), quantity
  * @returns {Promise<Array>} - Same items enriched with offer data
  */
 export const applyOffersToItems = async (items) => {
     return await Promise.all(items.map(async (item) => {
         const itemObj = item.toObject ? item.toObject({ virtuals: true }) : item;
         const product = itemObj.product;
-        if (!product) return itemObj;
+        
+        if (!product) {
+            itemObj.originalPrice = itemObj.price;
+            itemObj.finalPrice = itemObj.price;
+            itemObj.discountAmount = 0;
+            return itemObj;
+        }
 
         const categoryId = product.category?._id || product.category;
-        const basePrice = itemObj.price;
+        const basePrice = itemObj.price; // Assuming cart items store basePrice in 'price' field currently
 
-        const offer = await getBestOffer(product._id, categoryId, basePrice);
-
-        if (offer) {
-            return {
-                ...itemObj,
-                effectivePrice: offer.finalPrice,
-                effectiveTotalPrice: parseFloat((offer.finalPrice * itemObj.quantity).toFixed(2)),
-                offerApplied: {
-                    offerId: offer.offerId,
-                    offerName: offer.offerName,
-                    offerType: offer.offerType,
-                    discountType: offer.discountType,
-                    discountAmount: offer.discountAmount
-                }
-            };
-        }
+        const offers = await getApplicableOffers(product._id, categoryId);
+        const pricing = pricingService.calculateItemPrice(basePrice, offers);
 
         return {
             ...itemObj,
-            effectivePrice: basePrice,
-            effectiveTotalPrice: parseFloat((basePrice * itemObj.quantity).toFixed(2)),
-            offerApplied: null
+            originalPrice: pricing.originalPrice,
+            finalPrice: pricing.finalPrice,
+            discountAmount: pricing.discountAmount,
+            effectiveTotalPrice: parseFloat((pricing.finalPrice * itemObj.quantity).toFixed(2)),
+            offerApplied: pricing.appliedOffer
         };
     }));
 };
 
 /**
- * Apply best offer to an array of raw Product documents/objects.
+ * Apply best offer to an array of raw Product documents/objects (for listings).
  * @param {Array} products 
  * @returns {Promise<Array>} - Enriched products with .bestOffer
  */
@@ -122,9 +90,26 @@ export const applyOffersToProducts = async (products) => {
         const basePrice = Math.min(...p.variants.map(v => v.price));
         const categoryId = p.category?._id || p.category;
 
-        const bestOffer = await getBestOffer(p._id, categoryId, basePrice);
+        const offers = await getApplicableOffers(p._id, categoryId);
+        const pricing = pricingService.calculateItemPrice(basePrice, offers);
         
-        // Return enriched product
-        return { ...p, bestOffer };
+        // Ensure backward compatibility with existing views if they expect .bestOffer
+        let bestOfferData = null;
+        if (pricing.appliedOffer) {
+            // Reconstruct the old structure just for product listing views if needed,
+            // or better, standardise the views. For now, matching old structure:
+            bestOfferData = {
+                offerId: pricing.appliedOffer.offerId,
+                offerName: pricing.appliedOffer.name,
+                offerType: pricing.appliedOffer.offerType,
+                discountType: pricing.appliedOffer.discountType,
+                discountValue: pricing.appliedOffer.discountValue,
+                discountAmount: pricing.discountAmount,
+                originalPrice: pricing.originalPrice,
+                finalPrice: pricing.finalPrice
+            };
+        }
+
+        return { ...p, bestOffer: bestOfferData };
     }));
 };

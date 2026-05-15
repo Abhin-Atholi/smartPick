@@ -107,9 +107,32 @@ export const loadProductDetails = async (req, res) => {
       isInWishlist = await wishlistService.isInWishlist(req.session.user._id, product._id);
     }
 
-    // Fetch best offer for initial display (using min price variant)
+    // Fetch best offer and calculate pricing strings for UI
     const minPrice = Math.min(...product.variants.map(v => v.price));
-    const bestOffer = await offerHelper.getBestOffer(product._id, product.category._id, minPrice);
+    const maxPrice = Math.max(...product.variants.map(v => v.price));
+    
+    // We get the applicable offers and pass to pricing service for both min and max
+    const offers = await offerHelper.getApplicableOffers(product._id, product.category._id);
+    const minPricing = (await import("../../services/common/pricingService.js")).calculateItemPrice(minPrice, offers);
+    const maxPricing = (await import("../../services/common/pricingService.js")).calculateItemPrice(maxPrice, offers);
+
+    let displayPrice = minPricing.finalPrice === maxPricing.finalPrice 
+        ? `₹${minPricing.finalPrice}` 
+        : `₹${minPricing.finalPrice} - ₹${maxPricing.finalPrice}`;
+        
+    let originalPriceStr = null;
+    let offerBadge = null;
+    
+    const hasOffer = minPricing.appliedOffer; // Assuming if min has offer, product has offer
+    if (hasOffer) {
+        originalPriceStr = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+        offerBadge = hasOffer.discountType === 'flat' 
+            ? `₹${hasOffer.discountValue} OFF` 
+            : `${hasOffer.discountValue}% OFF`;
+    }
+
+    // Still pass bestOffer for JS logic if needed, but structure it
+    const bestOffer = minPricing.appliedOffer ? minPricing : null;
 
     // Fetch Reviews
     const reviewService = await import("../../services/user/reviewService.js");
@@ -121,6 +144,9 @@ export const loadProductDetails = async (req, res) => {
       relatedProducts: enrichedRelated,
       isInWishlist,
       bestOffer,
+      displayPrice,
+      originalPriceStr,
+      offerBadge,
       reviewsData
     });
   } catch (err) {

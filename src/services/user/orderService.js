@@ -41,6 +41,8 @@ export const getOrderById = async (userId, orderId) => {
     return order;
 };
 
+import * as pricingService from '../common/pricingService.js';
+
 export const placeOrder = async (userId, addressId, paymentMethod, couponData = null) => {
     // 1. Fetch Cart
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
@@ -57,7 +59,6 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
     // 3. Pre-flight stock check & item building
     const affectedItems = [];
     const orderItems = [];
-    let subtotal = 0;
 
     for (const item of cart.items) {
         const product = item.product;
@@ -75,32 +76,33 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             continue;
         }
 
-        // Recalculate Offer
+        // Recalculate Offer using centralized pricing engine
         const categoryId = product.category?._id || product.category;
-        const bestOffer = await offerHelper.getBestOffer(product._id, categoryId, variant.price);
+        const pricing = await offerHelper.getBestOffer(product._id, categoryId, variant.price) || {
+            originalPrice: variant.price,
+            finalPrice: variant.price,
+            discountAmount: 0,
+            appliedOffer: null
+        };
 
-        const originalPrice = variant.price;
-        const finalPrice = bestOffer ? bestOffer.finalPrice : originalPrice;
-        const discountPerUnit = originalPrice - finalPrice;
-        const itemTotal = finalPrice * item.quantity;
+        const itemTotal = pricing.finalPrice * item.quantity;
 
-        subtotal += itemTotal;
         orderItems.push({
             product: product._id,
             quantity: item.quantity,
             variantId: item.variantId,
             size: variant.size,
             color: variant.color,
-            price: finalPrice,
-            originalPrice: originalPrice,
-            discountAmount: discountPerUnit,
+            price: pricing.finalPrice,
+            originalPrice: pricing.originalPrice,
+            discountAmount: pricing.discountAmount,
             totalPrice: itemTotal,
-            offerApplied: bestOffer ? {
-                offerId: bestOffer.offerId,
-                offerName: bestOffer.offerName,
-                offerType: bestOffer.offerType,
-                discountType: bestOffer.discountType,
-                discountAmount: bestOffer.discountAmount * item.quantity
+            offerApplied: pricing.appliedOffer ? {
+                offerId: pricing.appliedOffer.offerId,
+                offerName: pricing.appliedOffer.name,
+                offerType: pricing.appliedOffer.offerType,
+                discountType: pricing.appliedOffer.discountType,
+                discountAmount: pricing.discountAmount * item.quantity
             } : undefined,
             itemStatus: (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing'
         });
@@ -110,16 +112,9 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
     }
 
-    // 4. Calculate Totals (Tax is applied AFTER discounts)
-    const shippingFee = subtotal > 499 ? 0 : 50;
-    const couponDiscount = couponData?.discountAmount || 0;
-    const taxableAmount = taxHelper.calculateTaxableAmount(subtotal, couponDiscount);
-    const tax = taxHelper.calculateTax(taxableAmount);
-    const totalAmount = Math.max(1, subtotal - couponDiscount + shippingFee + tax);
-
-    let originalSubtotal = 0;
-    orderItems.forEach(item => { originalSubtotal += (item.originalPrice * item.quantity); });
-    const totalOfferDiscount = originalSubtotal - subtotal;
+    // 4. Calculate Totals via Pricing Engine
+    const totals = pricingService.calculateOrderTotals(orderItems, couponData);
+    const totalAmount = totals.grandTotal;
 
     // 5. Initial Statuses
     let walletAmountUsed = 0;
@@ -153,12 +148,12 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             postalCode: address.pincode,
             country: address.country
         },
-        originalSubtotal,
-        totalOfferDiscount,
-        subtotal,
-        shippingFee,
-        tax,
-        discount: couponDiscount,
+        originalSubtotal: totals.originalSubtotal,
+        totalOfferDiscount: totals.offerDiscount,
+        subtotal: totals.subtotal,
+        shippingFee: totals.shipping,
+        tax: totals.tax,
+        discount: totals.couponDiscount,
         walletAmountUsed,
         totalAmount,
         paymentMethod,
