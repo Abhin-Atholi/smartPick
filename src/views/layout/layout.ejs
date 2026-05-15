@@ -70,6 +70,18 @@
       overlay && overlay.addEventListener("click", closeDrawer);
       document.addEventListener("keydown", (e) => e.key === "Escape" && closeDrawer());
 
+      function updateWishlistBadge(action) {
+        const badge = document.getElementById('wishlistBadge');
+        if (!badge) return;
+        let currentCount = parseInt(badge.innerText) || 0;
+        if (action === 'added') {
+          currentCount++;
+        } else if (action === 'removed') {
+          currentCount = Math.max(0, currentCount - 1);
+        }
+        badge.innerText = currentCount;
+      }
+
       async function toggleWishlist(btn, productId) {
         try {
           const response = await axios.post('/wishlist/toggle', { productId });
@@ -85,6 +97,9 @@
               btn.classList.add('text-gray-400');
               svg.setAttribute('fill', 'none');
             }
+            
+            // Instantly update badge count
+            updateWishlistBadge(response.data.action);
             
             const Toast = Swal.mixin({
               toast: true,

@@ -206,6 +206,9 @@
                         if (data.success) {
                             if (item) {
                                 item.remove();
+                                if (typeof updateWishlistBadge === 'function') {
+                                    updateWishlistBadge('removed');
+                                }
                                 // Check if grid is empty
                                 const grid = document.getElementById('wishlistGrid');
                                 if (grid && grid.children.length === 0) {
