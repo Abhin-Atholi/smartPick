@@ -24,7 +24,7 @@
             
             <div>
                 <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Product Name *</label>
-                <input type="text" id="productName" name="name" placeholder="e.g. Classic Polo Shirt"
+                <input type="text" id="productName" name="name" value="<%= product.name %>" placeholder="e.g. Classic Polo Shirt"
                     class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm">
                 <p id="productNameError" class="error-text text-rose-500 text-xs font-bold mt-1 hidden"></p>
             </div>
@@ -32,7 +32,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Brand</label>
-                    <input type="text" id="productBrand" name="brand" placeholder="e.g. Nike"
+                    <input type="text" id="productBrand" name="brand" value="<%= product.brand || '' %>" placeholder="e.g. Nike"
                         class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm">
                 </div>
                 <div>
@@ -52,7 +52,19 @@
                 <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Subcategory</label>
                 <select id="productSubcategory" name="subcategory"
                     class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-slate-700 text-sm cursor-pointer">
-                    <option value="">Select category first...</option>
+                    <option value="">None (optional)</option>
+                    <% if (locals.subcategories && subcategories.length > 0) { %>
+                        <% subcategories.forEach(sub => { %>
+                            <% 
+                                let isSelected = false;
+                                if (product.subcategory) {
+                                    const subId = product.subcategory._id ? product.subcategory._id.toString() : product.subcategory.toString();
+                                    if (subId === sub._id.toString()) isSelected = true;
+                                }
+                            %>
+                            <option value="<%= sub._id %>" <%= isSelected ? 'selected' : '' %>><%= sub.name %></option>
+                        <% }) %>
+                    <% } %>
                 </select>
             </div>
 
@@ -297,7 +309,7 @@
               </select>
             </td>
             <td class="py-3 pr-3">
-              <select class="w-full min-w-[120px] px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer variant-color-select" data-field="color">
+              <select class="w-full min-w-[120px] px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer variant-color-select" data-field="color" data-preselected="${data.color || ''}">
                 <option value="">Select Color</option>
               </select>
             </td>
@@ -337,9 +349,14 @@
         const selects = document.querySelectorAll('.variant-color-select');
         
         selects.forEach(select => {
-            const currentValue = select.value;
+            const currentValue = select.value || select.getAttribute('data-preselected');
+            
             select.innerHTML = '<option value="">Select Color</option>' + 
                 addedColors.map(c => `<option value="${c.name}" ${currentValue === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            
+            // Once preselected is applied, we can clear it or leave it, 
+            // but setting value explicitly helps some browsers
+            if (currentValue) select.value = currentValue;
         });
     }
 
@@ -563,13 +580,51 @@
 
             const res = await axios.put(`/admin/products/edit/${productId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.data.success) {
-                Swal.fire({ title: 'Created!', text: 'Product successfully added!', icon: 'success', timer: 2000, showConfirmButton: false })
+                Swal.fire({ title: 'Updated!', text: 'Product successfully updated!', icon: 'success', timer: 2000, showConfirmButton: false })
                     .then(() => window.location.href = '/admin/products');
             }
         } catch (err) {
-            Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
             btn.innerHTML = 'Update Product'; 
             btn.disabled = false;
+
+            if (err.response && err.response.data && err.response.data.errors) {
+                const errors = err.response.data.errors;
+                
+                // Show specific field errors
+                if (errors.name) {
+                    const el = document.getElementById('productNameError');
+                    el.textContent = errors.name;
+                    el.classList.remove('hidden');
+                }
+                if (errors.category) {
+                    const el = document.getElementById('productCategoryError');
+                    el.textContent = errors.category;
+                    el.classList.remove('hidden');
+                }
+
+                // Show grouped errors (Colors/Variants)
+                // Joi might return 'colorOptions' or 'colorOptions.0.images'
+                const hasColorError = Object.keys(errors).some(key => key.startsWith('colorOptions'));
+                if (hasColorError) {
+                    const el = document.getElementById('colorError');
+                    // Find the most descriptive error message for colors
+                    const msg = Object.keys(errors).find(k => k.startsWith('colorOptions')) || 'Color validation failed.';
+                    el.textContent = errors[msg];
+                    el.classList.remove('hidden');
+                }
+
+                const hasVariantError = Object.keys(errors).some(key => key.startsWith('variants'));
+                if (hasVariantError) {
+                    const el = document.getElementById('variantError');
+                    const msg = Object.keys(errors).find(k => k.startsWith('variants')) || 'Variant validation failed.';
+                    el.textContent = errors[msg];
+                    el.classList.remove('hidden');
+                }
+
+                Swal.fire('Validation Failed', 'Please check the form for errors.', 'warning');
+            } else {
+                Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
+            }
         }
     }
 

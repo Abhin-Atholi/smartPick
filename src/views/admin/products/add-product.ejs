@@ -524,9 +524,43 @@
                     .then(() => window.location.href = '/admin/products');
             }
         } catch (err) {
-            Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
             btn.innerHTML = 'Create Product'; 
             btn.disabled = false;
+
+            if (err.response && err.response.data && err.response.data.errors) {
+                const errors = err.response.data.errors;
+                
+                if (errors.name) {
+                    const el = document.getElementById('productNameError');
+                    el.textContent = errors.name;
+                    el.classList.remove('hidden');
+                }
+                if (errors.category) {
+                    const el = document.getElementById('productCategoryError');
+                    el.textContent = errors.category;
+                    el.classList.remove('hidden');
+                }
+
+                const hasColorError = Object.keys(errors).some(key => key.startsWith('colorOptions'));
+                if (hasColorError) {
+                    const el = document.getElementById('colorError');
+                    const msg = Object.keys(errors).find(k => k.startsWith('colorOptions')) || 'Color validation failed.';
+                    el.textContent = errors[msg];
+                    el.classList.remove('hidden');
+                }
+
+                const hasVariantError = Object.keys(errors).some(key => key.startsWith('variants'));
+                if (hasVariantError) {
+                    const el = document.getElementById('variantError');
+                    const msg = Object.keys(errors).find(k => k.startsWith('variants')) || 'Variant validation failed.';
+                    el.textContent = errors[msg];
+                    el.classList.remove('hidden');
+                }
+
+                Swal.fire('Validation Failed', 'Please check the form for errors.', 'warning');
+            } else {
+                Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
+            }
         }
     }
 

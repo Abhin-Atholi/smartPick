@@ -65,7 +65,11 @@ app.use(async (req, res, next) => {
 import * as orderService from "./src/services/user/orderService.js";
 orderService.startStockCleanupTask();
 
+import { globalErrorHandler } from "./src/middleware/errorHandler.js";
 mountRoutes(app);
+
+// Global Error Handler (must be after routes)
+app.use(globalErrorHandler);
 
 
 const PORT = process.env.PORT || 3000;

@@ -65,79 +65,37 @@ export const getAddProduct = async (req, res) => {
     }
 };
 
-export const addProduct = async (req, res) => {
+export const addProduct = async (req, res, next) => {
     try {
         const { name, description, brand, category, subcategory, isActive, isFeatured, variants, colorOptions } = req.body;
 
-        if (!name || name.trim().length < 2) {
-            return res.status(400).json({ success: false, message: "Product name must be at least 2 characters." });
-        }
-        if (!category) {
-            return res.status(400).json({ success: false, message: "Category is required." });
-        }
-
-        let parsedVariants = [];
-        let parsedColorOptions = [];
-        try {
-            parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
-            parsedColorOptions = typeof colorOptions === 'string' ? JSON.parse(colorOptions) : colorOptions;
-        } catch {
-            return res.status(400).json({ success: false, message: "Invalid variant or color data." });
-        }
-
-        if (!parsedColorOptions || parsedColorOptions.length === 0) {
-            return res.status(400).json({ success: false, message: "At least one color option is required." });
-        }
-
-        if (!parsedVariants || parsedVariants.length === 0) {
-            return res.status(400).json({ success: false, message: "At least one variant is required." });
-        }
-
-        // Check for duplicate variants (Size + Color)
-        const variantKeys = new Set();
-        for (const v of parsedVariants) {
-            const key = `${v.size}-${v.color.toLowerCase()}`;
-            if (variantKeys.has(key)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color}.` 
-                });
-            }
-            variantKeys.add(key);
-        }
-
         const existingProduct = await productService.checkProductExists(name);
         if (existingProduct) {
-            return res.status(400).json({ success: false, message: "A product with this name already exists." });
+            return res.status(400).json({ success: false, errors: { name: "A product with this name already exists." } });
         }
 
-        parsedColorOptions.forEach((col, index) => {
+        colorOptions.forEach((col, index) => {
             const vFiles = (req.files || []).filter(f => f.fieldname === `color_images_${index}`);
             col.images = vFiles.map(f => f.path);
+            delete col.newImagesCount;
+            delete col.existingImages;
         });
 
-        for (let i = 0; i < parsedColorOptions.length; i++) {
-            if (!parsedColorOptions[i].images || parsedColorOptions[i].images.length < 3) {
-                return res.status(400).json({ success: false, message: `Minimum 3 images are required for color ${parsedColorOptions[i].name}.` });
-            }
-        }
-
-    await productService.createProductFixed({
-      name: name.trim(),
-      description: description?.trim(),
-      brand: brand?.trim(),
-      category,
-      subcategory: subcategory || null,
-      colorOptions: parsedColorOptions,
-      variants: parsedVariants,
-      isActive: isActive === 'true' || isActive === 'on' || isActive === true,
-      isFeatured: isFeatured === 'true' || isFeatured === 'on'
-    });
+        await productService.createProductFixed({
+            name,
+            description,
+            brand,
+            category,
+            subcategory,
+            colorOptions,
+            variants,
+            isActive,
+            isFeatured
+        });
 
         res.status(201).json({ success: true, message: "Product created successfully!" });
     } catch (error) {
-        console.error("Add product error:", error);
-        res.status(500).json({ success: false, message: "Internal server error while creating product." });
+        next(error);
     }
 };
 
@@ -166,89 +124,37 @@ export const getEditProduct = async (req, res) => {
     }
 };
 
-export const updateProduct = async (req, res) => {
+export const updateProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name, description, brand, category, subcategory, isActive, isFeatured, variants, colorOptions, removedImages } = req.body;
 
-        if (!name || name.trim().length < 2) {
-            return res.status(400).json({ success: false, message: "Product name must be at least 2 characters." });
-        }
-        if (!category) {
-            return res.status(400).json({ success: false, message: "Category is required." });
-        }
-
-        let parsedVariants = [];
-        let parsedColorOptions = [];
-        try {
-            parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
-            parsedColorOptions = typeof colorOptions === 'string' ? JSON.parse(colorOptions) : colorOptions;
-        } catch {
-            return res.status(400).json({ success: false, message: "Invalid variant or color data." });
-        }
-
-        if (!parsedColorOptions || parsedColorOptions.length === 0) {
-            return res.status(400).json({ success: false, message: "At least one color option is required." });
-        }
-
-        if (!parsedVariants || parsedVariants.length === 0) {
-            return res.status(400).json({ success: false, message: "At least one variant is required." });
-        }
-
-        // Check for duplicate variants (Size + Color)
-        const variantKeys = new Set();
-        for (const v of parsedVariants) {
-            const key = `${v.size}-${v.color.toLowerCase()}`;
-            if (variantKeys.has(key)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: `Duplicate variant detected: Size ${v.size} and Color ${v.color}.` 
-                });
-            }
-            variantKeys.add(key);
-        }
-
-        let removedImageUrls = [];
-        try {
-            removedImageUrls = removedImages ? JSON.parse(removedImages) : [];
-        } catch { removedImageUrls = []; }
-
-        // Mapped color images
-         parsedColorOptions.forEach((col, index) => {
+        colorOptions.forEach((col, index) => {
             const vFiles = (req.files || []).filter(f => f.fieldname === `color_images_${index}`);
-            col.newImageUrls = vFiles.map(f => f.path);
-            
-            // col.existingImages should be passed from frontend
-            const existing = col.existingImages || [];
-            col.images = [...existing, ...col.newImageUrls];
+            const newImageUrls = vFiles.map(f => f.path);
+            col.images = [...(col.existingImages || []), ...newImageUrls];
+            delete col.newImagesCount;
+            delete col.existingImages;
         });
 
-        for (let i = 0; i < parsedColorOptions.length; i++) {
-            if (!parsedColorOptions[i].images || parsedColorOptions[i].images.length < 3) {
-                return res.status(400).json({ success: false, message: `Minimum 3 images are required for color ${parsedColorOptions[i].name}.` });
-            }
-        }
-
         const updateData = {
-            name: name.trim(),
-            description: description?.trim(),
-            brand: brand?.trim(),
+            name,
+            description,
+            brand,
             category,
-            subcategory: subcategory || null,
-            colorOptions: parsedColorOptions,
-            variants: parsedVariants,
-            isActive: isActive === 'true' || isActive === 'on' || isActive === true,
-            isFeatured: isFeatured === 'true' || isFeatured === 'on',
-            removedImageUrls: removedImageUrls
+            subcategory,
+            colorOptions,
+            variants,
+            isActive,
+            isFeatured
         };
 
-        const updated = await productService.updateProduct(id, updateData, removedImageUrls);
+        const updated = await productService.updateProduct(id, updateData, removedImages);
         if (!updated) return res.status(404).json({ success: false, message: "Product not found." });
 
         res.json({ success: true, message: "Product updated successfully!" });
     } catch (error) {
-        console.error("Update product error:", error);
-        res.status(500).json({ success: false, message: "Internal server error while updating product." });
+        next(error);
     }
 };
 

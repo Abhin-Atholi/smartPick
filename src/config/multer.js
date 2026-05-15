@@ -38,9 +38,21 @@ export const createCloudinaryUpload = (folderName) => {
   });
 };
 
-// Kept for backward compatibility in case some routes still expect the default `upload`
-// You should slowly migrate them to use `createCloudinaryUpload('folder_name')`
+// Kept for backward compatibility
 const upload = createCloudinaryUpload('smartpick/profiles');
+
+/**
+ * Reusable utility to create a multer instance that stores files in memory.
+ * This is used to parse multipart forms so validation can happen BEFORE uploading.
+ * @returns {multer.Multer}
+ */
+export const createMemoryUpload = () => {
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 }, // Limit 2MB
+    fileFilter: fileFilter,
+  });
+};
 
 export const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {

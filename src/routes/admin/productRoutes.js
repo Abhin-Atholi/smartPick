@@ -3,9 +3,29 @@ const router = express.Router();
 
 import { isAdmin } from "../../middleware/admin/adminAuth.js";
 import * as productController from "../../controller/admin/productController.js";
-import { createCloudinaryUpload, handleUploadError } from "../../config/multer.js";
+import { createMemoryUpload, handleUploadError } from "../../config/multer.js";
+import { uploadToCloudinary } from "../../middleware/cloudinaryUpload.js";
+import { validateRequest } from "../../middleware/validationMiddleware.js";
+import { createProductSchema, updateProductSchema } from "../../validators/admin/productValidation.js";
 
-const uploadProduct = createCloudinaryUpload('smartpick/products');
+const uploadProductMemory = createMemoryUpload();
+
+// Helper middleware to map new image counts for Joi validation
+const mapImageCounts = (req, res, next) => {
+    if (req.body.colorOptions) {
+        try {
+            const colors = typeof req.body.colorOptions === 'string' ? JSON.parse(req.body.colorOptions) : req.body.colorOptions;
+            colors.forEach((col, index) => {
+                const count = (req.files || []).filter(f => f.fieldname === `color_images_${index}`).length;
+                col.newImagesCount = count;
+            });
+            req.body.colorOptions = JSON.stringify(colors);
+        } catch (e) {
+            // Let Joi validation catch invalid JSON
+        }
+    }
+    next();
+};
 
 router.use(isAdmin);
 
@@ -14,11 +34,27 @@ router.get("/", productController.getProducts);
 
 // Add product
 router.get("/add", productController.getAddProduct);
-router.post("/add", uploadProduct.any(), handleUploadError, productController.addProduct);
+router.post(
+    "/add", 
+    uploadProductMemory.any(), 
+    handleUploadError, 
+    mapImageCounts,
+    validateRequest(createProductSchema),
+    uploadToCloudinary('smartpick/products'),
+    productController.addProduct
+);
 
 // Edit product
 router.get("/edit/:id", productController.getEditProduct);
-router.put("/edit/:id", uploadProduct.any(), handleUploadError, productController.updateProduct);
+router.put(
+    "/edit/:id", 
+    uploadProductMemory.any(), 
+    handleUploadError, 
+    mapImageCounts,
+    validateRequest(updateProductSchema),
+    uploadToCloudinary('smartpick/products'),
+    productController.updateProduct
+);
 
 // AJAX: fetch subcategories for a picked category
 router.get("/subcategories/:categoryId", productController.getSubcategoriesByCategory);
