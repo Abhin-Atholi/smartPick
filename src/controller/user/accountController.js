@@ -92,21 +92,6 @@ export const addAddress = async (req, res) => {
 };
 
 /**
- * GET: Load Edit Address Page (Can be skipped if modal handles it via data attributes)
- */
-export const loadEditAddress = async (req, res) => {
-  try {
-    const address = await userService.getAddressById(req.params.id, req.session.userId);
-
-    if (!address) return res.redirect("/account/addresses");
-
-    res.render("user/edit-address", { title: "Edit Address", address, msg: null });
-  } catch (err) {
-    res.status(500).send("Server Error");
-  }
-};
-
-/**
  * PUT: Update Existing Address (via Axios)
  */
 export const updateAddress = async (req, res) => {

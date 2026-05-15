@@ -176,38 +176,78 @@
     </div>
   </div>
 
+  <script src="/js/validation.js"></script>
   <script>
+    const addressValidators = {
+      fullName: CommonValidators.fullName,
+      phone: CommonValidators.phone,
+      pincode: CommonValidators.pincode,
+      state: CommonValidators.requiredString('State'),
+      city: CommonValidators.requiredString('City'),
+      locality: CommonValidators.requiredString('Locality'),
+      house: CommonValidators.requiredString('House / Building'),
+      area: CommonValidators.requiredString('Area / Street')
+    };
+
     // ---- Add Address Form (Axios Request) ----
-    if (document.getElementById('addAddressForm')) {
-      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
+    const addAddressForm = document.getElementById('addAddressForm');
+    if (addAddressForm) {
+      ValidationHelper.attachRealTimeValidation(addAddressForm, addressValidators);
+      
+      addAddressForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        if (!ValidationHelper.validateForm(addAddressForm, addressValidators)) return;
+        
         const data = Object.fromEntries(new FormData(this).entries());
         data.isDefault = this.elements.isDefault.checked;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+        
         try {
+          submitBtn.disabled = true;
+          submitBtn.innerText = 'Saving...';
           await axios.post('/account/addresses', data);
           window.location.reload();
         } catch (err) {
           const errBox = document.getElementById('addModalError');
           errBox.innerText = err.response?.data?.message || "Something went wrong";
           errBox.classList.remove('hidden');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerText = originalText;
         }
       });
     }
 
     // ---- Edit Address Form (Axios Request) ----
-    if (document.getElementById('editAddressForm')) {
-      document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
+    const editAddressForm = document.getElementById('editAddressForm');
+    if (editAddressForm) {
+      ValidationHelper.attachRealTimeValidation(editAddressForm, addressValidators);
+      
+      editAddressForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        if (!ValidationHelper.validateForm(editAddressForm, addressValidators)) return;
+        
         const data = Object.fromEntries(new FormData(this).entries());
         data.isDefault = this.elements.isDefault.checked;
         const actionUrl = this.dataset.action;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+        
         try {
+          submitBtn.disabled = true;
+          submitBtn.innerText = 'Updating...';
           await axios.put(actionUrl, data);
           window.location.reload();
         } catch (err) {
           const errBox = document.getElementById('editModalError');
           errBox.innerText = err.response?.data?.message || "Something went wrong";
           errBox.classList.remove('hidden');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerText = originalText;
         }
       });
     }
@@ -233,6 +273,10 @@
       document.getElementById('edit-house').value = btn.dataset.house;
       document.getElementById('edit-area').value = btn.dataset.area;
       document.getElementById('edit-isDefault').checked = btn.dataset.isdefault === 'true';
+      
+      // Clear previous validation errors
+      Array.from(document.getElementById('editAddressForm').elements).forEach(input => ValidationHelper.clearError(input));
+      
       document.getElementById('editAddressModal').classList.remove('hidden');
     }
     function closeEditModal() {

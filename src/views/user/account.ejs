@@ -59,20 +59,23 @@
       <form id="editProfileForm" class="p-6 space-y-4">
         <div>
           <label class="block text-sm font-bold mb-1 text-gray-700">Full Name</label>
-          <input type="text" name="fullName" value="<%= user.fullName %>" required
-            class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition">
+          <input type="text" name="fullName" value="<%= user.fullName %>"  
+            class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition">
         </div>
 
         <div>
           <label class="block text-sm font-bold mb-1 text-gray-700">Email Address</label>
-          <input type="email" name="email" value="<%= user.email %>" required
-            class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition">
+          <input type="email" name="email" value="<%= user.email %>"   <%= user.authProvider === 'google' ? 'disabled' : '' %>
+            class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none <%= user.authProvider === 'google' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-gray-50 focus:bg-white' %> transition">
+          <% if (user.authProvider === 'google') { %>
+            <p class="text-xs font-bold text-gray-500 mt-1">Email managed via Google Account</p>
+          <% } %>
         </div>
 
         <div>
           <label class="block text-sm font-bold mb-1 text-gray-700">Phone Number</label>
           <input type="text" name="phone" value="<%= user.phone || '' %>"
-            class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition">
+            class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition">
         </div>
 
         <div>
@@ -82,15 +85,20 @@
               src="<%= (user && user.profileImage) ? user.profileImage : 'https://ui-avatars.com/api/?name=' + (user ? encodeURIComponent(user.fullName) : 'User') + '&background=6366f1&color=fff' %>"
               class="w-16 h-16 rounded-full border object-cover" referrerpolicy="no-referrer"
               onerror="this.src='https://ui-avatars.com/api/?name=User&background=6366f1&color=fff'">
-            <% if (user.profileImage) { %>
+            <% if (user.profileImage && user.authProvider !== 'google') { %>
               <button type="button" onclick="removeImage()"
                 class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition">
                 Remove Current Photo
               </button>
               <% } %>
           </div>
-          <input type="file" name="profileImage" accept="image/*" onchange="previewImage(event)"
-            class="text-sm block w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+          <% if (user.authProvider === 'google') { %>
+            <p class="text-xs font-bold text-gray-500 mt-1">Profile image is managed by your Google account.</p>
+          <% } else { %>
+            <input type="file" name="profileImage" accept="image/jpeg, image/png, image/webp" onchange="previewImage(event)"
+              class="text-sm block w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+            <p class="text-xs font-bold text-gray-400 mt-1">Only JPG, PNG, and WebP images are allowed.</p>
+          <% } %>
         </div>
 
         <div class="flex gap-3 pt-4 border-t">
@@ -108,18 +116,49 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="/js/validation.js"></script>
   <script>
+    const profileValidators = {
+      fullName: CommonValidators.fullName,
+      email: CommonValidators.email,
+      phone: (value) => {
+        if (!value || value.trim().length === 0) return null; // Optional if you allow empty, else use CommonValidators.phone
+        if (!/^\d{10}$/.test(value.trim())) return "Phone number must be exactly 10 digits";
+        if (!/^[6-9]\d{9}$/.test(value.trim())) return "Must be a valid Indian mobile number";
+        return null;
+      }
+    };
+
+    const editProfileForm = document.getElementById('editProfileForm');
+    if (editProfileForm) {
+      ValidationHelper.attachRealTimeValidation(editProfileForm, profileValidators);
+    }
+
     function toggleModal(id) {
       const modal = document.getElementById(id);
+      if (modal.classList.contains('hidden')) {
+        Array.from(editProfileForm.elements).forEach(input => ValidationHelper.clearError(input));
+      }
       modal.classList.toggle('hidden');
     }
 
     function previewImage(event) {
       const file = event.target.files && event.target.files[0];
+      const input = event.target;
+      ValidationHelper.clearError(input);
+
       if (file) {
+        // Type validation
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+          ValidationHelper.showError(input, "Only JPG, PNG, and WebP images are allowed.");
+          event.target.value = '';
+          return;
+        }
+
         // Size validation (2MB limit)
         if (file.size > 2 * 1024 * 1024) {
-          Swal.fire("Error", "Image size must be less than 2MB.", "error");
+          ValidationHelper.showError(input, "Image size must be less than 2MB.");
           event.target.value = ''; // Reset input
           return;
         }
@@ -128,6 +167,10 @@
         reader.onload = function () {
           const output = document.getElementById('preview');
           output.src = reader.result;
+        }
+        reader.onerror = function() {
+          ValidationHelper.showError(input, "Image file is corrupted or unreadable.");
+          event.target.value = '';
         }
         reader.readAsDataURL(file);
       }
@@ -157,8 +200,10 @@
       });
     }
 
-    document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+    editProfileForm.addEventListener('submit', async function(e) {
       e.preventDefault();
+      
+      if (!ValidationHelper.validateForm(this, profileValidators)) return;
       
       const formData = new FormData(this);
       const submitBtn = this.querySelector('button[type="submit"]');

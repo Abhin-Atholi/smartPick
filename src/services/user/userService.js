@@ -30,8 +30,8 @@ export const processProfileUpdate = async (userId, updateData, file) => {
   // Handle Email Change Security & OTP
   const normalizedEmail = email ? email.trim().toLowerCase() : email;
   if (normalizedEmail && normalizedEmail !== user.email) {
-    if (!user.password) {
-      throw new Error("Please set an account password before changing your email.");
+    if (user.authProvider === 'google') {
+      throw new Error("Email cannot be changed for Google accounts.");
     }
 
     const emailExists = await User.findOne({ email: normalizedEmail, _id: { $ne: userId } });
@@ -60,6 +60,10 @@ export const processProfileUpdate = async (userId, updateData, file) => {
 export const removeImage = async (userId) => {
   const user = await User.findById(userId);
   if (!user || (!user.profileImage && !user.profileImageId)) throw new Error("No image to remove");
+
+  if (user.authProvider === 'google') {
+    throw new Error("Profile image is managed via Google Account.");
+  }
 
   if (user.profileImageId) {
     await deleteCloudinaryFile(user.profileImageId);
@@ -153,10 +157,13 @@ export const deleteAddress = async (userId, addressId) => {
 export const changePassword = async (userId, { currentPassword, newPassword, confirmPassword }) => {
   const user = await User.findById(userId);
   
-  if (user.password) {
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) throw new Error("Current password is incorrect");
+  if (user.authProvider === 'google') {
+    throw new Error("Password cannot be changed for Google accounts.");
   }
+
+  // Local users must provide correct current password
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) throw new Error("Current password is incorrect");
 
   if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
 
