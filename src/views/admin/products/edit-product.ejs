@@ -375,7 +375,10 @@
         
         let validFiles = [];
         for (const file of files) {
-            if (!validTypes.includes(file.type)) continue;
+            if (!validTypes.includes(file.type)) {
+                Swal.fire('Invalid File', `"${file.name}" is not a valid image. Please select JPG, PNG, or WEBP.`, 'error');
+                continue;
+            }
             if (file.size > 2 * 1024 * 1024) {
                 Swal.fire('File Too Large', `Image "${file.name}" exceeds the 2MB limit.`, 'warning');
                 continue;
