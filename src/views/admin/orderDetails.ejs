@@ -103,8 +103,8 @@
           <tbody class="divide-y divide-gray-50">
             <% order.items.forEach((item) => {
               const prod = item.product;
-              const variant = prod?.variants?.find(v => v.size === item.size && v.color?.name === item.color);
-              const imgUrl = variant?.images?.[0] || prod?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+              const colorOpt = prod?.colorOptions?.find(c => c.name === item.color);
+              const imgUrl = item.image || colorOpt?.images?.[0] || prod?.defaultImage || '/images/placeholder.jpg';
               const isc = statusColors[item.itemStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
               const canCancel = item.itemStatus === 'Processing';
             %>
@@ -112,7 +112,7 @@
               <td class="px-6 py-4">
                 <div class="flex items-center gap-4">
                   <div class="w-14 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                    <img src="<%= imgUrl %>" class="w-full h-full object-cover" onerror="this.src='/placeholder.jpg'">
+                    <img src="<%= imgUrl %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
                   </div>
                   <div>
                     <p class="text-sm font-black text-slate-800 max-w-[180px] truncate"><%= prod?.name || 'Unavailable' %></p>

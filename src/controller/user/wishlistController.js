@@ -1,4 +1,5 @@
 import * as wishlistService from "../../services/user/wishlistService.js";
+import * as offerHelper from "../../utils/offerHelper.js";
 
 export const getWishlist = async (req, res) => {
     try {
@@ -8,7 +9,13 @@ export const getWishlist = async (req, res) => {
         const skip = (page - 1) * limit;
 
         // Use service to fetch
-        const { products, totalPages, totalItems } = await wishlistService.getWishlistByUserId(userId, page, limit);
+        let { products, totalPages, totalItems } = await wishlistService.getWishlistByUserId(userId, page, limit);
+
+        // Map to plain objects with virtuals so we can apply offers properly
+        products = products.map(p => typeof p.toObject === 'function' ? p.toObject({ virtuals: true }) : p);
+        
+        // Enrich products with best offer info
+        products = await offerHelper.applyOffersToProducts(products);
 
         res.render("user/products/wishlist", {
             title: "My Wishlist — SmartPick",

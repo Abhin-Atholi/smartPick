@@ -34,7 +34,12 @@ export const loadCheckout = async (req, res, next) => {
         const cartItemsWithStock = cartData.items
             .filter(i => i.product.isActive && !i.product.isDeleted)
             .map(item => {
-                const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
+                let variant;
+                if (item.variantId) {
+                    variant = item.product.variants.find(v => v._id.toString() === item.variantId.toString());
+                } else {
+                    variant = item.product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
+                }
                 const availableStock = variant ? variant.stock : 0;
                 const isLowStock = availableStock > 0 && availableStock < item.quantity;
                 const isOutOfStock = availableStock === 0;

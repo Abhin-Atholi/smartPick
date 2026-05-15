@@ -205,6 +205,10 @@
                         <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Preview</label>
                         <div class="w-9 h-9 rounded-lg border border-gray-200 color-preview bg-white shadow-sm flex items-center justify-center text-xs text-gray-300">?</div>
                     </div>
+                    <div class="ml-4 flex items-center gap-2 mt-5">
+                        <input type="radio" name="defaultColorRadio" value="\${colorId}" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 cursor-pointer default-color-radio" \${colorCount === 0 ? 'checked' : ''}>
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer" onclick="this.previousElementSibling.click()">Set Default</label>
+                    </div>
                 </div>
                 <button type="button" onclick="removeColorSection('${colorId}')" class="text-gray-400 hover:text-rose-500 transition font-black text-xl leading-none">✕</button>
             </div>
@@ -423,6 +427,8 @@
         colorSections.forEach(sec => {
             const colorId = sec.id;
             const select = sec.querySelector('[data-field="color-data"]');
+            const isDefault = sec.querySelector('input[name="defaultColorRadio"]').checked;
+            
             if (select && select.value) {
                 try {
                     const parsed = JSON.parse(select.value);
@@ -431,6 +437,7 @@
                     colorOptions.push({
                         name: parsed.name,
                         code: parsed.code,
+                        isDefault: isDefault,
                         _blobId: colorId // temporary link for formdata
                     });
                 } catch(e) {}
@@ -501,7 +508,7 @@
             formData.append('isFeatured', document.getElementById('productFeatured').checked ? 'true' : 'false');
             
             // Clean _blobId from colorOptions before sending
-            const cleanColorOptions = colorOptions.map(c => ({ name: c.name, code: c.code }));
+            const cleanColorOptions = colorOptions.map(c => ({ name: c.name, code: c.code, isDefault: c.isDefault }));
             formData.append('colorOptions', JSON.stringify(cleanColorOptions));
             formData.append('variants', JSON.stringify(variants));
             

@@ -76,7 +76,7 @@ export const getBestOffer = async (productId, categoryId, basePrice) => {
  */
 export const applyOffersToItems = async (items) => {
     return await Promise.all(items.map(async (item) => {
-        const itemObj = item.toObject ? item.toObject() : item;
+        const itemObj = item.toObject ? item.toObject({ virtuals: true }) : item;
         const product = itemObj.product;
         if (!product) return itemObj;
 

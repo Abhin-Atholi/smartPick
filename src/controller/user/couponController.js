@@ -25,7 +25,12 @@ export const applyCoupon = async (req, res) => {
         let effectiveSubtotal = 0;
         let originalSubtotal = 0;
         cartData.items.forEach(item => {
-            const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
+            let variant;
+            if (item.variantId) {
+                variant = item.product.variants.find(v => v._id.toString() === item.variantId.toString());
+            } else {
+                variant = item.product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
+            }
             const availableStock = variant ? variant.stock : 0;
             if (availableStock >= item.quantity) {
                 effectiveSubtotal += item.effectiveTotalPrice;
@@ -84,7 +89,12 @@ export const removeCoupon = async (req, res) => {
         let originalSubtotal = 0;
         if (cartData && cartData.items.length > 0) {
             cartData.items.forEach(item => {
-                const variant = item.product.variants.find(v => v.size === item.size && v.color && v.color.name === item.color);
+                let variant;
+                if (item.variantId) {
+                    variant = item.product.variants.find(v => v._id.toString() === item.variantId.toString());
+                } else {
+                    variant = item.product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
+                }
                 const availableStock = variant ? variant.stock : 0;
                 if (availableStock >= item.quantity) {
                     effectiveSubtotal += item.effectiveTotalPrice;

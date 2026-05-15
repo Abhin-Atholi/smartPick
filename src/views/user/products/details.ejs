@@ -21,8 +21,8 @@
       <!-- ── LEFT: IMAGE GALLERY (Reduced to 5/12) ── -->
       <div class="lg:col-span-5 flex flex-col gap-5">
         <% 
-            let initialImages = product.colorOptions && product.colorOptions.length > 0 ? product.colorOptions[0].images : []; 
-            if(initialImages.length === 0) initialImages = ['/placeholder.jpg'];
+            let initialImages = product.defaultColor && product.defaultColor.images && product.defaultColor.images.length > 0 ? product.defaultColor.images : ['/images/placeholder.jpg'];
+            let defaultColorName = product.defaultColor ? product.defaultColor.name : '';
         %>
         <!-- Main Image with Zoom -->
         <div id="zoomContainer" class="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gray-50 cursor-crosshair group shadow-sm">
@@ -512,6 +512,14 @@
 
     // Init Page State
     window.addEventListener('DOMContentLoaded', () => {
+        const defaultColorName = "<%= defaultColorName %>";
+        if (defaultColorName) {
+            const defaultBtn = document.querySelector(`.color-option[title="${defaultColorName}"]`);
+            if (defaultBtn) {
+                defaultBtn.click();
+                return;
+            }
+        }
         if (productData.colorOptions && productData.colorOptions.length > 0) {
             const firstColorBtn = document.querySelector('.color-option');
             if (firstColorBtn) firstColorBtn.click();

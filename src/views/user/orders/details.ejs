@@ -98,8 +98,8 @@
           <div class="divide-y divide-gray-100">
             <% order.items.forEach(item => { %>
               <% 
-                const variant = item.product?.variants?.find(v => v.color && v.color.name === item.color);
-                const imgUrl = variant?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+                const colorOpt = item.product?.colorOptions?.find(c => c.name === item.color);
+                const imgUrl = item.image || colorOpt?.images?.[0] || item.product?.defaultImage || '/images/placeholder.jpg';
               %>
               <div id="item-row-<%= item._id %>" class="flex gap-4 px-6 py-5 hover:bg-gray-50/50 transition-colors">
                 <!-- Product Image -->

@@ -7,7 +7,7 @@
         ? Math.min(...p.variants.map(v => v.price))
         : 0;
         const formattedPrice = `₹${minPrice.toLocaleString()}`;
-        const firstImage = p.variants && p.variants.length > 0 && p.variants[0].images && p.variants[0].images.length > 0 ? p.variants[0].images[0] : 'https://placehold.co/600x700?text=No+Image';
+        const firstImage = p.defaultImage || 'https://placehold.co/600x700?text=No+Image';
         const catName = p.category ? p.category.name : 'Uncategorized';
         %>
         <article class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full relative">
@@ -45,7 +45,7 @@
             <div class="flex flex-col gap-3 mb-4 mt-auto">
               <% 
                 const uniqueSizes = [...new Set(p.variants.map(v => v.size))].sort((a,b) => ["S","M","L","XL"].indexOf(a) - ["S","M","L","XL"].indexOf(b));
-                const uniqueColors = Array.from(new Set(p.variants.map(v => JSON.stringify(v.color)))).map(c => JSON.parse(c));
+                const uniqueColors = p.colorOptions || [];
               %>
               <div class="flex gap-1.5 flex-wrap">
                 <% uniqueColors.slice(0, 5).forEach(c => { %>

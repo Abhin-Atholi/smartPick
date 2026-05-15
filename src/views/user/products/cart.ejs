@@ -49,7 +49,12 @@
                     cart.items.forEach(item => { 
                         const product = item.product;
                         const isUnavailable = !product || !product.isCurrentlyAvailable;
-                        const cartVariant = product && item.variantId ? product.variants.find(v => v._id.toString() === item.variantId.toString()) : null;
+                        let cartVariant = null;
+                        if (product && item.variantId) {
+                            cartVariant = product.variants.find(v => v._id.toString() === item.variantId.toString());
+                        } else if (product && item.size && item.color) {
+                            cartVariant = product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
+                        }
                         const itemSize = cartVariant ? cartVariant.size : 'N/A';
                         const itemColorName = cartVariant ? cartVariant.color : 'N/A';
                         const colorOption = product && product.colorOptions ? product.colorOptions.find(c => c.name === itemColorName) : null;
@@ -68,7 +73,7 @@
                                                 class="w-32 h-40 rounded-2xl overflow-hidden bg-gray-50 flex-shrink-0 relative">
                                                 <% 
                                     let imgUrl = colorOption && colorOption.images && colorOption.images.length > 0 ? colorOption.images[0] : null;
-                                    if(!imgUrl && product && product.colorOptions && product.colorOptions[0] && product.colorOptions[0].images) imgUrl = product.colorOptions[0].images[0];
+                                    if(!imgUrl && product && product.defaultImage) imgUrl = product.defaultImage;
                                     if(!imgUrl) imgUrl = '/images/placeholder.jpg';
                                 %>
                                                     <img src="<%= imgUrl %>" alt="<%= product ? product.name : 'Unknown' %>"

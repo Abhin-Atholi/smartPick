@@ -41,7 +41,7 @@ export const getOrderById = async (userId, orderId) => {
         order.paymentStatus = 'Expired';
         for (const item of order.items) {
             item.itemStatus = 'Expired';
-            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
+            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -194,7 +194,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
 
     // 7. STOCK RESERVATION
     for (const item of orderItems) {
-        const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
+        const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
         await Product.updateOne(
             { _id: item.product },
             { $inc: { 'variants.$[v].stock': -item.quantity } },
@@ -286,7 +286,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
             order.paymentStatus = 'Expired';
             for (const item of order.items) {
                 item.itemStatus = 'Expired';
-                const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
+                const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
                 await Product.updateOne(
                     { _id: item.product },
                     { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -324,7 +324,7 @@ export const cancelOrder = async (userId, orderId, reason) => {
         if (item.itemStatus !== 'Cancelled' && item.itemStatus !== 'Returned') {
             item.itemStatus = 'Cancelled';
             item.cancelReason = reason;
-            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
+            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -385,7 +385,7 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
     item.itemStatus = 'Cancelled';
     item.cancelReason = reason;
 
-    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
+    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
     await Product.updateOne(
         { _id: item.product },
         { $inc: { 'variants.$[v].stock': item.quantity } },
@@ -469,7 +469,7 @@ export const startStockCleanupTask = () => {
 
                 for (const item of order.items) {
                     item.itemStatus = 'Expired';
-                    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color.name': item.color };
+                    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
                     await Product.updateOne(
                         { _id: item.product },
                         { $inc: { 'variants.$[v].stock': item.quantity } },

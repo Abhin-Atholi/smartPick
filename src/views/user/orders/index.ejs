@@ -141,8 +141,8 @@
                   <div class="flex -space-x-2">
                     <% order.items.slice(0, 2).forEach(item => { %>
                       <% 
-                        const variant = item.product?.variants?.find(v => v.color && v.color.name === item.color);
-                        const imgUrl = variant?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+                        const variant = item.product?.variants?.find(v => v.color === item.color);
+                        const imgUrl = variant?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/images/placeholder.jpg';
                       %>
                       <div class="w-9 h-9 rounded-full border-2 border-white bg-gray-100 overflow-hidden flex-shrink-0 shadow-sm">
                         <img src="<%= imgUrl %>" class="w-full h-full object-cover">
@@ -270,8 +270,8 @@
                   <% order.items.forEach(item => { %>
                     <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 items-center">
                       <% 
-                        const vDet = item.product?.variants?.find(v => v.color && v.color.name === item.color);
-                        const iUrl = vDet?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/placeholder.jpg';
+                        const vDet = item.product?.variants?.find(v => v.color === item.color);
+                        const iUrl = vDet?.images?.[0] || item.product?.variants?.[0]?.images?.[0] || '/images/placeholder.jpg';
                       %>
                       <div class="w-14 h-16 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
                         <img src="<%= iUrl %>" class="w-full h-full object-cover">

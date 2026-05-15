@@ -143,12 +143,9 @@
                             <% cartItems.forEach(item=> { %>
                                 <div class="flex gap-4 <%= item.stockIssue ? 'opacity-70' : '' %>">
                                     <div class="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 relative">
-                                        <% const variant=item.product.variants.find(v=> v.color && v.color.name ===
-                                            item.color);
-                                            let imgUrl = variant && variant.images && variant.images.length > 0 ?
-                                            variant.images[0] : (item.product.variants[0]?.images[0] ||
-                                            '/placeholder.jpg');
-                                            %>
+                                        <% const colorOption = item.product.colorOptions ? item.product.colorOptions.find(c => c.name === item.color) : null;
+                                           let imgUrl = colorOption && colorOption.images && colorOption.images.length > 0 ? colorOption.images[0] : (item.product.defaultImage || '/images/placeholder.jpg');
+                                        %>
                                             <img src="<%= imgUrl %>" class="w-full h-full object-cover">
                                             <% if (item.stockIssue) { %>
                                                 <div

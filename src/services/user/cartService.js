@@ -68,6 +68,20 @@ export const getCart = async (userId, page = 1, limit = 4) => {
         populate: [{ path: 'category' }, { path: 'subcategory' }]
     });
 
+    if (!fullCart) {
+        return {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+            originalSubtotal: 0,
+            totalOfferDiscount: 0,
+            cartTotal: 0,
+            activeTotal: 0,
+            hasGlobalStockIssue: false
+        };
+    }
+
     const breakdown = await _calculateBreakdown(fullCart.items);
 
     const totalItems = fullCart.items.length;

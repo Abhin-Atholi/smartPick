@@ -98,13 +98,14 @@ export const getStorefrontProducts = async (queryParams) => {
   const totalPages = Math.ceil(totalProducts / PER_PAGE) || 1;
   const safePage = Math.min(currentPage, totalPages);
 
-  const products = await Product.find(filter)
+  const docs = await Product.find(filter)
     .sort(sortQuery)
     .skip((safePage - 1) * PER_PAGE)
     .limit(PER_PAGE)
     .populate("category", "name")
-    .populate("subcategory", "name")
-    .lean();
+    .populate("subcategory", "name");
+
+  const products = docs.map(d => d.toObject());
 
   return {
     products,
@@ -128,39 +129,40 @@ export const getStorefrontProducts = async (queryParams) => {
  * Fetch a single product by ID
  */
 export const getProductById = async (id) => {
-  return await Product.findOne({ _id: id, isDeleted: false, isActive: true })
+  const doc = await Product.findOne({ _id: id, isDeleted: false, isActive: true })
     .populate('category', 'name')
-    .populate('subcategory', 'name')
-    .lean();
+    .populate('subcategory', 'name');
+  return doc ? doc.toObject() : null;
 };
 
 /**
  * Fetch related products from the same category
  */
 export const getRelatedProducts = async (categoryId, excludeId, limit = 4) => {
-  return await Product.find({
+  const docs = await Product.find({
     category: categoryId,
     _id: { $ne: excludeId },
     isActive: true,
     isDeleted: false
   })
     .populate('category', 'name')
-    .limit(limit)
-    .lean();
+    .limit(limit);
+  return docs.map(d => d.toObject());
 };
 
 export const getHomeData = async () => {
     const categories = await Category.find({ isActive: true }).lean();
     
     // Latest Products (limit 12)
-    const latestProducts = await Product.find({
+    const docs = await Product.find({
       isActive: true,
       isDeleted: false
     })
     .populate('category', 'name')
     .sort({ createdAt: -1 })
-    .limit(12)
-    .lean();
+    .limit(12);
+
+    const latestProducts = docs.map(d => d.toObject());
 
     return { categories, latestProducts };
 };

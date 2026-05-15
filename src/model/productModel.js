@@ -9,7 +9,8 @@ const colorOptionSchema = new mongoose.Schema({
       validator: (arr) => arr.length >= 3,
       message: "Minimum 3 images required per color"
     }
-  }
+  },
+  isDefault: { type: Boolean, default: false }
 });
 
 const variantSchema = new mongoose.Schema({
@@ -132,6 +133,20 @@ const productSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+// Pre-save middleware to enforce exactly one default color
+productSchema.pre('save', async function() {
+    if (this.colorOptions && this.colorOptions.length > 0) {
+        let defaultCount = this.colorOptions.filter(c => c.isDefault).length;
+        
+        // If no default color is set, or multiple are set, reset and make the first one default
+        if (defaultCount !== 1) {
+            this.colorOptions.forEach((c, index) => {
+                c.isDefault = index === 0;
+            });
+        }
+    }
+});
+
 // Static for building the standard "User-Visible" query
 productSchema.statics.visibleOnly = function() {
     return this.find({ isActive: true, isDeleted: false });
@@ -174,6 +189,42 @@ productSchema.virtual('isCurrentlyAvailable').get(function() {
 productSchema.virtual('totalStock').get(function() {
     if (!this.variants || this.variants.length === 0) return 0;
     return this.variants.reduce((total, variant) => total + (variant.stock || 0), 0);
+});
+
+/**
+ * VIRTUAL: Default Color
+ * Returns the color marked isDefault: true, or the first color.
+ */
+productSchema.virtual('defaultColor').get(function() {
+    if (!this.colorOptions || this.colorOptions.length === 0) return null;
+    const defaultColor = this.colorOptions.find(c => c.isDefault);
+    return defaultColor || this.colorOptions[0];
+});
+
+/**
+ * VIRTUAL: Default Image
+ * Returns the first image of the default color, or a placeholder.
+ */
+productSchema.virtual('defaultImage').get(function() {
+    const dColor = this.defaultColor;
+    if (dColor && dColor.images && dColor.images.length > 0) {
+        return dColor.images[0];
+    }
+    return '/images/placeholder.jpg';
+});
+
+/**
+ * VIRTUAL: Default Variant
+ * Returns the first variant that matches the default color.
+ */
+productSchema.virtual('defaultVariant').get(function() {
+    if (!this.variants || this.variants.length === 0) return null;
+    const dColor = this.defaultColor;
+    if (!dColor) return this.variants[0];
+    
+    // Find first variant matching default color
+    const defaultVariant = this.variants.find(v => v.color === dColor.name);
+    return defaultVariant || this.variants[0];
 });
 
 // Ensure virtuals are included when converting to JSON/Object (crucial for EJS)

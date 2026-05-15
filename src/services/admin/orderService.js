@@ -25,12 +25,14 @@ const ALLOWED_TRANSITIONS = {
 };
 
 // ── Helper: restore stock for one item ───────────────────────────────────────
-const restoreStock = (item) =>
-    Product.updateOne(
+const restoreStock = (item) => {
+    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
+    return Product.updateOne(
         { _id: item.product },
         { $inc: { 'variants.$[v].stock': item.quantity } },
-        { arrayFilters: [{ 'v.size': item.size, 'v.color.name': item.color }] }
+        { arrayFilters: [arrayFilter] }
     );
+};
 
 // ── Order listing with search / filter / sort / pagination ───────────────────
 export const getAllOrders = async ({
