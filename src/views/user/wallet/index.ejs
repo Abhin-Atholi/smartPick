@@ -96,13 +96,8 @@
 
                                         <!-- Transaction Ref (Razorpay ID or internal) -->
                                         <td class="px-5 py-4">
-                                            <% 
-                                                // Extract Razorpay payment ID from description if present
-                                                const rzpMatch = tx.description && tx.description.match(/pay_[A-Za-z0-9]+/);
-                                                const txRef = rzpMatch ? rzpMatch[0] : (tx._id ? tx._id.toString().slice(-8).toUpperCase() : '—');
-                                            %>
                                             <span class="font-mono text-[10px] text-gray-500 bg-gray-100 px-2 py-1 rounded-lg font-bold">
-                                                <%= txRef %>
+                                                <%= tx.transactionId %>
                                             </span>
                                         </td>
 
@@ -112,7 +107,7 @@
                                                 'Referral': 'bg-violet-100 text-violet-700',
                                                 'Refund': 'bg-blue-100 text-blue-700',
                                                 'Purchase': 'bg-orange-100 text-orange-700',
-                                                'Admin Credit': 'bg-teal-100 text-teal-700',
+                                                'Cancellation Refund': 'bg-pink-100 text-pink-700',
                                                 'Order Payment': 'bg-indigo-100 text-indigo-700',
                                                 'Top-up': 'bg-emerald-100 text-emerald-700'
                                             }; %>

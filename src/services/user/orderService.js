@@ -10,20 +10,7 @@ import * as offerHelper from '../../utils/offerHelper.js';
 import * as taxHelper from '../../utils/taxHelper.js';
 import cron from 'node-cron';
 
-const processRefund = async (userId, amount, description, orderId) => {
-    let wallet = await Wallet.findOne({ userId });
-    if (!wallet) {
-        wallet = new Wallet({ userId, balance: 0, transactions: [] });
-    }
-    wallet.balance += amount;
-    wallet.transactions.push({
-        type: 'Credit',
-        amount,
-        description,
-        orderId
-    });
-    await wallet.save();
-};
+// processRefund removed in favor of walletService.creditWallet
 
 export const getOrderById = async (userId, orderId) => {
     const order = await Order.findOne({ _id: orderId, user: userId })
@@ -336,7 +323,7 @@ export const cancelOrder = async (userId, orderId, reason) => {
     if (order.paymentStatus === 'Paid') {
         order.paymentStatus = 'Refunded';
         // Full order totalAmount already includes tax — refund the whole thing
-        await processRefund(userId, order.totalAmount, `Refund for cancelled Order ${order.orderId}`, orderId);
+        await walletService.creditWallet(userId, order.totalAmount, `Refund for cancelled Order ${order.orderId}`, 'Cancellation Refund', orderId);
     }
 
     await order.save();
@@ -400,7 +387,7 @@ export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
         const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
         const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
         const refundAmount = item.totalPrice + itemTaxRefund;
-        await processRefund(userId, refundAmount, `Refund for cancelled item in Order ${order.orderId}`, orderId);
+        await walletService.creditWallet(userId, refundAmount, `Refund for cancelled item in Order ${order.orderId}`, 'Cancellation Refund', orderId);
 
         if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
     }

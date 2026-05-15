@@ -1,15 +1,7 @@
 import Order from '../../model/orderModel.js';
 import Product from '../../model/productModel.js';
-import Wallet from '../../model/walletModel.js';
+import * as walletService from '../user/walletService.js';
 import * as taxHelper from '../../utils/taxHelper.js';
-
-const processRefund = async (userId, amount, description, orderId) => {
-    let wallet = await Wallet.findOne({ userId });
-    if (!wallet) wallet = new Wallet({ userId, balance: 0, transactions: [] });
-    wallet.balance += amount;
-    wallet.transactions.push({ type: 'Credit', amount, description, orderId });
-    await wallet.save();
-};
 
 // ── Admin-settable status transitions ────────────────────────────────────────
 // "Return Requested" is user-triggered only; admin cannot set it manually.
@@ -156,7 +148,7 @@ export const updateOrderStatus = async (orderId, newStatus) => {
         }
         if (order.paymentStatus === 'Paid') {
             order.paymentStatus = 'Refunded';
-            await processRefund(order.user, order.totalAmount, `Refund for admin-cancelled Order ${order.orderId}`, orderId);
+            await walletService.creditWallet(order.user, order.totalAmount, `Refund for admin-cancelled Order ${order.orderId}`, 'Cancellation Refund', orderId);
         }
     } else {
         const syncMap = { Shipped: 'Shipped', 'Out for Delivery': 'Out for Delivery', Delivered: 'Delivered' };
@@ -195,7 +187,7 @@ export const cancelOrderItem = async (orderId, itemId) => {
         const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
         const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
         const refundAmount = item.totalPrice + itemTaxRefund;
-        await processRefund(order.user, refundAmount, `Refund for admin-cancelled item in Order ${order.orderId}`, orderId);
+        await walletService.creditWallet(order.user, refundAmount, `Refund for admin-cancelled item in Order ${order.orderId}`, 'Cancellation Refund', orderId);
         if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
     }
 
@@ -244,7 +236,7 @@ export const handleReturnDecision = async (orderId, itemId, decision) => {
             const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
             const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
             const refundAmount = item.totalPrice + itemTaxRefund;
-            await processRefund(order.user, refundAmount, `Refund for returned item in Order ${order.orderId}`, orderId);
+            await walletService.creditWallet(order.user, refundAmount, `Refund for returned item in Order ${order.orderId}`, 'Refund', orderId);
             if (order.orderStatus === 'Returned') order.paymentStatus = 'Refunded';
         }
     } else {
