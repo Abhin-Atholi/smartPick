@@ -111,7 +111,12 @@ export const getDashboardData = async (filter, customFrom, customTo) => {
             $project: {
                 _id: 1,
                 name: "$productInfo.name",
-                image: { $arrayElemAt: ["$productInfo.images", 0] },
+                image: { 
+                    $let: {
+                        vars: { firstColor: { $arrayElemAt: ["$productInfo.colorOptions", 0] } },
+                        in: { $arrayElemAt: ["$$firstColor.images", 0] }
+                    }
+                },
                 totalQuantity: 1,
                 totalRevenue: 1
             }
