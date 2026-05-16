@@ -23,6 +23,7 @@ export const getOrderById = async (userId, orderId) => {
     const hasExpiry = order.retryExpiresAt;
 
     if (isRzpPending && hasExpiry && new Date() > order.retryExpiresAt && !order.stockRestored) {
+        const prevStatus = order.orderStatus;
         order.stockRestored = true;
         order.orderStatus = 'Expired';
         order.paymentStatus = 'Expired';
@@ -35,6 +36,7 @@ export const getOrderById = async (userId, orderId) => {
                 { arrayFilters: [arrayFilter] }
             );
         }
+        orderLifecycleService.appendSystemEvent(order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired', 'Payment session expired during JIT lookup');
         await order.save();
     }
 
@@ -302,6 +304,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
         const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
         const hasExpiry = order.retryExpiresAt;
         if (isRzpPending && hasExpiry && new Date() > order.retryExpiresAt && !order.stockRestored) {
+            const prevStatus = order.orderStatus;
             order.stockRestored = true;
             order.orderStatus = 'Expired';
             order.paymentStatus = 'Expired';
@@ -314,6 +317,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
                     { arrayFilters: [arrayFilter] }
                 );
             }
+            orderLifecycleService.appendSystemEvent(order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired', 'Payment session expired during batch list lookup');
             await order.save();
         }
     }
@@ -415,9 +419,11 @@ export const checkPaymentStatus = async (userId, orderId) => {
 
 // ── Background Cleanup Task ──────────────────────────────────────────────────
 export const startStockCleanupTask = () => {
-    console.log('📦 Cron: Order cleanup task initialized (Every 30s)');
+    console.log('📦 Cron: Order cleanup task initialized (Every 10m)');
 
-    cron.schedule('*/30 * * * * *', async () => {
+    // This cron is for background cleanup of abandoned orders.
+    // Real-time expiry is handled JIT in getOrderById and getOrders.
+    cron.schedule('*/10 * * * *', async () => {
         try {
             const now = new Date();
             const expiredOrders = await Order.find({
@@ -429,9 +435,10 @@ export const startStockCleanupTask = () => {
 
             if (expiredOrders.length === 0) return;
 
-            console.log(`🧹 Cron: Auto-restoring stock for ${expiredOrders.length} expired order(s)...`);
+            console.log(`🧹 Cron: Auto-restoring stock for ${expiredOrders.length} abandoned order(s)...`);
 
             for (const order of expiredOrders) {
+                const prevStatus = order.orderStatus;
                 order.stockRestored = true;
                 order.orderStatus = 'Expired';
                 order.paymentStatus = 'Expired';
@@ -443,12 +450,22 @@ export const startStockCleanupTask = () => {
                         { _id: item.product },
                         { $inc: { 'variants.$[v].stock': item.quantity } },
                         { arrayFilters: [arrayFilter] }
-                    ).catch(err => console.error(`Cron Failed to restore stock for ${item.product}:`, err));
+                    ).catch(err => console.error(`Cron: Failed to restore stock for product ${item.product?._id || item.product}:`, err));
                 }
-                await order.save().catch(err => console.error(`Cron Failed to save expired order ${order._id}:`, err));
+
+                // Phase 8: Append system audit log
+                orderLifecycleService.appendSystemEvent(
+                    order,
+                    'SYSTEM_EXPIRED_ORDER',
+                    prevStatus,
+                    'Expired',
+                    'Automatic cleanup of abandoned payment session'
+                );
+
+                await order.save().catch(err => console.error(`Cron: Failed to save expired order ${order._id}:`, err));
             }
         } catch (err) {
-            console.error('Order cleanup task failed:', err);
+            console.error('Cron: Order cleanup task failed:', err);
         }
-    }, 60 * 1000);
+    });
 };
