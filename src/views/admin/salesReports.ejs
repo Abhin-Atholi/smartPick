@@ -1,137 +1,140 @@
 <div class="min-h-screen bg-slate-50/50 pb-12">
-    <!-- Back Button -->
-    <div class="mb-6">
-        <a href="/admin/dashboard" class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Back to Dashboard
+    <!-- Navigation Header -->
+    <div class="flex items-center justify-between mb-8">
+        <a href="/admin/dashboard" class="group flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-indigo-600 transition-all bg-white px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm">
+            <svg class="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Dashboard
         </a>
+        <div class="flex items-center gap-4">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Financial Reports v2.0</span>
+            <div class="h-1 w-1 bg-slate-300 rounded-full"></div>
+            <span id="currentTime" class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Live View</span>
+        </div>
     </div>
 
-    <!-- Header Section -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+    <!-- Main Title & Filters -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
         <div>
-            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Sales Analytics</h1>
-            <p class="text-slate-500 mt-2 font-medium">Analyze your store performance and download reports.</p>
+            <h1 class="text-4xl font-black text-slate-900 tracking-tighter">Sales Ledger</h1>
+            <p class="text-slate-500 mt-1 font-medium">Production-grade financial reporting & reconciliation.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-            <!-- Time Filter -->
-            <div class="relative">
-                <select id="reportFilter" onchange="handleFilterChange()" class="appearance-none bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-4 pr-10 py-3 shadow-sm transition-all hover:border-slate-300 cursor-pointer">
+            <!-- Filter Dropdown -->
+            <div class="relative group">
+                <select id="reportFilter" onchange="handleFilterChange()" class="appearance-none bg-white border border-slate-200 text-slate-800 text-sm font-bold rounded-2xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 block w-full pl-5 pr-12 py-3.5 shadow-sm transition-all hover:bg-slate-50 cursor-pointer">
                     <option value="Daily">Today</option>
                     <option value="Weekly">This Week</option>
                     <option value="Monthly" selected>This Month</option>
                     <option value="Yearly">This Year</option>
                     <option value="Custom">Custom Range</option>
                 </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
 
-            <!-- Custom Date Container -->
-            <div id="customDateRange" class="hidden items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
-                <input type="date" id="dateFrom" class="bg-transparent border-0 text-sm font-bold text-slate-700 focus:ring-0 px-3 py-1">
+            <!-- Custom Range (Hidden) -->
+            <div id="customDateRange" class="hidden items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in zoom-in duration-200">
+                <input type="date" id="dateFrom" class="bg-transparent border-0 text-sm font-bold text-slate-800 focus:ring-0 px-3 py-1">
                 <span class="text-slate-300 font-bold">→</span>
-                <input type="date" id="dateTo" class="bg-transparent border-0 text-sm font-bold text-slate-700 focus:ring-0 px-3 py-1">
-                <button onclick="fetchReportData()" class="bg-slate-900 text-white p-2 rounded-xl hover:bg-slate-800 transition shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <input type="date" id="dateTo" class="bg-transparent border-0 text-sm font-bold text-slate-800 focus:ring-0 px-3 py-1">
+                <button onclick="fetchReportData(1)" class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                 </button>
             </div>
 
-            <!-- Export Buttons -->
+            <!-- Export Actions -->
+            <div class="h-12 w-[1px] bg-slate-200 mx-2 hidden sm:block"></div>
             <div class="flex items-center gap-2">
-                <button onclick="exportReport('pdf')" class="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-3 rounded-2xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all active:scale-95">
-                    <span class="text-red-500 text-lg">📄</span> PDF
+                <button onclick="exportReport('pdf')" class="group flex items-center gap-2.5 bg-white border border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all hover:border-rose-200 active:scale-95">
+                    <span class="text-rose-500 group-hover:scale-110 transition-transform">📄</span> PDF Report
                 </button>
-                <button onclick="exportReport('excel')" class="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all active:scale-95">
-                    <span class="text-emerald-400 text-lg">📊</span> Excel
+                <button onclick="exportReport('excel')" class="group flex items-center gap-2.5 bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-sm font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95">
+                    <span class="text-emerald-400 group-hover:scale-110 transition-transform">📊</span> Full Workbook
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-            <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-indigo-600 group-hover:scale-110 transition-transform">💰</div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Revenue</p>
-            <h3 id="statRevenue" class="text-2xl font-black text-slate-900">₹0</h3>
-            <div id="growthRevenue" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
+    <!-- KPI Row: The Financial Truth -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <!-- Net Revenue Card (Primary) -->
+        <div class="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-200 relative overflow-hidden group">
+            <div class="relative z-10">
+                <p class="text-[11px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-2">Net Retained Revenue</p>
+                <h3 id="statNetRevenue" class="text-3xl font-black text-white tracking-tight">₹0</h3>
+                <div id="growthNetRevenue" class="mt-4 inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-black text-indigo-100"></div>
+            </div>
+            <!-- Decorative Icon -->
+            <div class="absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12 group-hover:rotate-0 transition-transform">💰</div>
         </div>
 
-        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-            <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-amber-500 group-hover:scale-110 transition-transform">📦</div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Orders</p>
-            <h3 id="statOrders" class="text-2xl font-black text-slate-900">0</h3>
-            <div id="growthOrders" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
+        <!-- Gross Revenue -->
+        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Gross Sales</p>
+            <h3 id="statGrossRevenue" class="text-3xl font-black text-slate-900 tracking-tight">₹0</h3>
+            <div id="growthGrossRevenue" class="mt-4 flex items-center gap-1.5 text-[10px] font-black"></div>
         </div>
 
-        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-            <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-emerald-500 group-hover:scale-110 transition-transform">✨</div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Products Sold</p>
-            <h3 id="statProducts" class="text-2xl font-black text-slate-900">0</h3>
-            <div id="growthProducts" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
+        <!-- Total Refunds -->
+        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Refunds</p>
+            <h3 id="statRefunds" class="text-3xl font-black text-rose-600 tracking-tight">₹0</h3>
+            <div id="liabilityLabel" class="mt-4 flex items-center gap-1.5 text-[10px] font-black text-amber-500">
+                <!-- Liability shown here -->
+            </div>
         </div>
 
-        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-            <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-xl mb-4 text-rose-500 group-hover:scale-110 transition-transform">🏷️</div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Discount</p>
-            <h3 id="statDiscount" class="text-2xl font-black text-slate-900">₹0</h3>
-            <div id="growthDiscount" class="mt-2 flex items-center gap-1 text-[10px] font-bold"></div>
+        <!-- Net Profitability Card (Optional Placeholder for Tax/Discounts) -->
+        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Discounts</p>
+            <h3 id="statDiscounts" class="text-3xl font-black text-slate-900 tracking-tight">₹0</h3>
+            <div id="growthDiscounts" class="mt-4 flex items-center gap-1.5 text-[10px] font-black"></div>
         </div>
     </div>
 
-    <!-- Main Analytics Content -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <!-- Sales Trend Chart -->
-        <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-8">
-                <div>
-                    <h2 class="text-xl font-black text-slate-900">Revenue Trend</h2>
-                    <p class="text-sm text-slate-500 font-medium">Visualizing sales performance over time.</p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
-                        <span class="w-3 h-3 bg-indigo-500 rounded-full"></span> Revenue
-                    </div>
-                    <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
-                        <span class="w-3 h-3 bg-slate-200 rounded-full"></span> Orders
-                    </div>
-                </div>
-            </div>
-            <div class="relative h-[350px]">
-                <canvas id="revenueChart"></canvas>
-            </div>
+    <!-- Secondary Metrics Bar -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+        <div class="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Orders</p>
+            <p id="statOrders" class="text-lg font-black text-slate-800">0</p>
         </div>
-
-        <!-- Coupon Usage Table -->
-        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col">
-            <div class="mb-6">
-                <h2 class="text-xl font-black text-slate-900">Coupon Performance</h2>
-                <p class="text-sm text-slate-500 font-medium">Top performing promo codes.</p>
-            </div>
-            <div class="flex-1 overflow-y-auto pr-2 space-y-4" id="couponList">
-                <!-- Injected via JS -->
-                <div class="animate-pulse space-y-4">
-                    <div class="h-16 bg-slate-50 rounded-2xl"></div>
-                    <div class="h-16 bg-slate-50 rounded-2xl"></div>
-                    <div class="h-16 bg-slate-50 rounded-2xl"></div>
-                </div>
-            </div>
+        <div class="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Products Sold</p>
+            <p id="statProducts" class="text-lg font-black text-slate-800">0</p>
+        </div>
+        <div class="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Avg Order Val</p>
+            <p id="statAOV" class="text-lg font-black text-slate-800">₹0</p>
+        </div>
+        <div class="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Return Rate</p>
+            <p id="statReturnRate" class="text-lg font-black text-amber-600">0%</p>
+        </div>
+        <div class="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Net Tax</p>
+            <p id="statTax" class="text-lg font-black text-emerald-600">₹0</p>
         </div>
     </div>
 
-    <!-- Detailed Orders Table -->
-    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div class="p-8 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <!-- Detailed Ledger Section -->
+    <div class="bg-white rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div class="p-10 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-                <h2 class="text-xl font-black text-slate-900">Order Discount Breakdown</h2>
-                <p class="text-sm text-slate-500 font-medium">Detailed view of every successful transaction.</p>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Order Reconciliation Ledger</h2>
+                <p class="text-sm text-slate-500 font-medium mt-1">Audit-ready view of gross vs net retained values.</p>
             </div>
-            <div class="relative">
-                <input type="text" placeholder="Search orders..." class="bg-slate-50 border-0 text-sm font-bold text-slate-700 rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-indigo-500 w-full sm:w-64">
-                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <div class="flex items-center gap-3">
+                <!-- Status Pills Filter (Static UI for now, logic can be added) -->
+                <div class="hidden lg:flex items-center gap-2 p-1 bg-slate-50 rounded-xl">
+                    <button class="px-4 py-1.5 bg-white text-[10px] font-black text-indigo-600 rounded-lg shadow-sm">ALL</button>
+                    <button class="px-4 py-1.5 text-[10px] font-black text-slate-400 hover:text-slate-600">REFUNDED</button>
+                </div>
+                <div class="relative group">
+                    <input type="text" placeholder="Search by Order ID..." class="bg-slate-50 border-slate-100 text-sm font-bold text-slate-800 rounded-xl pl-12 pr-6 py-3 focus:ring-4 focus:ring-indigo-100 focus:bg-white w-full sm:w-72 transition-all">
+                    <svg class="w-5 h-5 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
             </div>
         </div>
 
@@ -139,60 +142,47 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-slate-50/50">
-                        <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Order ID</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Subtotal</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Offer Disc.</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Coupon Disc.</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Final Amount</th>
-                        <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                        <th class="px-10 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Transaction</th>
+                        <th class="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
+                        <th class="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Gross Amount</th>
+                        <th class="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Refunded</th>
+                        <th class="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Net Retained</th>
+                        <th class="px-10 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                     </tr>
                 </thead>
-                <tbody id="orderReportBody" class="divide-y divide-slate-50">
-                    <!-- Injected via JS -->
+                <tbody id="ledgerBody" class="divide-y divide-slate-50">
+                    <!-- Dynamic Rows -->
                 </tbody>
             </table>
         </div>
         
-        <div id="noDataMessage" class="hidden p-20 text-center">
-            <div class="text-4xl mb-4">🔍</div>
-            <h3 class="text-lg font-black text-slate-800">No records found</h3>
-            <p class="text-slate-500">Try adjusting your filters or date range.</p>
+        <!-- Empty State -->
+        <div id="noDataMessage" class="hidden p-32 text-center">
+            <div class="text-6xl mb-6 grayscale opacity-50">📑</div>
+            <h3 class="text-2xl font-black text-slate-900">No records found</h3>
+            <p class="text-slate-500 max-w-sm mx-auto mt-2">Adjust your period or search term to see financial records.</p>
         </div>
 
         <!-- Pagination -->
-        <div id="reportPagination" class="px-8 py-5 border-t border-slate-50 bg-slate-50/30 flex items-center justify-between">
-            <p id="paginationInfo" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Showing page 1 of 1</p>
-            <div class="flex items-center gap-2" id="paginationButtons">
-                <!-- Injected via JS -->
-            </div>
+        <div id="ledgerPagination" class="px-10 py-8 border-t border-slate-50 bg-slate-50/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p id="paginationInfo" class="text-xs font-black text-slate-400 uppercase tracking-[0.1em]">Ledger View 1 of 1</p>
+            <div class="flex items-center gap-2.5" id="paginationButtons"></div>
         </div>
     </div>
 </div>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-    let reportChart = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
-        fetchReportData(1);
-    });
+    document.addEventListener('DOMContentLoaded', () => fetchReportData(1));
     
     let currentPage = 1;
 
     function handleFilterChange() {
         const filter = document.getElementById('reportFilter').value;
-        const customContainer = document.getElementById('customDateRange');
-        
+        const custom = document.getElementById('customDateRange');
         if (filter === 'Custom') {
-            customContainer.classList.remove('hidden');
-            customContainer.classList.add('flex');
+            custom.classList.remove('hidden'); custom.classList.add('flex');
         } else {
-            customContainer.classList.add('hidden');
-            customContainer.classList.remove('flex');
+            custom.classList.add('hidden'); custom.classList.remove('flex');
             fetchReportData(1);
         }
     }
@@ -204,220 +194,129 @@
 
         if (filter === 'Custom') {
             const from = document.getElementById('dateFrom').value;
-            const to = document.getElementById('dateTo').value;
+            const to   = document.getElementById('dateTo').value;
             if (!from || !to) return;
             url += `&customFrom=${from}&customTo=${to}`;
         }
 
         try {
-            const response = await axios.get(url);
-            if (response.data.success) {
-                updateUI(response.data.data);
-            }
-        } catch (error) {
-            console.error("Failed to fetch report:", error);
-            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Data sync failed', showConfirmButton: false, timer: 3000 });
+            const res = await axios.get(url);
+            if (res.data.success) updateLedgerUI(res.data.data);
+        } catch (e) {
+            console.error("Ledger fetch failed", e);
+            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Ledger sync failed', showConfirmButton: false, timer: 3000 });
         }
     }
 
-    function updateUI(data) {
-        // Update Stats
-        document.getElementById('statRevenue').innerText = `₹${data.summary.totalRevenue.toLocaleString()}`;
-        document.getElementById('statOrders').innerText = data.summary.totalOrders.toLocaleString();
-        document.getElementById('statProducts').innerText = data.summary.productsSold.toLocaleString();
-        document.getElementById('statDiscount').innerText = `₹${data.summary.totalDiscount.toLocaleString()}`;
+    function fmt(n) { return `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`; }
+    function fmtFull(n) { return `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 
-        // Update Growth Indicators
-        updateGrowthIndicator('growthRevenue', data.summary.revenueGrowth);
-        updateGrowthIndicator('growthOrders', data.summary.orderGrowth);
-        updateGrowthIndicator('growthProducts', data.summary.productsGrowth);
-        updateGrowthIndicator('growthDiscount', data.summary.discountGrowth);
+    function updateLedgerUI(data) {
+        const { kpis, ledger } = data;
 
-        // Update Chart
-        updateChart(data.chart);
+        // ── 1. Update KPI Cards ──────────────────────────────────────────────
+        document.getElementById('statNetRevenue').innerText   = fmt(kpis.revenue.net);
+        document.getElementById('statGrossRevenue').innerText = fmt(kpis.revenue.gross);
+        document.getElementById('statRefunds').innerText      = fmt(kpis.revenue.totalRefunded);
+        document.getElementById('statDiscounts').innerText    = fmt(kpis.revenue.totalDiscountLoss);
 
-        // Update Coupons
-        const couponList = document.getElementById('couponList');
-        couponList.innerHTML = '';
-        if (data.couponUsage.length === 0) {
-            couponList.innerHTML = `<div class="text-center py-12 text-slate-400 font-bold text-sm">No coupons used in this period.</div>`;
+        renderGrowth('growthNetRevenue',   kpis.growth.netRevenue);
+        renderGrowth('growthGrossRevenue', kpis.growth.grossRevenue);
+        renderGrowth('growthDiscounts',    kpis.growth.netRevenue); // Approximation
+
+        // Liability Label
+        const libEl = document.getElementById('liabilityLabel');
+        if (kpis.liability.pendingRefundAmount > 0) {
+            libEl.innerHTML = `<span>⚠ ${kpis.liability.pendingReturnItems} requests pending</span> · <span class="text-slate-400">${fmt(kpis.liability.pendingRefundAmount)} liability</span>`;
         } else {
-            data.couponUsage.forEach(c => {
-                const typeLabel = c.discountType === 'percentage' ? '%' : 'Flat';
-                couponList.innerHTML += `
-                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] font-black rounded uppercase">${typeLabel}</span>
-                                <p class="text-xs font-black text-slate-800 tracking-widest uppercase">${c._id}</p>
-                            </div>
-                            <p class="text-[10px] text-slate-400 font-bold">Used ${c.usageCount} times</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-black text-slate-900">₹${c.totalDiscount.toLocaleString()}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase">Total Saved</p>
-                        </div>
-                    </div>
-                `;
-            });
+            libEl.innerHTML = `<span>✅ All returns settled</span>`;
         }
 
-        // Update Table
-        const tbody = document.getElementById('orderReportBody');
+        // ── 2. Update Secondary Bar ───────────────────────────────────────────
+        document.getElementById('statOrders').innerText     = kpis.orders.total.toLocaleString();
+        document.getElementById('statProducts').innerText   = kpis.orders.productsSold.toLocaleString();
+        document.getElementById('statAOV').innerText        = fmt(kpis.orders.avgOrderValue);
+        document.getElementById('statReturnRate').innerText = `${kpis.orders.returnRate}%`;
+        document.getElementById('statTax').innerText        = fmt(kpis.revenue.tax);
+
+        // ── 3. Update Table ──────────────────────────────────────────────────
+        const tbody = document.getElementById('ledgerBody');
         const noData = document.getElementById('noDataMessage');
-        const pagination = document.getElementById('reportPagination');
+        const pagination = document.getElementById('ledgerPagination');
         tbody.innerHTML = '';
 
-        if (data.orders.length === 0) {
-            noData.classList.remove('hidden');
-            pagination.classList.add('hidden');
+        if (ledger.rows.length === 0) {
+            noData.classList.remove('hidden'); pagination.classList.add('hidden');
         } else {
-            noData.classList.add('hidden');
-            pagination.classList.remove('hidden');
+            noData.classList.add('hidden'); pagination.classList.remove('hidden');
             
-            // Update Pagination Info
-            document.getElementById('paginationInfo').innerText = `Showing page ${data.currentPage} of ${data.totalPages} (${data.totalOrdersCount} orders)`;
+            document.getElementById('paginationInfo').innerText = `Ledger View ${ledger.page} of ${ledger.pages} (${ledger.total} records)`;
             
-            // Render Pagination Buttons
             const btnContainer = document.getElementById('paginationButtons');
             btnContainer.innerHTML = '';
-            
-            for (let i = 1; i <= data.totalPages; i++) {
-                const isActive = i === data.currentPage;
+            for (let i = 1; i <= ledger.pages; i++) {
+                const active = i === ledger.page;
                 btnContainer.innerHTML += `
                     <button onclick="fetchReportData(${i})" 
-                        class="w-8 h-8 rounded-lg text-xs font-black transition-all active:scale-90 
-                        ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'}">
+                        class="w-10 h-10 rounded-xl text-xs font-black transition-all active:scale-90 
+                        ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'}">
                         ${i}
-                    </button>
-                `;
+                    </button>`;
             }
 
-            data.orders.forEach(order => {
-                const date = new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                const offerDiscount = order.totalOfferDiscount || 0;
-                const couponDiscount = order.discount || 0;
+            ledger.rows.forEach(order => {
+                const date = new Date(order.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                const isRefunded = order.refundedAmount > 0;
                 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="px-8 py-5 text-sm font-black text-slate-900">#${order.orderId || order._id.toString().slice(-6)}</td>
-                        <td class="px-6 py-5 text-sm font-bold text-slate-500">${date}</td>
-                        <td class="px-6 py-5 text-sm font-bold text-slate-700">${order.user ? order.user.fullName : 'Guest User'}</td>
-                        <td class="px-6 py-5 text-sm font-bold text-slate-700 text-right">₹${order.subtotal.toLocaleString()}</td>
-                        <td class="px-6 py-5 text-sm font-bold text-rose-500 text-right">- ₹${offerDiscount.toLocaleString()}</td>
-                        <td class="px-6 py-5 text-sm font-bold text-rose-500 text-right">- ₹${couponDiscount.toLocaleString()}</td>
-                        <td class="px-6 py-5 text-sm font-black text-indigo-600 text-right">₹${order.totalAmount.toLocaleString()}</td>
-                        <td class="px-8 py-5">
+                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-10 py-6">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-black text-slate-900 tracking-tight">#${order.orderId}</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${date} · ${order.paymentMethod}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-6">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-700">${order.customer}</span>
+                                <span class="text-[10px] font-medium text-slate-400">${order.email}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-6 text-sm font-bold text-slate-500 text-right">${fmtFull(order.grossAmount)}</td>
+                        <td class="px-6 py-6 text-sm font-bold ${isRefunded ? 'text-rose-500' : 'text-slate-300'} text-right">
+                            ${isRefunded ? '-' + fmtFull(order.refundedAmount) : '—'}
+                        </td>
+                        <td class="px-6 py-6 text-sm font-black text-indigo-600 text-right">${fmtFull(order.netRetained)}</td>
+                        <td class="px-10 py-6">
                             <span class="px-3 py-1 text-[10px] font-black rounded-full ${getStatusClass(order.orderStatus)}">
                                 ${order.orderStatus.toUpperCase()}
                             </span>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             });
         }
     }
 
-    function updateGrowthIndicator(elementId, growth) {
-        const el = document.getElementById(elementId);
-        const isPositive = growth >= 0;
-        const colorClass = isPositive ? 'text-emerald-500' : 'text-rose-500';
-        const arrow = isPositive ? '↑' : '↓';
-        el.className = `mt-2 flex items-center gap-1 text-[10px] font-bold ${colorClass}`;
-        el.innerHTML = `<span>${arrow} ${Math.abs(growth).toFixed(1)}%</span> <span class="text-slate-400">vs last period</span>`;
+    function renderGrowth(elId, val) {
+        const el = document.getElementById(elId);
+        const pos = val >= 0;
+        el.className = `mt-4 flex items-center gap-1.5 text-[10px] font-black ${pos ? 'text-emerald-500' : 'text-rose-500'}`;
+        el.innerHTML = `<span>${pos ? '▲' : '▼'} ${Math.abs(val).toFixed(1)}%</span> <span class="text-slate-400">vs last period</span>`;
     }
 
-    function getStatusClass(status) {
-        switch (status) {
-            case 'Delivered': return 'bg-emerald-50 text-emerald-600';
-            case 'Cancelled': return 'bg-rose-50 text-rose-600';
-            case 'Processing': return 'bg-amber-50 text-amber-600';
-            case 'Shipped': return 'bg-blue-50 text-blue-600';
-            default: return 'bg-slate-50 text-slate-600';
-        }
-    }
-
-    function updateChart(chartData) {
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-        if (reportChart) reportChart.destroy();
-
-        const gradient = ctx.createLinearGradient(0, 0, 0, 350);
-        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)');
-        gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
-
-        reportChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: chartData.labels,
-                datasets: [
-                    {
-                        label: 'Revenue',
-                        data: chartData.revenue,
-                        borderColor: '#4f46e5',
-                        borderWidth: 4,
-                        tension: 0.4,
-                        fill: true,
-                        backgroundColor: gradient,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#4f46e5',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Orders',
-                        data: chartData.orders,
-                        type: 'bar',
-                        backgroundColor: '#e2e8f0',
-                        borderRadius: 8,
-                        barThickness: 12,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1e293b',
-                        padding: 12,
-                        cornerRadius: 12,
-                        titleFont: { weight: 'bold' }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { weight: 'bold', size: 10 }, color: '#94a3b8' }
-                    },
-                    y: {
-                        position: 'left',
-                        grid: { borderDash: [5, 5], color: '#f1f5f9' },
-                        ticks: { font: { weight: 'bold' }, color: '#64748b' }
-                    },
-                    y1: {
-                        position: 'right',
-                        grid: { display: false },
-                        ticks: { font: { weight: 'bold' }, color: '#94a3b8' }
-                    }
-                }
-            }
-        });
+    function getStatusClass(s) {
+        if (s.includes('Delivered')) return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
+        if (s.includes('Cancelled') || s.includes('Rejected')) return 'bg-rose-50 text-rose-600 border border-rose-100';
+        if (s.includes('Returned') || s.includes('Requested')) return 'bg-amber-50 text-amber-600 border border-amber-100';
+        return 'bg-slate-50 text-slate-500 border border-slate-100';
     }
 
     function exportReport(type) {
         const filter = document.getElementById('reportFilter').value;
         const from = document.getElementById('dateFrom').value;
-        const to = document.getElementById('dateTo').value;
-        
+        const to   = document.getElementById('dateTo').value;
         let url = `/admin/sales-reports/export/${type}?filter=${filter}`;
-        if (filter === 'Custom' && from && to) {
-            url += `&customFrom=${from}&customTo=${to}`;
-        }
-        
+        if (filter === 'Custom' && from && to) url += `&customFrom=${from}&customTo=${to}`;
         window.location.href = url;
     }
 </script>
