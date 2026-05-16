@@ -6,16 +6,29 @@ window.validateAndCollectProductData = function(isEdit = false) {
     document.querySelectorAll('.error-text').forEach(el => el.classList.add('hidden'));
     document.getElementById('colorError').classList.add('hidden');
     document.getElementById('variantError').classList.add('hidden');
+    
+    if (document.getElementById('productName')) {
+        document.getElementById('productName').classList.remove('border-rose-500');
+        document.getElementById('productName').classList.add('border-gray-200');
+    }
+    if (document.getElementById('productCategory')) {
+        document.getElementById('productCategory').classList.remove('border-rose-500');
+        document.getElementById('productCategory').classList.add('border-gray-200');
+    }
 
     let valid = true;
     if (name.length < 2) { 
         document.getElementById('productNameError').textContent = 'Product name must be at least 2 characters.';
         document.getElementById('productNameError').classList.remove('hidden');
+        document.getElementById('productName').classList.add('border-rose-500');
+        document.getElementById('productName').classList.remove('border-gray-200');
         valid = false;
     }
     if (!category) { 
         document.getElementById('productCategoryError').textContent = 'Please select a category.';
         document.getElementById('productCategoryError').classList.remove('hidden');
+        document.getElementById('productCategory').classList.add('border-rose-500');
+        document.getElementById('productCategory').classList.remove('border-gray-200');
         valid = false;
     }
 
@@ -154,11 +167,15 @@ window.handleProductSubmitError = function(err, btn, originalText) {
             const el = document.getElementById('productNameError');
             el.textContent = errors.name;
             el.classList.remove('hidden');
+            const input = document.getElementById('productName');
+            if(input) { input.classList.add('border-rose-500'); input.classList.remove('border-gray-200'); }
         }
         if (errors.category) {
             const el = document.getElementById('productCategoryError');
             el.textContent = errors.category;
             el.classList.remove('hidden');
+            const input = document.getElementById('productCategory');
+            if(input) { input.classList.add('border-rose-500'); input.classList.remove('border-gray-200'); }
         }
 
         const hasColorError = Object.keys(errors).some(key => key.startsWith('colorOptions'));
@@ -182,3 +199,97 @@ window.handleProductSubmitError = function(err, btn, originalText) {
         Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
     }
 };
+
+window.setupLiveProductValidation = function() {
+    // Basic Details
+    const nameInput = document.getElementById('productName');
+    const catSelect = document.getElementById('productCategory');
+    
+    if (nameInput) {
+        nameInput.addEventListener('input', () => {
+            const v = nameInput.value.trim();
+            const errEl = document.getElementById('productNameError');
+            if (v.length < 2) {
+                if (errEl) {
+                    errEl.textContent = 'Product name must be at least 2 characters.';
+                    errEl.classList.remove('hidden');
+                }
+                nameInput.classList.add('border-rose-500');
+                nameInput.classList.remove('border-gray-200');
+            } else {
+                if (errEl) errEl.classList.add('hidden');
+                nameInput.classList.remove('border-rose-500');
+                nameInput.classList.add('border-gray-200');
+            }
+        });
+    }
+
+    if (catSelect) {
+        catSelect.addEventListener('change', () => {
+            const errEl = document.getElementById('productCategoryError');
+            if (!catSelect.value) {
+                if (errEl) {
+                    errEl.textContent = 'Please select a category.';
+                    errEl.classList.remove('hidden');
+                }
+                catSelect.classList.add('border-rose-500');
+                catSelect.classList.remove('border-gray-200');
+            } else {
+                if (errEl) errEl.classList.add('hidden');
+                catSelect.classList.remove('border-rose-500');
+                catSelect.classList.add('border-gray-200');
+            }
+        });
+    }
+
+    // Dynamic field validation via event delegation
+    document.addEventListener('input', (e) => {
+        // Color fields
+        if (e.target.matches('[data-field="color-name"]')) {
+            const v = e.target.value.trim();
+            if (v.length < 2 || !/^[A-Za-z\s]+$/.test(v)) {
+                e.target.classList.add('border-rose-500');
+                e.target.classList.remove('border-gray-200');
+            } else {
+                e.target.classList.remove('border-rose-500');
+                e.target.classList.add('border-gray-200');
+                const err = document.getElementById('colorError');
+                if (err) err.classList.add('hidden');
+            }
+            if (typeof window.updateVariantColorDropdowns === 'function') {
+                window.updateVariantColorDropdowns();
+            }
+        }
+        
+        // Variants fields
+        if (e.target.matches('[data-field="price"]') || e.target.matches('[data-field="stock"]')) {
+            const val = parseFloat(e.target.value);
+            const isPrice = e.target.matches('[data-field="price"]');
+            if (isNaN(val) || (isPrice && val < 1) || (!isPrice && val < 0)) {
+                e.target.classList.add('border-rose-500');
+                e.target.classList.remove('border-gray-200');
+            } else {
+                e.target.classList.remove('border-rose-500');
+                e.target.classList.add('border-gray-200');
+                const err = document.getElementById('variantError');
+                if (err) err.classList.add('hidden');
+            }
+        }
+    });
+
+    document.addEventListener('change', (e) => {
+        if (e.target.matches('[data-field="color-hex"]')) {
+            if (!/^#[0-9A-Fa-f]{6}$/i.test(e.target.value)) {
+                e.target.classList.add('border-rose-500');
+                e.target.classList.remove('border-gray-200');
+            } else {
+                e.target.classList.remove('border-rose-500');
+                e.target.classList.add('border-gray-200');
+            }
+        }
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.setupLiveProductValidation();
+});

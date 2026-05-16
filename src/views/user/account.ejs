@@ -113,6 +113,7 @@
   </div>
   <%- include("partials/footer") %>
   <%- include("partials/drawer") %>
+  <%- include("../admin/partials/image-cropper") %>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -142,7 +143,9 @@
       modal.classList.toggle('hidden');
     }
 
-    function previewImage(event) {
+    let croppedProfileImage = null;
+
+    async function previewImage(event) {
       const file = event.target.files && event.target.files[0];
       const input = event.target;
       ValidationHelper.clearError(input);
@@ -163,16 +166,19 @@
           return;
         }
 
-        const reader = new FileReader();
-        reader.onload = function () {
-          const output = document.getElementById('preview');
-          output.src = reader.result;
+        try {
+          const croppedFile = await window.cropImage(file, { aspectRatio: 1 });
+          croppedProfileImage = croppedFile;
+          
+          const reader = new FileReader();
+          reader.onload = function () {
+            const output = document.getElementById('preview');
+            output.src = reader.result;
+          }
+          reader.readAsDataURL(croppedFile);
+        } catch (err) {
+          event.target.value = ''; // User cancelled crop
         }
-        reader.onerror = function() {
-          ValidationHelper.showError(input, "Image file is corrupted or unreadable.");
-          event.target.value = '';
-        }
-        reader.readAsDataURL(file);
       }
     }
 
@@ -206,6 +212,10 @@
       if (!ValidationHelper.validateForm(this, profileValidators)) return;
       
       const formData = new FormData(this);
+      if (croppedProfileImage) {
+        formData.set('profileImage', croppedProfileImage);
+      }
+      
       const submitBtn = this.querySelector('button[type="submit"]');
       const originalText = submitBtn.innerText;
       
