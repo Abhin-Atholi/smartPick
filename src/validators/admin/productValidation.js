@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import { objectIdValidation } from '../common/sharedValidation.js';
+import { PRODUCT_SIZES } from '../../config/productConstants.js';
 
 // Schema for an individual color option
 const colorOptionSchema = Joi.object({
@@ -30,7 +31,7 @@ const colorOptionSchema = Joi.object({
 
 // Schema for an individual variant
 const variantSchema = Joi.object({
-    size: Joi.string().valid('S', 'M', 'L', 'XL', 'XXL', 'Free Size').required().messages({
+    size: Joi.string().valid(...PRODUCT_SIZES).required().messages({
         'any.only': 'Invalid size selected.',
         'any.required': 'Size is required.'
     }),

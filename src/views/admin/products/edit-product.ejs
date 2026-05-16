@@ -149,12 +149,19 @@
 
 <%- include("../partials/image-cropper") %>
 
-<script>
+<!-- Load Shared JS Modules -->
+<script type="module">
+    import { PRODUCT_SIZES } from '/js/admin/product/productConstants.js';
+    window.PRODUCT_SIZES = PRODUCT_SIZES;
+</script>
+<script src="/js/admin/product/colorManager.js"></script>
+<script src="/js/admin/product/variantManager.js"></script>
+<script src="/js/admin/product/productValidation.js"></script>
 
+<script>
     const existingVariants = <%- JSON.stringify(product.variants) %>;
     const existingColorOptions = <%- JSON.stringify(product.colorOptions || []) %>;
     const productId = '<%= product._id %>';
-    let removedImages = [];
 
     // ── Category → Subcategory AJAX ─────────────────────────────────────────
     document.getElementById('productCategory').addEventListener('change', async function () {
@@ -175,472 +182,45 @@
         }
     });
 
-    // ── Predefined Colors ─────────────────────────────────────────
-    const PREDEFINED_COLORS = [
-      { name: 'Black', code: '#000000' },
-      { name: 'White', code: '#FFFFFF' },
-      { name: 'Red', code: '#EF4444' },
-      { name: 'Blue', code: '#3B82F6' },
-      { name: 'Green', code: '#22C55E' },
-      { name: 'Yellow', code: '#EAB308' },
-      { name: 'Orange', code: '#F97316' },
-      { name: 'Purple', code: '#A855F7' },
-      { name: 'Grey', code: '#6B7280' },
-      { name: 'Navy', code: '#1E3A8A' }
-    ];
-
-    // ── Colors Management ──────────────────────────────────────────────────
-    let colorCount = 0;
-    let colorBlobs = {};
-    let colorExistingImages = {}; // mapping colorId -> array of blobs
-    let activeColorUploadId = null;
-
-    function addColorSection(existingData = null) {
-        const colorId = `color-section-${colorCount}`;
-        colorBlobs[colorId] = [];
-        
-        let colorObj = null;
-        if (existingData) {
-            colorObj = PREDEFINED_COLORS.find(c => c.name === existingData.name) || { name: existingData.name, code: existingData.code };
-            colorExistingImages[colorId] = existingData.images ? [...existingData.images] : [];
-        } else {
-            colorExistingImages[colorId] = [];
-        }
-
-        const div = document.createElement('div');
-        div.id = colorId;
-        div.className = 'border border-gray-200 rounded-xl p-4 bg-gray-50/50';
-
-        const colorOptions = PREDEFINED_COLORS.map(c => `
-          <option value='${JSON.stringify(c)}' ${existingData && existingData.name === c.name ? 'selected' : ''}>
-            ${c.name}
-          </option>
-        `).join('');
-
-        div.innerHTML = `
-            <div class="flex items-start justify-between mb-4">
-                <div class="flex items-center gap-4 flex-1">
-                    <div class="w-1/3">
-                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Color Name</label>
-                        <select class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="color-data" onchange="updateColorData('${colorId}', this)">
-                            <option value="">Select Color...</option>
-                            ${colorOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Preview</label>
-                        <div class="w-9 h-9 rounded-lg border border-gray-200 color-preview shadow-sm flex items-center justify-center text-xs text-gray-300" style="${existingData ? `background-color: ${colorObj.code}; color: transparent;` : 'background-color: #FFFFFF;'}">${existingData ? '' : '?'}</div>
-                    </div>
-                    <div class="ml-4 flex items-center gap-2 mt-5">
-                        <input type="radio" name="defaultColorRadio" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300" ${existingData && existingData.isDefault ? 'checked' : (!existingData && colorCount === 0 ? 'checked' : '')}>
-                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer" onclick="this.previousElementSibling.click()">Set Default</label>
-                    </div>
-                </div>
-                <button type="button" onclick="removeColorSection('${colorId}')" class="text-gray-400 hover:text-rose-500 transition font-black text-xl leading-none">✕</button>
-            </div>
-
-            <!-- Image Upload Zone -->
-            <div class="mt-4 bg-white border border-dashed border-gray-200 rounded-xl p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-xs font-black text-gray-600 uppercase tracking-widest">Color Images <span class="text-rose-500">*</span></h4>
-                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">Min 3</span>
-                </div>
-                
-                <div class="flex gap-4">
-                    <div class="w-32 h-32 border-2 border-dashed border-indigo-100 rounded-xl flex flex-col items-center justify-center hover:bg-indigo-50 hover:border-indigo-300 transition cursor-pointer flex-shrink-0" onclick="triggerColorUpload('${colorId}')">
-                        <span class="text-2xl mb-1">📸</span>
-                        <span class="text-[10px] font-black text-indigo-600 uppercase">Upload</span>
-                    </div>
-                    
-                    <div id="grid-${colorId}" class="flex-1 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 auto-rows-max">
-                        <!-- Previews go here -->
-                    </div>
-                </div>
-                <input type="file" id="file-${colorId}" accept="image/*" multiple class="hidden" onchange="handleColorFiles(event, '${colorId}')">
-            </div>
-        `;
-        document.getElementById('colorsContainer').appendChild(div);
-        colorCount++;
-        
-        if (existingData) {
-            redrawColorImages(colorId);
-        }
-        
-        updateVariantColorDropdowns();
-    }
-
-    function updateColorData(colorId, selectElem) {
-        const preview = document.querySelector(`#${colorId} .color-preview`);
-        try {
-            const color = JSON.parse(selectElem.value);
-            preview.style.backgroundColor = color.code;
-            preview.innerHTML = '';
-        } catch {
-            preview.style.backgroundColor = '#FFFFFF';
-            preview.innerHTML = '?';
-        }
-        updateVariantColorDropdowns();
-    }
-
-    function removeColorSection(colorId) {
-        delete colorBlobs[colorId];
-        delete colorExistingImages[colorId];
-        document.getElementById(colorId)?.remove();
-        updateVariantColorDropdowns();
-    }
-
-    // ── Variant Management ──────────────────────────────────────────────────
-    let variantCount = 0;
-
-    function addVariantRow(data = {}) {
-        variantCount++;
-        const rowId = `variant-row-${variantCount}`;
-
-        const row = document.createElement('tr');
-        row.id = rowId;
-        row.className = 'border-b border-gray-50 hover:bg-gray-50 transition-colors';
-        
-        const sizeOptions = ["S", "M", "L", "XL", "XXL", "Free Size"].map(s => `<option value="${s}" ${data.size === s ? 'selected' : ''}>${s}</option>`).join('');
-        
-        row.innerHTML = `
-            <td class="py-3 pr-3">
-              <select class="w-full min-w-[80px] px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer" data-field="size">
-                ${sizeOptions}
-              </select>
-            </td>
-            <td class="py-3 pr-3">
-              <select class="w-full min-w-[120px] px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer variant-color-select" data-field="color" data-preselected="${data.color || ''}">
-                <option value="">Select Color</option>
-              </select>
-            </td>
-            <td class="py-3 pr-3">
-              <input type="number" value="${data.price || ''}" placeholder="Price ₹" min="1" class="w-full min-w-[80px] px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="price">
-            </td>
-            <td class="py-3 pr-3">
-              <input type="number" value="${data.stock || ''}" placeholder="Stock" min="0" class="w-full min-w-[80px] px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100" data-field="stock">
-            </td>
-            <td class="py-3 text-right">
-                <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-gray-300 hover:text-rose-500 transition font-black text-lg leading-none px-2">✕</button>
-            </td>
-        `;
-        document.getElementById('variantsBody').appendChild(row);
-        updateVariantColorDropdowns();
-    }
-
-    function getAddedColors() {
-        const colors = [];
-        const sections = document.querySelectorAll('#colorsContainer > div');
-        sections.forEach(sec => {
-            const select = sec.querySelector('[data-field="color-data"]');
-            if (select && select.value) {
-                try {
-                    const parsed = JSON.parse(select.value);
-                    if (!colors.find(c => c.name === parsed.name)) {
-                        colors.push(parsed);
-                    }
-                } catch(e) {}
-            }
-        });
-        return colors;
-    }
-
-    function updateVariantColorDropdowns() {
-        const addedColors = getAddedColors();
-        const selects = document.querySelectorAll('.variant-color-select');
-        
-        selects.forEach(select => {
-            const currentValue = select.value || select.getAttribute('data-preselected');
-            
-            select.innerHTML = '<option value="">Select Color</option>' + 
-                addedColors.map(c => `<option value="${c.name}" ${currentValue === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
-            
-            // Once preselected is applied, we can clear it or leave it, 
-            // but setting value explicitly helps some browsers
-            if (currentValue) select.value = currentValue;
-        });
-    }
-
-    // ── Cropper Integration ─────────────────────────────────────────────────────
-    let pendingFiles = [];
-    let pendingIndex = 0;
-
-    function triggerColorUpload(colorId) {
-        activeColorUploadId = colorId;
-        document.getElementById(`file-${colorId}`).click();
-    }
-
-    function handleColorFiles(e, colorId) {
-        const files = Array.from(e.target.files);
-        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-        
-        let validFiles = [];
-        for (const file of files) {
-            if (!validTypes.includes(file.type)) {
-                Swal.fire('Invalid File', `"${file.name}" is not a valid image. Please select JPG, PNG, or WEBP.`, 'error');
-                continue;
-            }
-            if (file.size > 2 * 1024 * 1024) {
-                Swal.fire('File Too Large', `Image "${file.name}" exceeds the 2MB limit.`, 'warning');
-                continue;
-            }
-            validFiles.push(file);
-        }
-
-        pendingFiles = validFiles;
-        pendingIndex = 0;
-        e.target.value = ''; 
-        if (pendingFiles.length > 0) processNextPendingFile();
-    }
-
-    async function processNextPendingFile() {
-        if (pendingIndex >= pendingFiles.length) return;
-        const file = pendingFiles[pendingIndex];
-        pendingIndex++;
-        
-        try {
-            const croppedFile = await cropImage(file); 
-            if (activeColorUploadId && colorBlobs[activeColorUploadId]) {
-                colorBlobs[activeColorUploadId].push(croppedFile);
-                redrawColorImages(activeColorUploadId);
-            }
-        } catch (err) {
-            console.log('Skipped cropping for', file.name);
-        }
-        
-        processNextPendingFile(); 
-    }
-
-    
-    function redrawColorImages(colorId) {
-        const grid = document.getElementById(`grid-${colorId}`);
-        if (!grid) return;
-        
-        grid.innerHTML = '';
-        
-        const existImages = colorExistingImages[colorId] || [];
-        existImages.forEach((url, index) => {
-            const div = document.createElement('div');
-            div.className = 'relative w-32 h-32 rounded-xl overflow-hidden border border-gray-200 shadow-sm group flex-shrink-0';
-            div.innerHTML = `
-                <img src="${url}" class="w-full h-full object-cover">
-                <button type="button" onclick="removeExistingColorImage('${colorId}', ${index}, '${url}')"
-                    class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
-            `;
-            grid.appendChild(div);
-        });
-
-        const blobs = colorBlobs[colorId] || [];
-        blobs.forEach((blob, index) => {
-            const src = URL.createObjectURL(blob);
-            const div = document.createElement('div');
-            div.className = 'relative w-32 h-32 rounded-xl overflow-hidden border-2 border-indigo-200 shadow-sm group flex-shrink-0';
-            div.innerHTML = `
-                <img src="${src}" class="w-full h-full object-cover">
-                <button type="button" onclick="removeColorImage('${colorId}', ${index})"
-                    class="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full text-xs font-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
-            `;
-            grid.appendChild(div);
-        });
-    }
-
-    function removeExistingColorImage(colorId, index, url) {
-        removedImages.push(url);
-        colorExistingImages[colorId].splice(index, 1);
-        redrawColorImages(colorId);
-    }
-
-    function removeColorImage(colorId, index) {
-        if (colorBlobs[colorId]) {
-            colorBlobs[colorId].splice(index, 1);
-            redrawColorImages(colorId);
-        }
-    }
-
     // ── Form Submit ──────────────────────────────────────────────────────────
     async function submitEditForm() {
-        const name = document.getElementById('productName').value.trim();
-        const category = document.getElementById('productCategory').value;
-
-        // Reset errors
-        document.querySelectorAll('.error-text').forEach(el => el.classList.add('hidden'));
-        document.getElementById('colorError').classList.add('hidden');
-        document.getElementById('variantError').classList.add('hidden');
-
-        let valid = true;
-        if (name.length < 2) { 
-            document.getElementById('productNameError').textContent = 'Product name must be at least 2 characters.';
-            document.getElementById('productNameError').classList.remove('hidden');
-            valid = false;
-        }
-        if (!category) { 
-            document.getElementById('productCategoryError').textContent = 'Please select a category.';
-            document.getElementById('productCategoryError').classList.remove('hidden');
-            valid = false;
-        }
-
-        // Collect Colors
-        const colorOptions = [];
-        const colorSections = document.querySelectorAll('#colorsContainer > div');
-        let colorValid = true;
-        
-        colorSections.forEach(sec => {
-            const colorId = sec.id;
-            const select = sec.querySelector('[data-field="color-data"]');
-            const isDefault = sec.querySelector('input[name="defaultColorRadio"]').checked;
-            
-            if (select && select.value) {
-                try {
-                    const parsed = JSON.parse(select.value);
-                    const blobs = colorBlobs[colorId] || [];
-                    const exist = colorExistingImages[colorId] || [];
-                    if ((blobs.length + exist.length) < 3) colorValid = false;
-                    parsed.existingImages = exist;
-                    colorOptions.push({
-                        name: parsed.name,
-                        code: parsed.code,
-                        isDefault: isDefault,
-                        existingImages: parsed.existingImages,
-                        _blobId: colorId
-                    });
-                } catch(e) {}
-            }
-        });
-
-        if (colorOptions.length === 0 || !colorValid) {
-            document.getElementById('colorError').classList.remove('hidden');
-            valid = false;
-        }
-
-        // Check for duplicate color selections
-        const colorNames = colorOptions.map(c => c.name);
-        if (new Set(colorNames).size !== colorNames.length) {
-            Swal.fire('Duplicate Colors', 'You have added the same color multiple times.', 'warning');
-            valid = false;
-        }
-
-        // Collect Variants
-        const variants = [];
-        const variantRows = document.querySelectorAll('#variantsBody tr');
-        const variantKeys = new Set();
-        let variantsValid = true;
-        let variantDuplicate = false;
-
-        variantRows.forEach(row => {
-            const size = row.querySelector('[data-field="size"]').value;
-            const color = row.querySelector('[data-field="color"]').value;
-            const price = parseFloat(row.querySelector('[data-field="price"]').value);
-            const stock = parseInt(row.querySelector('[data-field="stock"]').value);
-
-            if (!size || !color || isNaN(price) || price < 1 || isNaN(stock) || stock < 0) {
-                variantsValid = false;
-                return;
-            }
-
-            const key = `${size}-${color.toLowerCase()}`;
-            if (variantKeys.has(key)) variantDuplicate = true;
-            variantKeys.add(key);
-
-            variants.push({ size, color, price, stock });
-        });
-
-        if (variantRows.length === 0 || !variantsValid) {
-            document.getElementById('variantError').classList.remove('hidden');
-            valid = false;
-        }
-
-        if (variantDuplicate) {
-            Swal.fire('Duplicate Variants', 'You cannot add the same size and color combination twice.', 'warning');
-            valid = false;
-        }
-
-        if (!valid) return;
+        const formData = window.validateAndCollectProductData(true);
+        if (!formData) return;
 
         const btn = document.getElementById('submitProductBtn');
+        const originalText = btn.innerHTML;
         btn.innerHTML = '⏳ Updating Product...'; 
         btn.disabled = true;
 
         try {
-            const formData = new FormData();
-            formData.append('name', name);
-            formData.append('brand', document.getElementById('productBrand').value.trim());
-            formData.append('category', category);
-            formData.append('subcategory', document.getElementById('productSubcategory').value);
-            formData.append('description', document.getElementById('productDesc').value.trim());
-            formData.append('isActive', document.getElementById('productActive').checked ? 'true' : 'false');
-            formData.append('isFeatured', document.getElementById('productFeatured').checked ? 'true' : 'false');
-            
-            // Clean _blobId from colorOptions before sending
-            const cleanColorOptions = colorOptions.map(c => ({ name: c.name, code: c.code, isDefault: c.isDefault, existingImages: c.existingImages }));
-            formData.append('removedImages', JSON.stringify(removedImages));
-            formData.append('colorOptions', JSON.stringify(cleanColorOptions));
-            formData.append('variants', JSON.stringify(variants));
-            
-            // Append images mapping to colorOptions array index
-            colorOptions.forEach((col, index) => {
-                const blobs = colorBlobs[col._blobId] || [];
-                blobs.forEach(blob => formData.append(`color_images_${index}`, blob));
-            });
-
             const res = await axios.put(`/admin/products/edit/${productId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.data.success) {
                 Swal.fire({ title: 'Updated!', text: 'Product successfully updated!', icon: 'success', timer: 2000, showConfirmButton: false })
                     .then(() => window.location.href = '/admin/products');
             }
         } catch (err) {
-            btn.innerHTML = 'Update Product'; 
-            btn.disabled = false;
-
-            if (err.response && err.response.data && err.response.data.errors) {
-                const errors = err.response.data.errors;
-                
-                // Show specific field errors
-                if (errors.name) {
-                    const el = document.getElementById('productNameError');
-                    el.textContent = errors.name;
-                    el.classList.remove('hidden');
-                }
-                if (errors.category) {
-                    const el = document.getElementById('productCategoryError');
-                    el.textContent = errors.category;
-                    el.classList.remove('hidden');
-                }
-
-                // Show grouped errors (Colors/Variants)
-                // Joi might return 'colorOptions' or 'colorOptions.0.images'
-                const hasColorError = Object.keys(errors).some(key => key.startsWith('colorOptions'));
-                if (hasColorError) {
-                    const el = document.getElementById('colorError');
-                    // Find the most descriptive error message for colors
-                    const msg = Object.keys(errors).find(k => k.startsWith('colorOptions')) || 'Color validation failed.';
-                    el.textContent = errors[msg];
-                    el.classList.remove('hidden');
-                }
-
-                const hasVariantError = Object.keys(errors).some(key => key.startsWith('variants'));
-                if (hasVariantError) {
-                    const el = document.getElementById('variantError');
-                    const msg = Object.keys(errors).find(k => k.startsWith('variants')) || 'Variant validation failed.';
-                    el.textContent = errors[msg];
-                    el.classList.remove('hidden');
-                }
-
-                Swal.fire('Validation Failed', 'Please check the form for errors.', 'warning');
-            } else {
-                Swal.fire('Error!', err.response?.data?.message || 'Something went wrong.', 'error');
-            }
+            window.handleProductSubmitError(err, btn, originalText);
         }
     }
 
-    // Initialize UI
-    
-    // Preload Colors
-    existingColorOptions.forEach(c => {
-        addColorSection(c);
-    });
+    // Initialize UI after module loads
+    window.addEventListener('load', () => {
+        // Preload Colors
+        if (existingColorOptions && existingColorOptions.length > 0) {
+            existingColorOptions.forEach(c => {
+                window.addColorSection(c);
+            });
+        } else {
+            window.addColorSection();
+        }
 
-    // Preload Variants
-    existingVariants.forEach(v => {
-        addVariantRow(v);
+        // Preload Variants
+        if (existingVariants && existingVariants.length > 0) {
+            existingVariants.forEach(v => {
+                window.addVariantRow(v);
+            });
+        } else {
+            window.addVariantRow();
+        }
     });
-
 </script>

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { PRODUCT_SIZES } from "../config/productConstants.js";
 
 const colorOptionSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -17,7 +18,7 @@ const variantSchema = new mongoose.Schema({
   size: {
     type: String,
     required: true,
-    enum: ["S", "M", "L", "XL", "XXL", "Free Size"], // Expanded standard sizes
+    enum: PRODUCT_SIZES,
     trim: true,
   },
   color: {
