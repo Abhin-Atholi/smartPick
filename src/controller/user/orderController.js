@@ -196,11 +196,17 @@ export const cancelOrder = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Order ID is required" });
         }
 
+        // Reason is optional but if provided must be valid
+        const trimmedReason = (reason || '').trim();
+        if (trimmedReason && (trimmedReason.length < 5 || trimmedReason.length > 300)) {
+            return res.status(400).json({ success: false, message: "Cancellation reason must be between 5 and 300 characters" });
+        }
+
         let result;
         if (itemId) {
-            result = await orderService.cancelOrderItem(userId, orderId, itemId, reason);
+            result = await orderService.cancelOrderItem(userId, orderId, itemId, trimmedReason || 'No reason provided');
         } else {
-            result = await orderService.cancelOrder(userId, orderId, reason);
+            result = await orderService.cancelOrder(userId, orderId, trimmedReason || 'No reason provided');
         }
 
         if (result.success) {
@@ -222,15 +228,21 @@ export const returnOrder = async (req, res, next) => {
         if (!orderId) {
             return res.status(400).json({ success: false, message: "Order ID is required" });
         }
-        if (!reason) {
+
+        // Return reason is mandatory
+        const trimmedReason = (reason || '').trim();
+        if (!trimmedReason) {
             return res.status(400).json({ success: false, message: "Return reason is required" });
+        }
+        if (trimmedReason.length < 5 || trimmedReason.length > 300) {
+            return res.status(400).json({ success: false, message: "Return reason must be between 5 and 300 characters" });
         }
 
         let result;
         if (itemId) {
-            result = await orderService.returnOrderItem(userId, orderId, itemId, reason);
+            result = await orderService.returnOrderItem(userId, orderId, itemId, trimmedReason);
         } else {
-            result = await orderService.returnOrder(userId, orderId, reason);
+            result = await orderService.returnOrder(userId, orderId, trimmedReason);
         }
 
         if (result.success) {

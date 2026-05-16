@@ -15,6 +15,7 @@ import { updateLedger } from '../common/financialLedgerService.js';
 import { withTransaction, sessionOpts } from '../../utils/transactionHelper.js';
 export const getOrderById = async (userId, orderId) => {
     const order = await Order.findOne({ _id: orderId, user: userId })
+        .populate('user', 'fullName email phone')
         .populate({ path: 'items.product', populate: { path: 'category' } });
 
     if (!order) return null;

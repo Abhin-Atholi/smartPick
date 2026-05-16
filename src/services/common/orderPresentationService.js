@@ -16,6 +16,10 @@ export const getOrderStatusBadge = (status) => {
             classes = 'bg-red-100 text-red-700';
             iconClass = 'bg-red-500';
             break;
+        case 'Partially Cancelled':
+            classes = 'bg-rose-100 text-rose-700';
+            iconClass = 'bg-rose-500';
+            break;
         case 'Shipped':
             classes = 'bg-blue-100 text-blue-700';
             iconClass = 'bg-blue-500';
@@ -24,6 +28,10 @@ export const getOrderStatusBadge = (status) => {
         case 'Returned':
             classes = 'bg-orange-100 text-orange-700';
             iconClass = 'bg-orange-500';
+            break;
+        case 'Partially Returned':
+            classes = 'bg-amber-100 text-amber-700';
+            iconClass = 'bg-amber-500';
             break;
         default:
             classes = 'bg-yellow-100 text-yellow-800';
@@ -126,13 +134,15 @@ export const formatOrderForDisplay = (order) => {
             },
 
             // Status and Badges
-            status: item.itemStatus,
-            badge: getItemStatusBadge(item.itemStatus),
+            status: item.returnRejected ? 'Return Rejected' : item.itemStatus,
+            badge: getItemStatusBadge(item.returnRejected ? 'Return Rejected' : item.itemStatus),
             refundProcessed: !!item.refundProcessed,
             
             // Permissions and Flags
             canCancel: ['Processing', 'Payment Pending', 'Payment Failed'].includes(item.itemStatus),
-            canReturn: item.itemStatus === 'Delivered',
+            canReturn: item.itemStatus === 'Delivered' && !item.returnRejected,
+            returnRejected: !!item.returnRejected,
+            returnInspection: item.returnInspection || null,
             hasOffer: offerDiscount > 0,
             hasCoupon: couponAllocated > 0,
             hasTax: taxAmount > 0,
@@ -202,6 +212,11 @@ export const formatOrderForDisplay = (order) => {
         returned: order.totalReturnedItems || 0
     };
 
+    // Invoice visibility — only when a real financial transaction succeeded
+    const INVOICE_ALLOWED = ['Delivered', 'Partially Cancelled', 'Cancelled', 'Partially Returned', 'Returned', 'Return Requested'];
+    const canViewInvoice = INVOICE_ALLOWED.includes(order.orderStatus)
+        && ['Paid', 'Refunded'].includes(order.paymentStatus);
+
     // 3. Final Output
     return {
         _id: order._id,
@@ -219,6 +234,8 @@ export const formatOrderForDisplay = (order) => {
         
         shippingAddress: order.shippingAddress,
         
+        canViewInvoice,
+
         items: formattedItems,
         summary,
         financials,

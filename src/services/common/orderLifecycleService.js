@@ -119,43 +119,72 @@ const orchestrateRefund = async (order, itemsToRefundIds, refundType, reason, se
 };
 
 /**
- * Derive root order status from item statuses.
+ * Derive root order status from item composition.
+ * Called after every item-level state change to keep order status accurate.
+ *
+ * Priority (top-down, first match wins):
+ *  1. Guard: never overwrite payment-layer statuses
+ *  2. All Cancelled            → Cancelled
+ *  3. All Returned/Cancelled   → Returned
+ *  4. Some Cancelled, rest active → Partially Cancelled
+ *  5. Some Returned/Requested, rest active → Partially Returned
+ *  6. All active items Delivered → Delivered
+ *  7. All active items Return Requested → Return Requested
+ *  8. Otherwise: leave current status (mid-fulfilment: Processing/Shipped/etc.)
  */
 const deriveOrderStatus = (order) => {
+    // Never touch payment-layer or expired statuses
     if (['Payment Pending', 'Payment Failed', 'Expired'].includes(order.orderStatus)) return;
 
-    const allCancelled = order.items.every(i => i.itemStatus === 'Cancelled');
-    if (allCancelled) {
+    const items = order.items;
+
+    // ── 1. ALL CANCELLED ─────────────────────────────────────────────────────
+    if (items.every(i => i.itemStatus === 'Cancelled')) {
         order.orderStatus = 'Cancelled';
         if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
         return;
     }
 
-    const allResolved = order.items.every(i => ['Returned', 'Cancelled'].includes(i.itemStatus));
-    if (allResolved) {
+    // ── 2. ALL RETURNED (or Returned + Cancelled mix) ─────────────────────────
+    if (items.every(i => ['Returned', 'Cancelled'].includes(i.itemStatus))) {
         order.orderStatus = 'Returned';
         if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
         return;
     }
 
-    const hasReturns = order.items.some(i => ['Returned', 'Return Requested'].includes(i.itemStatus));
-    const hasActive = order.items.some(i => !['Returned', 'Cancelled'].includes(i.itemStatus));
+    // Classify items into groups
+    const hasCancelled = items.some(i => i.itemStatus === 'Cancelled');
+    const hasReturned  = items.some(i => ['Returned', 'Return Requested'].includes(i.itemStatus));
+    // "Active" = not fully resolved
+    const activeItems  = items.filter(i => !['Cancelled', 'Returned'].includes(i.itemStatus));
 
-    if (hasReturns && hasActive) {
+    // ── 3. PARTIALLY CANCELLED (some cancelled, rest still live) ─────────────
+    // Only set if NO return activity — cancellations take lower display priority
+    if (hasCancelled && !hasReturned && activeItems.length > 0) {
+        order.orderStatus = 'Partially Cancelled';
+        return;
+    }
+
+    // ── 4. PARTIALLY RETURNED (some returned/requested, rest still live) ──────
+    if (hasReturned && activeItems.length > 0) {
         order.orderStatus = 'Partially Returned';
         return;
     }
 
-    const activeItems = order.items.filter(i => !['Returned', 'Cancelled'].includes(i.itemStatus));
+    // ── 5. ALL ACTIVE ITEMS ARE DELIVERED ─────────────────────────────────────
     if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Delivered')) {
         order.orderStatus = 'Delivered';
         return;
     }
 
+    // ── 6. ALL ACTIVE ITEMS ARE PENDING RETURN ────────────────────────────────
     if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Return Requested')) {
         order.orderStatus = 'Return Requested';
         return;
     }
+
+    // ── 7. MID-FULFILMENT — leave as-is (Processing / Shipped / Out for Delivery)
+    // The admin's bulk status update already sets these correctly.
 };
 
 // ── Exported Lifecycle Functions ─────────────────────────────────────────────
@@ -238,6 +267,7 @@ export const requestItemReturn = async (order, itemId, userId, reason, session =
     const item = order.items.id(itemId);
     if (!item) throw new Error('Item not found');
     if (item.itemStatus !== 'Delivered') throw new Error('Only delivered items can be returned');
+    if (item.returnRejected) throw new Error('Return previously rejected. Cannot request again.');
 
     const prevStatus  = item.itemStatus;
     item.itemStatus   = 'Return Requested';
@@ -260,7 +290,7 @@ export const requestItemReturn = async (order, itemId, userId, reason, session =
  * @param {mongoose.ClientSession|null} session
  */
 export const handleReturnDecision = async (order, itemId, adminId, decisionPayload, session = null) => {
-    const { decision, notes, restockable, inspectionStatus } = decisionPayload;
+    const { decision, notes, restockable } = decisionPayload;
 
     const item = order.items.id(itemId);
     if (!item) throw new Error('Item not found');
@@ -269,8 +299,8 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
     const prevStatus = item.itemStatus;
 
     item.returnInspection = {
-        status:      inspectionStatus || (decision === 'approve' ? 'Approved' : 'Rejected'),
-        notes:       notes || '',
+        status: decision === 'approve' ? 'Approved' : 'Rejected',
+        notes: notes || '',
         restockable: !!restockable,
         inspectedAt: new Date(),
         inspectedBy: adminId
@@ -293,6 +323,8 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
 
     } else if (decision === 'reject') {
         item.itemStatus = 'Delivered'; // Revert to delivered
+        item.returnRejected = true;
+        item.returnRejectedAt = new Date();
         auditLog(order, 'ADMIN_REJECTED_RETURN', adminId, 'Admin', prevStatus, 'Delivered',
             notes || 'Return rejected');
     } else {

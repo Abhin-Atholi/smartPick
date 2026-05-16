@@ -40,8 +40,10 @@ const orderItemSchema = new mongoose.Schema({
     // Phase 7: Return Inspection & Inventory Reconciliation
     inventoryReconciled: { type: Boolean, default: false },
     inventoryReconciledAt: { type: Date },
+    returnRejected: { type: Boolean, default: false },
+    returnRejectedAt: { type: Date },
     returnInspection: {
-        status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Damaged', 'Restockable', 'Non-Restockable'] },
+        status: { type: String, enum: ['Approved', 'Rejected'] },
         notes: { type: String },
         restockable: { type: Boolean },
         inspectedAt: { type: Date },
@@ -73,7 +75,7 @@ const orderSchema = new mongoose.Schema({
     totalAmount: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['COD', 'Razorpay', 'Wallet'], required: true },
     paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Refunded', 'Expired'], default: 'Pending' },
-    orderStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', "Out for Delivery",'Returned', 'Partially Returned', 'Return Rejected'], default: 'Processing' },
+    orderStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Partially Cancelled', 'Cancelled', 'Return Requested', 'Partially Returned', 'Returned', 'Return Rejected'], default: 'Processing' },
     couponApplied: {
         code: { type: String },
         discountAmount: { type: Number },

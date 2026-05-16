@@ -180,34 +180,18 @@
     const isApprove = decision === 'approve';
     
     const { value: formValues, isConfirmed } = await Swal.fire({
-      title: isApprove ? 'Approve & Inspect Return' : 'Reject Return',
+      title: isApprove ? 'Approve Return' : 'Reject Return',
       html: `
         <div class="text-left space-y-4 mt-4">
           ${isApprove ? `
-          <div>
-            <label class="block text-sm font-bold text-gray-700 mb-1">Inspection Status</label>
-            <select id="swal-status" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none">
-              <option value="Approved">Approved</option>
-              <option value="Restockable">Restockable</option>
-              <option value="Damaged">Damaged</option>
-            </select>
-          </div>
-          <div class="flex items-center gap-2 mt-3">
+          <div class="flex items-center gap-2 mb-3">
             <input type="checkbox" id="swal-restockable" class="w-4 h-4 text-indigo-600 rounded" checked>
             <label class="text-sm font-bold text-gray-700">Item is restockable (Restore Inventory)</label>
           </div>
-          ` : `
+          ` : ''}
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-1">Rejection Reason</label>
-            <select id="swal-status" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none">
-              <option value="Rejected">Rejected</option>
-              <option value="Non-Restockable">Non-Restockable</option>
-            </select>
-          </div>
-          `}
-          <div class="mt-3">
-            <label class="block text-sm font-bold text-gray-700 mb-1">Inspection Notes</label>
-            <textarea id="swal-notes" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none" rows="2" placeholder="Optional notes..."></textarea>
+            <label class="block text-sm font-bold text-gray-700 mb-1">${isApprove ? 'Optional Notes' : 'Rejection Reason (Optional)'}</label>
+            <textarea id="swal-notes" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none" rows="2" placeholder="${isApprove ? 'Any inspection notes...' : 'Why is this return rejected?'}"></textarea>
           </div>
         </div>
       `,
@@ -219,7 +203,6 @@
       customClass: { popup: 'rounded-3xl' },
       preConfirm: () => {
         return {
-          inspectionStatus: document.getElementById('swal-status').value,
           restockable: isApprove ? document.getElementById('swal-restockable').checked : false,
           notes: document.getElementById('swal-notes').value
         }
