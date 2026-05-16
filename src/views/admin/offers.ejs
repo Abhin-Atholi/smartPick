@@ -277,209 +277,228 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // â”€â”€ Searchable Combobox Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Searchable Combobox ───────────────────────────────────────────────────
     let closeTimers = {};
-
-    function openDropdown(type) {
-        document.getElementById(`${type}Dropdown`).classList.remove('hidden');
-    }
-    function scheduleClose(type) {
-        closeTimers[type] = setTimeout(() => {
-            document.getElementById(`${type}Dropdown`).classList.add('hidden');
-        }, 200);
-    }
-    function cancelClose(type) {
-        clearTimeout(closeTimers[type]);
-    }
+    function openDropdown(type)   { document.getElementById(`${type}Dropdown`).classList.remove('hidden'); }
+    function scheduleClose(type)  { closeTimers[type] = setTimeout(() => document.getElementById(`${type}Dropdown`).classList.add('hidden'), 200); }
+    function cancelClose(type)    { clearTimeout(closeTimers[type]); }
 
     function filterOptions(type) {
-        const query = document.getElementById(`${type}Search`).value.toLowerCase();
-        const dropdown = document.getElementById(`${type}Dropdown`);
-        dropdown.classList.remove('hidden');
-        dropdown.querySelectorAll(`.${type}-option`).forEach(opt => {
-            const name = opt.dataset.name.toLowerCase();
-            opt.classList.toggle('hidden', !name.includes(query));
-        });
+        const q = document.getElementById(`${type}Search`).value.toLowerCase();
+        const dd = document.getElementById(`${type}Dropdown`);
+        dd.classList.remove('hidden');
+        dd.querySelectorAll(`.${type}-option`).forEach(o => o.classList.toggle('hidden', !o.dataset.name.toLowerCase().includes(q)));
     }
 
     function selectOption(type, id, name) {
         document.getElementById(`${type}Search`).value = name;
         document.getElementById(`${type}Selector`).value = id;
         document.getElementById(`${type}Dropdown`).classList.add('hidden');
-        // Clear error if any
-        const err = document.getElementById('applicableToError');
-        if (err) { err.classList.add('hidden'); }
+        OfferV._clear('applicableTo', 'applicableToError');
     }
 
-    // â”€â”€ Modal Controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Validation helper ─────────────────────────────────────────────────────
+    const OfferV = {
+        _show(fieldId, errorId, msg) {
+            const f = document.getElementById(fieldId);
+            const e = document.getElementById(errorId);
+            if (f) { f.classList.add('border-red-500'); f.classList.remove('border-gray-200'); }
+            if (e) { e.textContent = msg; e.classList.remove('hidden'); }
+        },
+        _clear(fieldId, errorId) {
+            const f = document.getElementById(fieldId);
+            const e = document.getElementById(errorId);
+            if (f) { f.classList.remove('border-red-500'); f.classList.add('border-gray-200'); }
+            if (e) { e.textContent = ''; e.classList.add('hidden'); }
+        },
+        clearAll() {
+            document.querySelectorAll('#offerForm .error-msg').forEach(e => { e.textContent = ''; e.classList.add('hidden'); });
+            document.querySelectorAll('#offerForm input, #offerForm select').forEach(el => {
+                el.classList.remove('border-red-500'); el.classList.add('border-gray-200');
+            });
+        },
+        // Map backend Joi errors object → field-level UI
+        applyBackendErrors(errors) {
+            const fieldMap = {
+                name:          ['offerName',     'offerNameError'],
+                discountValue: ['discountValue', 'discountValueError'],
+                applicableTo:  ['productSearch', 'applicableToError'],
+                expiryDate:    ['expiryDate',    'expiryDateError'],
+                startDate:     ['startDate',     'startDateError'],
+            };
+            Object.entries(errors).forEach(([key, msg]) => {
+                const ids = fieldMap[key];
+                if (ids) this._show(ids[0], ids[1], msg);
+            });
+        },
+
+        name() {
+            const v = document.getElementById('offerName').value.trim();
+            if (!v)          return this._show('offerName','offerNameError','Offer name is required.'), false;
+            if (v.length<2)  return this._show('offerName','offerNameError','Must be at least 2 characters.'), false;
+            if (/^\d+$/.test(v)) return this._show('offerName','offerNameError','Offer name cannot be only numbers.'), false;
+            if (v.length>100) return this._show('offerName','offerNameError','Cannot exceed 100 characters.'), false;
+            this._clear('offerName','offerNameError'); return true;
+        },
+        applicableTo() {
+            const type = document.getElementById('offerType').value;
+            const val  = document.getElementById(`${type}Selector`).value;
+            if (!val) return this._show(type==='product'?'productSearch':'categorySearch','applicableToError',`Please select a ${type}.`), false;
+            this._clear(type==='product'?'productSearch':'categorySearch','applicableToError'); return true;
+        },
+        discountValue() {
+            const dType = document.getElementById('discountType').value;
+            const v = parseFloat(document.getElementById('discountValue').value);
+            if (!document.getElementById('discountValue').value || isNaN(v))
+                return this._show('discountValue','discountValueError','Discount value is required.'), false;
+            if (v < 1) return this._show('discountValue','discountValueError','Must be at least 1.'), false;
+            if (dType === 'percentage' && v > 90) return this._show('discountValue','discountValueError','Percentage cannot exceed 90%.'), false;
+            this._clear('discountValue','discountValueError'); return true;
+        },
+        dates() {
+            const start  = document.getElementById('startDate').value;
+            const expiry = document.getElementById('expiryDate').value;
+            let ok = true;
+            if (!expiry) { this._show('expiryDate','expiryDateError','Expiry date is required.'); ok = false; }
+            else if (new Date(expiry) <= new Date()) { this._show('expiryDate','expiryDateError','Expiry must be a future date.'); ok = false; }
+            else this._clear('expiryDate','expiryDateError');
+            if (start && expiry && new Date(start) >= new Date(expiry)) {
+                this._show('startDate','startDateError','Start date must be before expiry date.'); ok = false;
+            } else { this._clear('startDate','startDateError'); }
+            return ok;
+        },
+        all() {
+            return [this.name(), this.applicableTo(), this.discountValue(), this.dates()].every(Boolean);
+        }
+    };
+
+    // ── Live validation ───────────────────────────────────────────────────────
+    document.getElementById('offerName').addEventListener('input',    () => OfferV.name());
+    document.getElementById('discountValue').addEventListener('input', () => OfferV.discountValue());
+    document.getElementById('expiryDate').addEventListener('change',  () => OfferV.dates());
+    document.getElementById('startDate').addEventListener('change',   () => OfferV.dates());
+    document.getElementById('discountType').addEventListener('change', () => OfferV.discountValue());
+
+    // ── Modal controls ────────────────────────────────────────────────────────
+    const pad = n => n < 10 ? '0'+n : n;
+    const toLocalDT = d => { const dt=new Date(d); return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`; };
+
     function openAddModal() {
         document.getElementById('modalTitle').textContent = 'Add New Offer';
         document.getElementById('offerId').value = '';
         document.getElementById('offerForm').reset();
-        document.getElementById('productSearch').value = '';
+        document.getElementById('productSearch').value   = '';
         document.getElementById('productSelector').value = '';
-        document.getElementById('categorySearch').value = '';
+        document.getElementById('categorySearch').value   = '';
         document.getElementById('categorySelector').value = '';
         document.getElementById('offerIsActive').checked = true;
-        // Default startDate to now
-        const now = new Date();
-        const pad = n => n < 10 ? '0' + n : n;
-        document.getElementById('startDate').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        document.getElementById('startDate').value = toLocalDT(new Date());
         document.getElementById('productSelectorWrap').classList.remove('hidden');
         document.getElementById('categorySelectorWrap').classList.add('hidden');
-        clearErrors();
+        OfferV.clearAll();
         document.getElementById('offerModal').classList.remove('hidden');
     }
 
     function openEditModal(offer) {
         document.getElementById('modalTitle').textContent = 'Edit Offer';
-        document.getElementById('offerId').value = offer._id;
+        document.getElementById('offerId').value   = offer._id;
         document.getElementById('offerName').value = offer.name;
         document.getElementById('offerDesc').value = offer.description || '';
-        document.getElementById('offerType').value = offer.offerType;
-        document.getElementById('discountType').value = offer.discountType;
-        document.getElementById('discountValue').value = offer.discountValue;
+        document.getElementById('offerType').value      = offer.offerType;
+        document.getElementById('discountType').value   = offer.discountType;
+        document.getElementById('discountValue').value  = offer.discountValue;
         document.getElementById('offerIsActive').checked = offer.isActive !== false;
-
-        const pad = n => n < 10 ? '0' + n : n;
-        const toLocal = (d) => {
-            const dt = new Date(d);
-            return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-        };
-        document.getElementById('expiryDate').value = toLocal(offer.expiryDate);
-        if (offer.startDate) document.getElementById('startDate').value = toLocal(offer.startDate);
-
+        document.getElementById('expiryDate').value = toLocalDT(offer.expiryDate);
+        if (offer.startDate) document.getElementById('startDate').value = toLocalDT(offer.startDate);
         handleTypeChange();
-        // Restore combobox selected display
         if (offer.offerType === 'product') {
             document.getElementById('productSelector').value = offer.applicableTo;
-            document.getElementById('productSearch').value = offer.targetName || '';
+            document.getElementById('productSearch').value   = offer.targetName || '';
         } else {
             document.getElementById('categorySelector').value = offer.applicableTo;
-            document.getElementById('categorySearch').value = offer.targetName || '';
+            document.getElementById('categorySearch').value   = offer.targetName || '';
         }
-
-        clearErrors();
+        OfferV.clearAll();
         document.getElementById('offerModal').classList.remove('hidden');
     }
 
-    function closeModal() {
-        document.getElementById('offerModal').classList.add('hidden');
-    }
+    function closeModal() { document.getElementById('offerModal').classList.add('hidden'); }
 
     function handleTypeChange() {
         const type = document.getElementById('offerType').value;
-        document.getElementById('productSelectorWrap').classList.toggle('hidden', type !== 'product');
+        document.getElementById('productSelectorWrap').classList.toggle('hidden',  type !== 'product');
         document.getElementById('categorySelectorWrap').classList.toggle('hidden', type !== 'category');
     }
 
-    // â”€â”€ Validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    function showError(id, msg) {
-        const el = document.getElementById(id);
-        if (el) { el.textContent = msg; el.classList.remove('hidden'); }
-        const inputId = id.replace('Error', '');
-        const input = document.getElementById(inputId);
-        if (input) { input.classList.add('border-red-500'); input.classList.remove('border-gray-200'); }
-    }
+    // ── Submit ────────────────────────────────────────────────────────────────
+    async function submitOffer() {
+        OfferV.clearAll();
+        if (!OfferV.all()) return;
 
-    function clearErrors() {
-        document.querySelectorAll('.error-msg').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('#offerForm input, #offerForm select').forEach(el => {
-            el.classList.remove('border-red-500');
-            el.classList.add('border-gray-200');
-        });
-    }
-
-    function validateForm() {
-        clearErrors();
-        let valid = true;
-        const name = document.getElementById('offerName').value.trim();
-        if (!name) { showError('offerNameError', 'Offer name is required.'); valid = false; }
+        const id  = document.getElementById('offerId').value;
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true; btn.textContent = 'Saving…';
 
         const type = document.getElementById('offerType').value;
-        const applicableTo = type === 'product'
-            ? document.getElementById('productSelector').value
-            : document.getElementById('categorySelector').value;
-        if (!applicableTo) { showError('applicableToError', `Please select a ${type}.`); valid = false; }
-
-        const discountType = document.getElementById('discountType').value;
-        const dVal = Number(document.getElementById('discountValue').value);
-        if (!dVal || dVal < 1) { showError('discountValueError', 'Enter a valid discount value (â‰¥ 1).'); valid = false; }
-        if (discountType === 'percentage' && dVal > 90) { showError('discountValueError', 'Percentage cannot exceed 90%.'); valid = false; }
-
-        const startDate = document.getElementById('startDate').value;
-        const expiry = document.getElementById('expiryDate').value;
-        if (!expiry) { showError('expiryDateError', 'Expiry date is required.'); valid = false; }
-        else if (new Date(expiry) <= new Date()) { showError('expiryDateError', 'Expiry must be a future date.'); valid = false; }
-        if (startDate && expiry && new Date(startDate) >= new Date(expiry)) {
-            showError('startDateError', 'Start date must be before expiry date.'); valid = false;
-        }
-
-        return valid ? { name, applicableTo, type, discountType, dVal, expiry, startDate } : null;
-    }
-
-    // â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    async function submitOffer() {
-        const validated = validateForm();
-        if (!validated) return;
-
-        const id = document.getElementById('offerId').value;
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true; btn.textContent = 'Saving...';
-
         const payload = {
-            name: validated.name,
-            description: document.getElementById('offerDesc').value.trim(),
-            offerType: validated.type,
-            discountType: validated.discountType,
-            discountValue: validated.dVal,
-            applicableTo: validated.applicableTo,
-            startDate: validated.startDate,
-            expiryDate: validated.expiry,
-            isActive: document.getElementById('offerIsActive').checked
+            name:         document.getElementById('offerName').value.trim(),
+            description:  document.getElementById('offerDesc').value.trim(),
+            offerType:    type,
+            discountType: document.getElementById('discountType').value,
+            discountValue: parseFloat(document.getElementById('discountValue').value),
+            applicableTo: document.getElementById(`${type}Selector`).value,
+            startDate:    document.getElementById('startDate').value || null,
+            expiryDate:   document.getElementById('expiryDate').value,
+            isActive:     document.getElementById('offerIsActive').checked  // always explicit boolean
         };
 
         try {
             const url = id ? `/admin/offers/edit/${id}` : '/admin/offers/add';
             const res = await (id ? axios.patch(url, payload) : axios.post(url, payload));
             if (res.data.success) {
-                Swal.fire({ icon: 'success', title: 'Success', text: res.data.message, timer: 1500, showConfirmButton: false })
-                    .then(() => location.reload());
+                await Swal.fire({ icon:'success', title:'Saved!', text: res.data.message, timer:1500, showConfirmButton:false });
+                location.reload();
             }
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Something went wrong.' });
+            const data = err.response?.data;
+            if (data?.errors) {
+                OfferV.applyBackendErrors(data.errors);
+                Swal.fire({ icon:'warning', title:'Please fix the errors', text:'Check the highlighted fields.', timer:2500, showConfirmButton:false });
+            } else {
+                Swal.fire({ icon:'error', title:'Error', text: data?.message || 'Something went wrong.' });
+            }
         } finally {
             btn.disabled = false; btn.textContent = 'Save Offer';
         }
     }
 
-    async function toggleOffer(id, btn) {
+    // ── Toggle / Delete ───────────────────────────────────────────────────────
+    async function toggleOffer(id) {
         try {
             const res = await axios.patch(`/admin/offers/toggle/${id}`);
             if (res.data.success) location.reload();
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed.' });
+            Swal.fire({ icon:'error', title:'Error', text: err.response?.data?.message || 'Failed.' });
         }
     }
 
     async function deleteOffer(id) {
         const confirm = await Swal.fire({
-            icon: 'warning', title: 'Delete Offer?',
-            text: 'This will permanently remove the offer.',
-            showCancelButton: true, confirmButtonText: 'Yes, delete it',
-            confirmButtonColor: '#ef4444'
+            icon:'warning', title:'Delete Offer?',
+            text:'This will permanently remove the offer.',
+            showCancelButton:true, confirmButtonText:'Yes, delete it',
+            confirmButtonColor:'#ef4444'
         });
         if (!confirm.isConfirmed) return;
         try {
             const res = await axios.delete(`/admin/offers/delete/${id}`);
             if (res.data.success) document.getElementById(`offer-row-${id}`)?.remove();
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed.' });
+            Swal.fire({ icon:'error', title:'Error', text: err.response?.data?.message || 'Failed.' });
         }
     }
 
-    // Close modal on backdrop click
-    document.getElementById('offerModal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
+    // Close on backdrop click
+    document.getElementById('offerModal').addEventListener('click', e => { if (e.target === document.getElementById('offerModal')) closeModal(); });
 </script>
+

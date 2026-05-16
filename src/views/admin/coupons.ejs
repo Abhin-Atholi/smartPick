@@ -310,281 +310,299 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    const modal = document.getElementById('couponModal');
-    const modalContent = document.getElementById('couponModalContent');
-    const form = document.getElementById('couponForm');
-    const discountTypeSelect = document.getElementById('discountType');
-    const maxDiscountContainer = document.getElementById('maxDiscountContainer');
-    const maxDiscountInput = document.getElementById('maximumDiscount');
-    const codeInput = document.getElementById('code');
-    const codeLockText = document.getElementById('codeLockText');
-    const discountValueInput = document.getElementById('discountValue');
+    // ── DOM references ────────────────────────────────────────────────────────
+    const modal          = document.getElementById('couponModal');
+    const modalContent   = document.getElementById('couponModalContent');
+    const form           = document.getElementById('couponForm');
+    const discountTypeEl = document.getElementById('discountType');
+    const maxDiscountBox = document.getElementById('maxDiscountContainer');
+    const maxDiscountEl  = document.getElementById('maximumDiscount');
+    const codeEl         = document.getElementById('code');
+    const codeLockText   = document.getElementById('codeLockText');
+    const discountValEl  = document.getElementById('discountValue');
+    const isActiveEl     = document.getElementById('isActive');
 
-    // Auto-Uppercase and No Spaces for Code Input
-    codeInput.addEventListener('input', function() {
-        this.value = this.value.replace(/\s+/g, '').toUpperCase();
-    });
+    // ── Validation helpers ────────────────────────────────────────────────────
+    const CouponV = {
+        _show(fieldId, errorId, msg) {
+            const f = document.getElementById(fieldId);
+            const e = document.getElementById(errorId);
+            if (f) { f.classList.add('border-red-500'); f.classList.remove('border-gray-200'); }
+            if (e) { e.textContent = msg; e.classList.remove('hidden'); }
+        },
+        _clear(fieldId, errorId) {
+            const f = document.getElementById(fieldId);
+            const e = document.getElementById(errorId);
+            if (f) { f.classList.remove('border-red-500'); f.classList.add('border-gray-200'); }
+            if (e) { e.textContent = ''; e.classList.add('hidden'); }
+        },
+        clearAll() {
+            document.querySelectorAll('#couponForm .error-msg').forEach(e => { e.textContent = ''; e.classList.add('hidden'); });
+            document.querySelectorAll('#couponForm input, #couponForm select').forEach(el => {
+                el.classList.remove('border-red-500'); el.classList.add('border-gray-200');
+            });
+        },
+        // Map backend `errors` object (from Joi middleware) to field-level UI
+        applyBackendErrors(errors) {
+            const fieldMap = {
+                code:            ['code',            'codeError'],
+                discountValue:   ['discountValue',   'discountValueError'],
+                minimumAmount:   ['minimumAmount',   'minimumAmountError'],
+                maximumDiscount: ['maximumDiscount', 'maximumDiscountError'],
+                usageLimit:      ['usageLimit',      'usageLimitError'],
+                expiryDate:      ['expiryDate',      'expiryDateError'],
+                startDate:       ['startDate',       'startDateError'],
+            };
+            Object.entries(errors).forEach(([key, msg]) => {
+                const ids = fieldMap[key];
+                if (ids) this._show(ids[0], ids[1], msg);
+            });
+        },
 
-    // Dynamic Discount Type UI Handler
-    discountTypeSelect.addEventListener('change', function() {
-        if (this.value === 'percentage') {
-            maxDiscountContainer.classList.remove('opacity-50', 'pointer-events-none');
-            maxDiscountInput.disabled = false;
-            discountValueInput.placeholder = "e.g. 15 (Max 90%)";
-            discountValueInput.max = 90;
-        } else {
-            maxDiscountContainer.classList.add('opacity-50', 'pointer-events-none');
-            maxDiscountInput.disabled = true;
-            maxDiscountInput.value = '';
-            discountValueInput.placeholder = "e.g. 500 (Flat ₹)";
-            discountValueInput.max = "";
+        code() {
+            const v = codeEl.value.trim();
+            if (!v)          return this._show('code','codeError','Coupon code is required.'), false;
+            if (v.length<3)  return this._show('code','codeError','Code must be at least 3 characters.'), false;
+            if (/^\d+$/.test(v)) return this._show('code','codeError','Code cannot be only numbers.'), false;
+            if (v.length>20) return this._show('code','codeError','Code cannot exceed 20 characters.'), false;
+            if (!/^[A-Z0-9_-]+$/.test(v)) return this._show('code','codeError','Only letters, numbers, - and _ allowed.'), false;
+            this._clear('code','codeError'); return true;
+        },
+        discountValue() {
+            const dType = discountTypeEl.value;
+            const v = parseFloat(discountValEl.value);
+            if (!discountValEl.value || isNaN(v)) return this._show('discountValue','discountValueError','Discount value is required.'), false;
+            if (v < 1) return this._show('discountValue','discountValueError','Must be at least 1.'), false;
+            if (dType === 'percentage' && v > 90) return this._show('discountValue','discountValueError','Percentage cannot exceed 90%.'), false;
+            this._clear('discountValue','discountValueError'); return true;
+        },
+        minimumAmount() {
+            const dType = discountTypeEl.value;
+            const dVal  = parseFloat(discountValEl.value);
+            const v     = parseFloat(document.getElementById('minimumAmount').value);
+            const raw   = document.getElementById('minimumAmount').value;
+            if (raw === '') return this._show('minimumAmount','minimumAmountError','Minimum purchase amount is required.'), false;
+            if (v < 0)      return this._show('minimumAmount','minimumAmountError','Cannot be negative.'), false;
+            if (dType === 'flat' && !isNaN(dVal) && dVal >= v)
+                return this._show('minimumAmount','minimumAmountError','Must be greater than the flat discount value.'), false;
+            this._clear('minimumAmount','minimumAmountError'); return true;
+        },
+        maximumDiscount() {
+            if (discountTypeEl.value !== 'percentage') { this._clear('maximumDiscount','maximumDiscountError'); return true; }
+            const v = parseFloat(maxDiscountEl.value);
+            if (!maxDiscountEl.value || isNaN(v)) return this._show('maximumDiscount','maximumDiscountError','Required for percentage type.'), false;
+            if (v < 1) return this._show('maximumDiscount','maximumDiscountError','Must be at least ₹1.'), false;
+            this._clear('maximumDiscount','maximumDiscountError'); return true;
+        },
+        usageLimit() {
+            const v = parseInt(document.getElementById('usageLimit').value);
+            if (!document.getElementById('usageLimit').value || isNaN(v)) return this._show('usageLimit','usageLimitError','Usage limit is required.'), false;
+            if (v < 1) return this._show('usageLimit','usageLimitError','Must be at least 1.'), false;
+            this._clear('usageLimit','usageLimitError'); return true;
+        },
+        expiryDate() {
+            const v = document.getElementById('expiryDate').value;
+            if (!v) return this._show('expiryDate','expiryDateError','Expiry date is required.'), false;
+            if (new Date(v) <= new Date()) return this._show('expiryDate','expiryDateError','Expiry date must be in the future.'), false;
+            const start = document.getElementById('startDate').value;
+            if (start && new Date(start) >= new Date(v)) return this._show('expiryDate','expiryDateError','Must be after the start date.'), false;
+            this._clear('expiryDate','expiryDateError'); return true;
+        },
+        all(isEdit) {
+            const checks = [
+                isEdit ? true : this.code(),
+                this.discountValue(),
+                this.minimumAmount(),
+                this.maximumDiscount(),
+                this.usageLimit(),
+                this.expiryDate()
+            ];
+            if (!isEdit) checks.unshift(this.code());
+            return checks.every(Boolean);
         }
+    };
+
+    // ── Discount type toggle ──────────────────────────────────────────────────
+    discountTypeEl.addEventListener('change', function () {
+        if (this.value === 'percentage') {
+            maxDiscountBox.classList.remove('opacity-50','pointer-events-none');
+            maxDiscountEl.disabled = false;
+            discountValEl.placeholder = 'e.g. 15  (Max 90%)';
+            discountValEl.max = 90;
+        } else {
+            maxDiscountBox.classList.add('opacity-50','pointer-events-none');
+            maxDiscountEl.disabled = true;
+            maxDiscountEl.value = '';
+            discountValEl.placeholder = 'e.g. 500  (Flat ₹)';
+            discountValEl.removeAttribute('max');
+        }
+        CouponV.discountValue();
+        CouponV.minimumAmount();
+        CouponV.maximumDiscount();
     });
+
+    // ── Live validation listeners ─────────────────────────────────────────────
+    codeEl.addEventListener('input',  () => { codeEl.value = codeEl.value.replace(/\s+/g,'').toUpperCase(); CouponV.code(); });
+    discountValEl.addEventListener('input', () => { CouponV.discountValue(); CouponV.minimumAmount(); });
+    document.getElementById('minimumAmount').addEventListener('input', () => CouponV.minimumAmount());
+    maxDiscountEl.addEventListener('input', () => CouponV.maximumDiscount());
+    document.getElementById('usageLimit').addEventListener('input', () => CouponV.usageLimit());
+    document.getElementById('expiryDate').addEventListener('change', () => CouponV.expiryDate());
+    document.getElementById('startDate').addEventListener('change',  () => CouponV.expiryDate());
+
+    // ── Modal helpers ─────────────────────────────────────────────────────────
+    function _openModal() {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95','opacity-0','translate-y-4');
+        }, 10);
+    }
+    function closeModal() {
+        modal.classList.add('opacity-0');
+        modalContent.classList.add('scale-95','opacity-0','translate-y-4');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    const pad = n => n < 10 ? '0'+n : n;
+    const toLocalDT = d => {
+        const dt = new Date(d);
+        return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    };
 
     function openAddModal() {
         form.reset();
         document.getElementById('couponId').value = '';
         document.getElementById('modalTitle').textContent = 'Add New Coupon';
-        // Default startDate to now
-        const now = new Date();
-        const pad = n => n < 10 ? '0' + n : n;
-        document.getElementById('startDate').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-        document.getElementById('isActive').checked = true;
-        // Reset locks
-        codeInput.readOnly = false;
-        codeInput.classList.remove('bg-gray-200', 'text-gray-500', 'border-transparent');
+        document.getElementById('startDate').value = toLocalDT(new Date());
+        isActiveEl.checked = true;
+        codeEl.readOnly = false;
+        codeEl.classList.remove('bg-gray-200','text-gray-500','border-transparent');
         codeLockText.classList.add('hidden');
-        discountTypeSelect.disabled = false;
-        discountTypeSelect.classList.remove('bg-gray-200', 'text-gray-500');
-        discountTypeSelect.dispatchEvent(new Event('change'));
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modalContent.classList.remove('scale-95', 'opacity-0', 'translate-y-4');
-        }, 10);
+        discountTypeEl.disabled = false;
+        discountTypeEl.classList.remove('bg-gray-200','text-gray-500');
+        discountTypeEl.dispatchEvent(new Event('change'));
+        CouponV.clearAll();
+        _openModal();
     }
 
     function openEditModal(coupon) {
         form.reset();
         document.getElementById('couponId').value = coupon._id;
         document.getElementById('modalTitle').textContent = 'Edit Coupon: ' + coupon.code;
-        
-        codeInput.value = coupon.code;
+        codeEl.value = coupon.code;
         document.getElementById('description').value = coupon.description || '';
-        discountTypeSelect.value = coupon.discountType;
-        discountValueInput.value = coupon.discountValue;
+        discountTypeEl.value = coupon.discountType;
+        discountValEl.value = coupon.discountValue;
         document.getElementById('minimumAmount').value = coupon.minimumAmount;
         document.getElementById('usageLimit').value = coupon.usageLimit;
-        
-        if(coupon.maximumDiscount) {
-            maxDiscountInput.value = coupon.maximumDiscount;
-        }
+        if (coupon.maximumDiscount) maxDiscountEl.value = coupon.maximumDiscount;
+        document.getElementById('expiryDate').value = toLocalDT(coupon.expiryDate);
+        if (coupon.startDate) document.getElementById('startDate').value = toLocalDT(coupon.startDate);
+        // ── Toggle: always set explicitly from data, never from FormData ──────
+        isActiveEl.checked = coupon.isActive !== false;
 
-        // Format Date for datetime-local input
-        const d = new Date(coupon.expiryDate);
-        const pad = n => n < 10 ? '0' + n : n;
-        const formattedExpiry = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        document.getElementById('expiryDate').value = formattedExpiry;
-
-        if (coupon.startDate) {
-            const s = new Date(coupon.startDate);
-            document.getElementById('startDate').value = `${s.getFullYear()}-${pad(s.getMonth()+1)}-${pad(s.getDate())}T${pad(s.getHours())}:${pad(s.getMinutes())}`;
-        }
-        document.getElementById('isActive').checked = coupon.isActive !== false;
-
-        // Security Lock check
         if (coupon.usedCount > 0) {
-            codeInput.readOnly = true;
-            codeInput.classList.add('bg-gray-200', 'text-gray-500', 'border-transparent');
+            codeEl.readOnly = true;
+            codeEl.classList.add('bg-gray-200','text-gray-500','border-transparent');
             codeLockText.classList.remove('hidden');
-            
-            // Also lock discount type/value according to rules
-            discountTypeSelect.disabled = true;
-            discountTypeSelect.classList.add('bg-gray-200', 'text-gray-500');
+            discountTypeEl.disabled = true;
+            discountTypeEl.classList.add('bg-gray-200','text-gray-500');
         } else {
-            codeInput.readOnly = false;
-            codeInput.classList.remove('bg-gray-200', 'text-gray-500', 'border-transparent');
+            codeEl.readOnly = false;
+            codeEl.classList.remove('bg-gray-200','text-gray-500','border-transparent');
             codeLockText.classList.add('hidden');
-            
-            discountTypeSelect.disabled = false;
-            discountTypeSelect.classList.remove('bg-gray-200', 'text-gray-500');
+            discountTypeEl.disabled = false;
+            discountTypeEl.classList.remove('bg-gray-200','text-gray-500');
         }
 
-        discountTypeSelect.dispatchEvent(new Event('change')); // Trigger UI update
-        
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modalContent.classList.remove('scale-95', 'opacity-0', 'translate-y-4');
-        }, 10);
+        discountTypeEl.dispatchEvent(new Event('change'));
+        CouponV.clearAll();
+        _openModal();
     }
 
-    function closeModal() {
-        modal.classList.add('opacity-0');
-        modalContent.classList.add('scale-95', 'opacity-0', 'translate-y-4');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
-    }
-
-    // Form Submit
+    // ── Form submit ───────────────────────────────────────────────────────────
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = 'Saving...';
-
-        // --- Custom Frontend Validation ---
-        let hasError = false;
-        
-        function showError(inputId, errorId, message) {
-            const input = document.getElementById(inputId);
-            const errEl = document.getElementById(errorId);
-            if(input) {
-                input.classList.add('border-red-500', 'focus:ring-red-500');
-                input.classList.remove('border-gray-200', 'focus:ring-indigo-500');
-            }
-            if(errEl) {
-                errEl.textContent = message;
-                errEl.classList.remove('hidden');
-            }
-            hasError = true;
-        }
-
-        function clearErrors() {
-            document.querySelectorAll('.error-msg').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('input, select').forEach(el => {
-                el.classList.remove('border-red-500', 'focus:ring-red-500');
-                el.classList.add('border-gray-200', 'focus:ring-indigo-500');
-            });
-        }
-
-        clearErrors();
-
-        const codeVal = codeInput.value.trim();
-        if (!codeVal) {
-            showError('code', 'codeError', 'Coupon code is required.');
-        } else if (codeVal.length < 3) {
-            showError('code', 'codeError', 'Code must be at least 3 characters.');
-        }
-
-        const dType = discountTypeSelect.value;
-        const dValueStr = discountValueInput.value;
-        const dValue = Number(dValueStr);
-        
-        if (!dValueStr) {
-            showError('discountValue', 'discountValueError', 'Discount value is required.');
-        } else if (dValue < 1) {
-            showError('discountValue', 'discountValueError', 'Must be at least 1.');
-        } else if (dType === 'percentage' && dValue > 90) {
-            showError('discountValue', 'discountValueError', 'Percentage cannot exceed 90%.');
-        }
-
-        const mAmountStr = document.getElementById('minimumAmount').value;
-        const mAmount = Number(mAmountStr);
-        if (!mAmountStr) {
-            showError('minimumAmount', 'minimumAmountError', 'Minimum purchase is required.');
-        } else if (mAmount < 0) {
-            showError('minimumAmount', 'minimumAmountError', 'Cannot be negative.');
-        } else if (dType === 'flat' && dValue >= mAmount) {
-            showError('minimumAmount', 'minimumAmountError', 'Min purchase must be greater than flat discount.');
-        }
-
-        if (dType === 'percentage') {
-            const maxDStr = maxDiscountInput.value;
-            const maxD = Number(maxDStr);
-            if (!maxDStr) {
-                showError('maximumDiscount', 'maximumDiscountError', 'Required for percentage type.');
-            } else if (maxD < 1) {
-                showError('maximumDiscount', 'maximumDiscountError', 'Must be at least 1.');
-            }
-        }
-
-        const uLimitStr = document.getElementById('usageLimit').value;
-        const uLimit = Number(uLimitStr);
-        if (!uLimitStr) {
-            showError('usageLimit', 'usageLimitError', 'Usage limit is required.');
-        } else if (uLimit < 1) {
-            showError('usageLimit', 'usageLimitError', 'Must be at least 1.');
-        }
-
-        const expDate = document.getElementById('expiryDate').value;
-        if (!expDate) {
-            showError('expiryDate', 'expiryDateError', 'Expiry date is required.');
-        } else if (new Date(expDate) <= new Date()) {
-            showError('expiryDate', 'expiryDateError', 'Expiry date must be in the future.');
-        }
-
-        if (hasError) {
-            btn.disabled = false;
-            btn.innerHTML = 'Save Coupon';
-            return;
-        }
-        // --- End Validation ---
-
-        const id = document.getElementById('couponId').value;
+        const id     = document.getElementById('couponId').value;
         const isEdit = !!id;
-        
-        // Re-enable disabled fields momentarily to serialize
-        const tempDisabled = Array.from(form.querySelectorAll(':disabled'));
-        tempDisabled.forEach(el => el.disabled = false);
-        
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        
-        // Restore disabled
-        tempDisabled.forEach(el => el.disabled = true);
+
+        CouponV.clearAll();
+        if (!CouponV.all(isEdit)) return;
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true; btn.textContent = 'Saving…';
+
+        // ── Build payload manually so isActive is ALWAYS a proper boolean ────
+        // (FormData silently omits unchecked checkboxes → this was the bug)
+        const payload = {
+            code:            codeEl.value.trim().toUpperCase(),
+            description:     document.getElementById('description').value.trim(),
+            discountType:    discountTypeEl.value,
+            discountValue:   parseFloat(discountValEl.value),
+            minimumAmount:   parseFloat(document.getElementById('minimumAmount').value),
+            maximumDiscount: discountTypeEl.value === 'percentage' ? parseFloat(maxDiscountEl.value) : null,
+            usageLimit:      parseInt(document.getElementById('usageLimit').value),
+            startDate:       document.getElementById('startDate').value || null,
+            expiryDate:      document.getElementById('expiryDate').value,
+            isActive:        isActiveEl.checked  // ← explicit boolean, never omitted
+        };
 
         try {
             const url = isEdit ? `/admin/coupons/edit/${id}` : '/admin/coupons/add';
-            const response = await (isEdit ? axios.patch(url, data) : axios.post(url, data));
-
-            if (response.data.success) {
-                Swal.fire({ icon: 'success', title: 'Success', text: response.data.message, timer: 1500, showConfirmButton: false })
-                    .then(() => window.location.reload());
+            const res = await (isEdit ? axios.patch(url, payload) : axios.post(url, payload));
+            if (res.data.success) {
+                await Swal.fire({ icon:'success', title:'Saved!', text: res.data.message, timer:1500, showConfirmButton:false });
+                window.location.reload();
             }
-        } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Something went wrong!' });
-            btn.disabled = false;
-            btn.innerHTML = 'Save Coupon';
+        } catch (err) {
+            const data = err.response?.data;
+            if (data?.errors) {
+                // Map structured Joi field errors to the form UI
+                CouponV.applyBackendErrors(data.errors);
+                Swal.fire({ icon:'warning', title:'Please fix the errors', text:'Check the highlighted fields.', timer:2500, showConfirmButton:false });
+            } else {
+                Swal.fire({ icon:'error', title:'Error', text: data?.message || 'Something went wrong!' });
+            }
+        } finally {
+            btn.disabled = false; btn.textContent = 'Save Coupon';
         }
     });
 
-    // Toggle Status
-    async function toggleCouponStatus(id, currentStatus) {
+    // ── Toggle status ─────────────────────────────────────────────────────────
+    async function toggleCouponStatus(id) {
         try {
             const res = await axios.patch(`/admin/coupons/toggle/${id}`);
             if (res.data.success) {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: res.data.message, showConfirmButton: false, timer: 2000 });
-                setTimeout(() => window.location.reload(), 1000);
+                Swal.fire({ toast:true, position:'top-end', icon:'success', title: res.data.message, showConfirmButton:false, timer:2000 });
+                setTimeout(() => window.location.reload(), 800);
             }
-        } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update status' });
+        } catch (err) {
+            Swal.fire({ icon:'error', title:'Error', text: err.response?.data?.message || 'Failed to update status.' });
         }
     }
 
-    // Delete
-    function deleteCoupon(id) {
-        Swal.fire({
-            title: 'Delete Coupon?',
-            text: 'This will soft-delete the coupon, preventing future uses. Existing orders will not be affected.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#9ca3af',
-            confirmButtonText: 'Yes, delete it!'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const res = await axios.delete(`/admin/coupons/delete/${id}`);
-                    if (res.data.success) {
-                        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Coupon has been removed.', timer: 1500, showConfirmButton: false })
-                            .then(() => window.location.reload());
-                    }
-                } catch (error) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete coupon' });
-                }
-            }
+    // ── Delete coupon ─────────────────────────────────────────────────────────
+    async function deleteCoupon(id) {
+        const result = await Swal.fire({
+            title:'Delete Coupon?',
+            text:'This will soft-delete the coupon. Existing orders are unaffected.',
+            icon:'warning', showCancelButton:true,
+            confirmButtonColor:'#ef4444', cancelButtonColor:'#9ca3af',
+            confirmButtonText:'Yes, delete it!'
         });
+        if (!result.isConfirmed) return;
+        try {
+            const res = await axios.delete(`/admin/coupons/delete/${id}`);
+            if (res.data.success) {
+                await Swal.fire({ icon:'success', title:'Deleted!', text:'Coupon removed.', timer:1500, showConfirmButton:false });
+                window.location.reload();
+            }
+        } catch (err) {
+            Swal.fire({ icon:'error', title:'Error', text: err.response?.data?.message || 'Failed to delete coupon.' });
+        }
     }
 </script>
+
+

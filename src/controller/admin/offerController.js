@@ -22,7 +22,7 @@ export const getOffers = async (req, res) => {
             status: status || '',
             products,
             categories,
-            activePath: "/admin/offers"
+            activePath: '/admin/offers'
         });
     } catch (error) {
         console.error('getOffers Error:', error);
