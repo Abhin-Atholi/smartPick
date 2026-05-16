@@ -178,6 +178,30 @@ export const formatOrderForDisplay = (order) => {
         couponCapped: !!order.couponCapped
     };
 
+    // Phase 10: Financial Ledger
+    const rawActiveTotal = !isNaN(order.activeTotal) ? order.activeTotal : rawTotal;
+    const rawRefunded = !isNaN(order.totalRefundedAmount) ? order.totalRefundedAmount : 0;
+    const rawNetRetained = rawActiveTotal; // The active total is the retained amount
+
+    const financials = {
+        originalTotal: rawTotal,
+        activeTotal: rawActiveTotal,
+        refundedTotal: rawRefunded,
+        netRetainedAmount: rawNetRetained,
+        formatted: {
+            originalTotal: formatCurrency(rawTotal),
+            activeTotal: formatCurrency(rawActiveTotal),
+            refundedTotal: formatCurrency(rawRefunded),
+            netRetainedAmount: formatCurrency(rawNetRetained)
+        }
+    };
+
+    const counts = {
+        active: order.totalActiveItems || 0,
+        cancelled: order.totalCancelledItems || 0,
+        returned: order.totalReturnedItems || 0
+    };
+
     // 3. Final Output
     return {
         _id: order._id,
@@ -196,6 +220,8 @@ export const formatOrderForDisplay = (order) => {
         shippingAddress: order.shippingAddress,
         
         items: formattedItems,
-        summary
+        summary,
+        financials,
+        counts
     };
 };

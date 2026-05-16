@@ -64,13 +64,20 @@ export const cancelItem = async (req, res) => {
 export const getReturnRequests = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const data = await orderService.getReturnRequests({ page, limit: 10 });
-        const formattedOrders = data.orders.map(o => formatAdminOrderForDisplay(o));
+        const status = req.query.status || 'Return Requested';
+        const search = req.query.search || '';
+
+        const data = await orderService.getReturnRequests({ page, limit: 10, status, search });
+        
+        // Dynamic import to avoid circular dependencies if any, or just import at the top
+        const { formatAdminReturnItemForDisplay } = await import('../../services/common/adminOrderPresentationService.js');
+        const formattedItems = data.returnItems.map(item => formatAdminReturnItemForDisplay(item));
 
         res.render('admin/returnRequests', {
-            title: 'Return Requests — Admin | SmartPick',
+            title: 'Return Management — Admin | SmartPick',
             ...data,
-            formattedOrders,
+            formattedItems,
+            filters: { status, search },
             activePath: "/admin/orders"
         });
     } catch (err) {

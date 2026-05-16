@@ -110,6 +110,30 @@ export const formatAdminOrderForDisplay = (order) => {
         couponCapped: !!order.couponCapped
     };
 
+    // Phase 10: Financial Ledger
+    const rawActiveTotal = !isNaN(order.activeTotal) ? order.activeTotal : rawTotal;
+    const rawRefunded = !isNaN(order.totalRefundedAmount) ? order.totalRefundedAmount : 0;
+    const rawNetRetained = rawActiveTotal;
+
+    const financials = {
+        originalTotal: rawTotal,
+        activeTotal: rawActiveTotal,
+        refundedTotal: rawRefunded,
+        netRetainedAmount: rawNetRetained,
+        formatted: {
+            originalTotal: formatCurrency(rawTotal),
+            activeTotal: formatCurrency(rawActiveTotal),
+            refundedTotal: formatCurrency(rawRefunded),
+            netRetainedAmount: formatCurrency(rawNetRetained)
+        }
+    };
+
+    const counts = {
+        active: order.totalActiveItems || 0,
+        cancelled: order.totalCancelledItems || 0,
+        returned: order.totalReturnedItems || 0
+    };
+
     // 3. Admin Specifics & Final Output
     const orderIdDisplay = order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}`;
 
@@ -134,7 +158,55 @@ export const formatAdminOrderForDisplay = (order) => {
         
         items: formattedItems,
         summary,
+        financials,
+        counts,
         lifecycleHistory: formatLifecycleHistory(order.lifecycleHistory)
+    };
+};
+
+// ── Return Item Formatting ───────────────────────────────────────────────────
+export const formatAdminReturnItemForDisplay = (row) => {
+    const item = row.items;
+    const finalPrice = item.price || 0;
+    const finalPaidAmount = item.finalPriceAfterCoupon || item.totalPrice || (finalPrice * item.quantity);
+    
+    const colorOpt = row.productObj?.colorOptions?.find(c => c.name === item.color);
+    const image = item.image || colorOpt?.images?.[0] || row.productObj?.defaultImage || '/images/placeholder.jpg';
+
+    return {
+        order_id: row._id,
+        orderId: row.orderId || `#${row._id.toString().slice(-6).toUpperCase()}`,
+        item_id: item._id,
+        productName: row.productObj?.name || item.productName || 'Product Unavailable',
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        image,
+        
+        user: {
+            fullName: row.userObj?.fullName || 'Deleted User',
+            email: row.userObj?.email || '',
+            profileImage: row.userObj?.profileImage || null
+        },
+        
+        status: item.itemStatus,
+        badge: getItemStatusBadge(item.itemStatus),
+        
+        returnReason: item.returnReason || item.cancellationReason || 'No reason provided',
+        returnInspection: item.returnInspection || null,
+        inventoryReconciled: !!item.inventoryReconciled,
+        
+        formatted: {
+            finalPaidAmount: formatCurrency(finalPaidAmount)
+        },
+        
+        requestedDate: item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown',
+        
+        refundProcessed: !!item.refundProcessed,
+        refundStatus: item.refundProcessed ? {
+            transactionId: item.refundTransactionId,
+            processedAt: item.refundProcessedAt ? new Date(item.refundProcessedAt).toLocaleString('en-GB') : 'N/A'
+        } : null
     };
 };
 

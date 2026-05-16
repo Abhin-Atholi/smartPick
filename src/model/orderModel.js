@@ -73,7 +73,7 @@ const orderSchema = new mongoose.Schema({
     totalAmount: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['COD', 'Razorpay', 'Wallet'], required: true },
     paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Refunded', 'Expired'], default: 'Pending' },
-    orderStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', "Out for Delivery",'Returned', 'Return Rejected'], default: 'Processing' },
+    orderStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested', "Out for Delivery",'Returned', 'Partially Returned', 'Return Rejected'], default: 'Processing' },
     couponApplied: {
         code: { type: String },
         discountAmount: { type: Number },
@@ -82,6 +82,14 @@ const orderSchema = new mongoose.Schema({
     // Phase 9: Pricing Safety Flags
     pricingAdjusted: { type: Boolean, default: false },
     couponCapped: { type: Boolean, default: false },
+    
+    // Phase 10: Financial Ledger Aggregates
+    totalRefundedAmount: { type: Number, default: 0 },
+    activeTotal: { type: Number, default: 0 },
+    totalActiveItems: { type: Number, default: 0 },
+    totalCancelledItems: { type: Number, default: 0 },
+    totalReturnedItems: { type: Number, default: 0 },
+    
     
     paymentDetails: {
         razorpayOrderId: { type: String },

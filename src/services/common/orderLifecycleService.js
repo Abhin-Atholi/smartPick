@@ -3,6 +3,7 @@ import * as refundService from './refundService.js';
 import * as walletService from '../user/walletService.js';
 import { createLogger } from '../../utils/logger.js';
 import { sessionOpts } from '../../utils/transactionHelper.js';
+import { updateLedger } from './financialLedgerService.js';
 
 const log = createLogger('orderLifecycleService');
 
@@ -117,6 +118,46 @@ const orchestrateRefund = async (order, itemsToRefundIds, refundType, reason, se
     return 0;
 };
 
+/**
+ * Derive root order status from item statuses.
+ */
+const deriveOrderStatus = (order) => {
+    if (['Payment Pending', 'Payment Failed', 'Expired'].includes(order.orderStatus)) return;
+
+    const allCancelled = order.items.every(i => i.itemStatus === 'Cancelled');
+    if (allCancelled) {
+        order.orderStatus = 'Cancelled';
+        if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
+        return;
+    }
+
+    const allResolved = order.items.every(i => ['Returned', 'Cancelled'].includes(i.itemStatus));
+    if (allResolved) {
+        order.orderStatus = 'Returned';
+        if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
+        return;
+    }
+
+    const hasReturns = order.items.some(i => ['Returned', 'Return Requested'].includes(i.itemStatus));
+    const hasActive = order.items.some(i => !['Returned', 'Cancelled'].includes(i.itemStatus));
+
+    if (hasReturns && hasActive) {
+        order.orderStatus = 'Partially Returned';
+        return;
+    }
+
+    const activeItems = order.items.filter(i => !['Returned', 'Cancelled'].includes(i.itemStatus));
+    if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Delivered')) {
+        order.orderStatus = 'Delivered';
+        return;
+    }
+
+    if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Return Requested')) {
+        order.orderStatus = 'Return Requested';
+        return;
+    }
+};
+
 // ── Exported Lifecycle Functions ─────────────────────────────────────────────
 
 /**
@@ -160,6 +201,7 @@ export const cancelOrder = async (order, actorId, role, reason, session = null) 
     auditLog(order, action, actorId, actorModel, prevStatus, 'Cancelled', reason, { refundAmount });
     log.lifecycle(action, order._id, prevStatus, 'Cancelled', { refundAmount });
 
+    updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true, refundAmount };
 };
@@ -183,12 +225,8 @@ export const cancelOrderItem = async (order, itemId, actorId, role, reason, sess
     item.cancelReason = reason;
     auditLog(order, 'ITEM_CANCELLED', actorId, actorModel, prevStatus, 'Cancelled', reason, { itemId });
 
-    const activeItems = order.items.filter(i => !['Cancelled', 'Returned', 'Expired'].includes(i.itemStatus));
-    if (activeItems.length === 0) {
-        order.orderStatus = 'Cancelled';
-        if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
-    }
-
+    deriveOrderStatus(order);
+    updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true, refundAmount };
 };
@@ -206,9 +244,8 @@ export const requestItemReturn = async (order, itemId, userId, reason, session =
     item.returnReason = reason;
     auditLog(order, 'USER_REQUESTED_RETURN', userId, 'User', prevStatus, 'Return Requested', reason);
 
-    const allPending = order.items.every(i => ['Return Requested', 'Returned', 'Cancelled'].includes(i.itemStatus));
-    if (allPending && order.orderStatus !== 'Returned') order.orderStatus = 'Return Requested';
-
+    deriveOrderStatus(order);
+    updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true };
 };
@@ -262,16 +299,14 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
         throw new Error('Invalid decision');
     }
 
-    const allResolved = order.items.every(i => ['Returned', 'Cancelled'].includes(i.itemStatus));
-    if (allResolved && order.orderStatus !== 'Cancelled') {
-        order.orderStatus = 'Returned';
-        if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
-    }
+    deriveOrderStatus(order);
 
     log.lifecycle(
         decision === 'approve' ? 'RETURN_APPROVED' : 'RETURN_REJECTED',
         order._id, prevStatus, item.itemStatus, { restockable, notes }
     );
+    
+    updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true, decision };
 };
@@ -304,6 +339,8 @@ export const updateOrderStatus = async (order, adminId, newStatus, session = nul
 
     auditLog(order, 'ADMIN_UPDATED_STATUS', adminId, 'Admin', prevStatus, newStatus,
         'Bulk status update via admin panel');
+    
+    updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true };
 };

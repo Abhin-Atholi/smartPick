@@ -22,94 +22,132 @@
   </a>
 </div>
 
-<!-- Return Request Cards -->
-<% if (!formattedOrders || formattedOrders.length === 0) { %>
+<!-- Return Request Filters -->
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+  <form action="/admin/orders/return-requests" method="GET" class="flex flex-wrap gap-4 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs font-bold text-gray-500 mb-1">Search</label>
+      <input type="text" name="search" value="<%= filters?.search || '' %>" placeholder="Search Order ID, Customer..." class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-600 outline-none transition">
+    </div>
+    <div class="w-48">
+      <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+      <select name="status" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-600 outline-none transition">
+        <option value="Return Requested" <%= filters?.status === 'Return Requested' ? 'selected' : '' %>>Pending Requests</option>
+        <option value="Returned" <%= filters?.status === 'Returned' ? 'selected' : '' %>>Approved Returns</option>
+        <option value="Return Rejected" <%= filters?.status === 'Return Rejected' ? 'selected' : '' %>>Rejected Returns</option>
+        <option value="All" <%= filters?.status === 'All' ? 'selected' : '' %>>All Returns</option>
+      </select>
+    </div>
+    <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-sm shadow-indigo-100">
+      Filter
+    </button>
+  </form>
+</div>
+
+<!-- Flattened Return Items Table -->
+<% if (!formattedItems || formattedItems.length === 0) { %>
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm py-24 text-center">
     <div class="text-5xl mb-4">📬</div>
-    <p class="text-gray-400 font-semibold text-lg">No pending return requests.</p>
+    <p class="text-gray-400 font-semibold text-lg">No return items found.</p>
     <a href="/admin/orders" class="mt-4 inline-block text-sm text-indigo-600 font-bold hover:underline">Back to Orders</a>
   </div>
 <% } else { %>
-  <div class="space-y-6">
-    <% formattedOrders.forEach(order => { %>
-      <%
-        const returnItems = order.items.filter(i => i.itemStatus === 'Return Requested');
-        if (returnItems.length === 0) return;
-      %>
-      <!-- Order Card -->
-      <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        <!-- Card Header -->
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-4">
-            <!-- Customer avatar -->
-            <div class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-              <% if (order.user?.profileImage) { %>
-                <img src="<%= order.user.profileImage %>" class="w-full h-full object-cover" referrerpolicy="no-referrer">
-              <% } else { %>
-                <span class="font-black text-indigo-600"><%= (order.user?.fullName || 'U').charAt(0) %></span>
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-gray-50 text-xs uppercase tracking-widest text-gray-400 font-black bg-gray-50">
+            <th class="px-6 py-4">Item & Order</th>
+            <th class="px-6 py-4">Customer</th>
+            <th class="px-6 py-4 text-center">Paid Amount</th>
+            <th class="px-6 py-4">Reason / Inspection</th>
+            <th class="px-6 py-4 text-center">Status</th>
+            <th class="px-6 py-4 text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          <% formattedItems.forEach(item => { %>
+          <tr class="hover:bg-gray-50/50 transition-colors" id="return-row-<%= item.item_id %>">
+            <td class="px-6 py-4">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <img src="<%= item.image %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
+                </div>
+                <div>
+                  <a href="/admin/orders/<%= item.order_id %>" class="text-xs font-black text-indigo-600 hover:underline"><%= item.orderId %></a>
+                  <p class="font-black text-slate-800 text-sm max-w-[160px] truncate" title="<%= item.productName %>"><%= item.productName %></p>
+                  <p class="text-xs text-gray-400 mt-0.5"><%= item.size %> • <%= item.color %> • Qty: <%= item.quantity %></p>
+                  <p class="text-[10px] text-gray-400 mt-1">Req: <%= item.requestedDate %></p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <% if (item.user.profileImage) { %>
+                  <img src="<%= item.user.profileImage %>" class="w-8 h-8 rounded-full object-cover" referrerpolicy="no-referrer">
+                <% } else { %>
+                  <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xs"><%= item.user.fullName.charAt(0) %></div>
+                <% } %>
+                <div>
+                  <p class="text-sm font-bold text-slate-800"><%= item.user.fullName %></p>
+                  <p class="text-xs text-gray-400 truncate max-w-[120px]"><%= item.user.email %></p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <span class="text-sm font-black text-slate-800"><%= item.formatted.finalPaidAmount %></span>
+              <% if (item.refundProcessed) { %>
+                <div class="mt-1 flex flex-col items-center" title="Txn: <%= item.refundStatus.transactionId %>">
+                  <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Refunded</span>
+                  <span class="text-[9px] text-gray-400 mt-0.5"><%= item.refundStatus.processedAt %></span>
+                </div>
               <% } %>
-            </div>
-            <div>
-              <p class="font-black text-slate-800 text-sm"><%= order.user?.fullName || 'Deleted User' %></p>
-              <p class="text-xs text-gray-400"><%= order.user?.email %></p>
-            </div>
-          </div>
-          <div class="flex items-center gap-4">
-            <div class="text-right">
-              <p class="text-xs text-gray-400 font-bold">Order ID</p>
-              <p class="text-sm font-black text-slate-800"><%= order.orderId %></p>
-            </div>
-            <div class="text-right">
-              <p class="text-xs text-gray-400 font-bold">Date</p>
-              <p class="text-sm font-bold text-slate-600"><%= order.formattedDate %></p>
-            </div>
-            <a href="/admin/orders/<%= order._id %>" class="px-4 py-2 text-xs font-bold text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition">
-              View Order
-            </a>
-          </div>
-        </div>
-
-        <!-- Requested Items -->
-        <div class="divide-y divide-gray-50">
-          <% returnItems.forEach(item => { %>
-          <div class="px-6 py-5 flex flex-wrap gap-5 items-center" id="return-row-<%= item._id %>">
-            <!-- Product Image -->
-            <div class="w-16 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-              <img src="<%= item.image %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
-            </div>
-
-            <!-- Product Info -->
-            <div class="flex-1 min-w-[160px]">
-              <p class="font-black text-slate-800 text-sm"><%= item.productName %></p>
-              <p class="text-xs text-gray-400 mt-0.5">Size: <%= item.size %> • Color: <%= item.color %> • Qty: <%= item.quantity %></p>
-              <p class="text-sm font-black text-indigo-600 mt-1"><%= item.formatted.finalPaidAmount %></p>
-              <span class="inline-block mt-2 px-2.5 py-1 <%= item.badge.classes %> border-current/20 border text-xs font-bold"><%= item.badge.text %></span>
-            </div>
-
-            <!-- Return Reason -->
-            <div class="flex-1 min-w-[160px] bg-orange-50 border border-orange-100 rounded-xl p-4">
-              <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">User's Reason</p>
-              <p class="text-sm text-slate-700 font-medium"><%= item.cancellationReason || item.returnReason || 'No reason provided' %></p>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex flex-col gap-2 flex-shrink-0" id="actions-<%= item._id %>">
-              <button onclick="handleReturn('<%= order._id %>', '<%= item._id %>', 'approve')"
-                class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl transition shadow-sm shadow-green-100 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                Approve Return
-              </button>
-              <button onclick="handleReturn('<%= order._id %>', '<%= item._id %>', 'reject')"
-                class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition shadow-sm shadow-red-100 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                Reject Return
-              </button>
-            </div>
-          </div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="bg-orange-50/50 border border-orange-100 rounded-lg p-2.5 max-w-[200px]">
+                <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-0.5">User Reason</p>
+                <p class="text-xs text-slate-700 font-medium truncate" title="<%= item.returnReason %>"><%= item.returnReason %></p>
+              </div>
+              <% if (item.returnInspection) { %>
+                <div class="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-2.5 max-w-[200px]">
+                  <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Inspection: <%= item.returnInspection.status %></p>
+                  <p class="text-xs text-slate-600 truncate" title="<%= item.returnInspection.notes %>"><%= item.returnInspection.notes || 'No notes' %></p>
+                  <% if (item.inventoryReconciled) { %>
+                    <span class="inline-block mt-1 text-[9px] font-bold text-emerald-600 uppercase">Stock Restored</span>
+                  <% } else if (item.returnInspection.restockable) { %>
+                    <span class="inline-block mt-1 text-[9px] font-bold text-blue-600 uppercase">Restockable</span>
+                  <% } else { %>
+                    <span class="inline-block mt-1 text-[9px] font-bold text-red-600 uppercase">Damaged / Discard</span>
+                  <% } %>
+                </div>
+              <% } %>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border <%= item.badge.classes %> border-current/20">
+                <%= item.badge.text %>
+              </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <% if (item.status === 'Return Requested') { %>
+                <div class="flex flex-col gap-1.5 justify-center items-center">
+                  <button onclick="handleReturn('<%= item.order_id %>', '<%= item.item_id %>', 'approve')"
+                    class="w-full px-3 py-1.5 bg-green-50 hover:bg-green-600 text-green-700 hover:text-white text-[11px] font-bold rounded-lg transition border border-green-200 hover:border-transparent">
+                    Approve
+                  </button>
+                  <button onclick="handleReturn('<%= item.order_id %>', '<%= item.item_id %>', 'reject')"
+                    class="w-full px-3 py-1.5 bg-red-50 hover:bg-red-600 text-red-700 hover:text-white text-[11px] font-bold rounded-lg transition border border-red-200 hover:border-transparent">
+                    Reject
+                  </button>
+                </div>
+              <% } else { %>
+                <span class="text-xs text-gray-300 font-bold">—</span>
+              <% } %>
+            </td>
+          </tr>
           <% }) %>
-        </div>
-      </div>
-    <% }) %>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Pagination -->

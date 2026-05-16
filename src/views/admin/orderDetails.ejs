@@ -52,8 +52,6 @@
     <% } else { %>
       <span class="text-xs text-gray-400 font-bold italic">No further transitions available</span>
     <% } %>
-
-    <% } %>
   </div>
 </div>
 
@@ -80,7 +78,7 @@
           </thead>
           <tbody class="divide-y divide-gray-50">
             <% formattedOrder.items.forEach((item) => { %>
-            <tr class="hover:bg-gray-50/50 transition-colors" id="item-row-<%= item._id %>">
+            <tr class="transition-colors <%= ['Cancelled', 'Returned', 'Return Rejected'].includes(item.status) ? 'bg-gray-50/80 opacity-75 grayscale-[30%]' : 'hover:bg-gray-50/50' %>" id="item-row-<%= item._id %>">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-4">
                   <div class="w-14 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
@@ -184,22 +182,25 @@
   <!-- Right col: summary + customer -->
   <div class="space-y-6">
 
-    <!-- Order Summary -->
-    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
-      <h2 class="text-base font-black text-slate-800 mb-4">Order Summary</h2>
+    <!-- A. ORIGINAL BILLING SUMMARY -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 opacity-80 grayscale-[10%]">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <h2 class="text-base font-black text-slate-800">Original Order Summary</h2>
+      </div>
       <div class="space-y-3 text-sm">
         <div class="flex justify-between"><span class="text-gray-500 font-bold">Subtotal</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.subtotal %></span></div>
-        <div class="flex justify-between"><span class="text-gray-500 font-bold">Shipping</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.shipping %></span></div>
-        <div class="flex justify-between"><span class="text-gray-500 font-bold">Tax</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.tax %></span></div>
         <% if (formattedOrder.summary.hasOfferDiscount) { %>
           <div class="flex justify-between"><span class="text-gray-500 font-bold">Offer Save</span><span class="font-black text-rose-600">-<%= formattedOrder.summary.formatted.offerDiscount %></span></div>
         <% } %>
         <% if (formattedOrder.summary.hasCouponDiscount) { %>
           <div class="flex justify-between"><span class="text-gray-500 font-bold">Coupon</span><span class="font-black text-indigo-600">-<%= formattedOrder.summary.formatted.couponDiscount %></span></div>
         <% } %>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Tax</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.tax %></span></div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Shipping</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.shipping %></span></div>
         <div class="border-t border-dashed border-gray-200 pt-3 flex justify-between">
-          <span class="font-black text-slate-800 text-base">Total</span>
-          <span class="font-black text-indigo-600 text-xl"><%= formattedOrder.summary.formatted.total %></span>
+          <span class="font-black text-slate-800 text-sm uppercase tracking-wide">Original Paid</span>
+          <span class="font-black text-slate-800 text-lg"><%= formattedOrder.financials.formatted.originalTotal %></span>
         </div>
         <% if (formattedOrder.summary.pricingAdjusted || formattedOrder.summary.couponCapped) { %>
           <div class="p-2 bg-orange-50 border border-orange-100 rounded-lg flex items-start gap-2 mt-2">
@@ -219,6 +220,45 @@
             <span class="w-1.5 h-1.5 rounded-full <%= formattedOrder.paymentBadge.iconClass %>"></span>
             <%= formattedOrder.paymentBadge.text %>
           </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- B. REFUND LEDGER -->
+    <% if (formattedOrder.financials.refundedTotal > 0) { %>
+    <div class="bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-sm p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <h2 class="text-base font-black text-indigo-900">Refund Ledger</h2>
+      </div>
+      <div class="space-y-3 mb-4">
+        <% formattedOrder.items.filter(i => i.refundProcessed).forEach(item => { %>
+          <div class="flex justify-between items-center text-sm">
+            <div class="flex flex-col">
+              <span class="text-indigo-900 font-bold truncate max-w-[150px]" title="<%= item.productName %>"><%= item.productName %></span>
+              <span class="text-[10px] text-indigo-500 font-bold uppercase"><%= item.status %></span>
+            </div>
+            <span class="text-indigo-700 font-black"><%= item.formatted.finalPaidAmount %></span>
+          </div>
+        <% }); %>
+      </div>
+      <div class="pt-3 border-t border-indigo-200/50 flex justify-between items-center">
+        <span class="text-xs font-black text-indigo-900 uppercase tracking-widest">Total Refunded</span>
+        <span class="text-lg font-black text-indigo-600"><%= formattedOrder.financials.formatted.refundedTotal %></span>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- C. CURRENT ACTIVE ORDER VALUE -->
+    <div class="bg-white rounded-2xl border-2 border-indigo-100 shadow-md p-6 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full -mr-8 -mt-8 opacity-50"></div>
+      <div class="relative z-10">
+        <h2 class="text-base font-black text-slate-800 mb-1">Current Active Order</h2>
+        <p class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-4"><%= formattedOrder.counts.active %> Active Item(s)</p>
+        
+        <div class="flex justify-between items-end">
+          <span class="text-sm font-black text-gray-400 uppercase tracking-wide">Net Retained</span>
+          <span class="text-3xl font-black text-indigo-600"><%= formattedOrder.financials.formatted.netRetainedAmount %></span>
         </div>
       </div>
     </div>

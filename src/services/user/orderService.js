@@ -11,6 +11,7 @@ import * as taxHelper from '../../utils/taxHelper.js';
 import cron from 'node-cron';
 import * as refundService from '../common/refundService.js';
 import * as orderLifecycleService from '../common/orderLifecycleService.js';
+import { updateLedger } from '../common/financialLedgerService.js';
 import { withTransaction, sessionOpts } from '../../utils/transactionHelper.js';
 export const getOrderById = async (userId, orderId) => {
     const order = await Order.findOne({ _id: orderId, user: userId })
@@ -37,6 +38,7 @@ export const getOrderById = async (userId, orderId) => {
             );
         }
         orderLifecycleService.appendSystemEvent(order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired', 'Payment session expired during JIT lookup');
+        updateLedger(order);
         await order.save();
     }
 
@@ -235,6 +237,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         }
 
         // 9. Finalize Order and Clear Cart
+        updateLedger(order);
         await order.save(sessionOpts(session));
         cart.items = [];
         cart.cartTotal = 0;
@@ -318,6 +321,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
                 );
             }
             orderLifecycleService.appendSystemEvent(order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired', 'Payment session expired during batch list lookup');
+            updateLedger(order);
             await order.save();
         }
     }
@@ -462,6 +466,7 @@ export const startStockCleanupTask = () => {
                     'Automatic cleanup of abandoned payment session'
                 );
 
+                updateLedger(order);
                 await order.save().catch(err => console.error(`Cron: Failed to save expired order ${order._id}:`, err));
             }
         } catch (err) {

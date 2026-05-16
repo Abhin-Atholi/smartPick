@@ -82,6 +82,14 @@ export const getAllOrders = async ({
     ]);
     const cancelledReturnedCount = cancelledReturnedAgg[0]?.total || 0;
 
+    // Count of true pending return request items
+    const pendingReturnsAgg = await Order.aggregate([
+        { $unwind: '$items' },
+        { $match: { 'items.itemStatus': 'Return Requested' } },
+        { $count: 'total' }
+    ]);
+    const returnRequestCount = pendingReturnsAgg[0]?.total || 0;
+
     // Status counts
     const statusCountsAgg = await Order.aggregate([
         { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
@@ -89,7 +97,7 @@ export const getAllOrders = async ({
     
     const statsObj = {
         Processing: 0, Shipped: 0, 'Out for Delivery': 0, 
-        Cancelled: 0, 'Return Requested': 0, Returned: 0,
+        Cancelled: 0, Returned: 0,
         Delivered: 0, totalAll: 0
     };
     
@@ -108,7 +116,7 @@ export const getAllOrders = async ({
             shippedCount: statsObj.Shipped,
             outForDeliveryCount: statsObj['Out for Delivery'],
             cancelledCount: statsObj.Cancelled,
-            returnRequestCount: statsObj['Return Requested'],
+            returnRequestCount: returnRequestCount,
             returnedCount: statsObj.Returned,
             deliveredProductsCount,
             cancelledReturnedCount
@@ -157,23 +165,60 @@ export const cancelOrderItem = async (orderId, itemId, adminId) => {
     });
 };
 
-// ── Return requests listing ───────────────────────────────────────────────────
-export const getReturnRequests = async ({ page = 1, limit = 10 } = {}) => {
-    const query = {
-        $or: [
-            { orderStatus: 'Return Requested' },
-            { 'items.itemStatus': 'Return Requested' }
-        ]
-    };
-    const [orders, total] = await Promise.all([
-        Order.find(query)
-            .populate('user', 'fullName email profileImage')
-            .populate('items.product', 'name variants')
-            .sort({ updatedAt: -1 })
-            .skip((page - 1) * limit).limit(limit).lean(),
-        Order.countDocuments(query)
+// ── Return requests listing (Flattened Item-Level) ────────────────────────────
+export const getReturnRequests = async ({ page = 1, limit = 10, status = 'Return Requested', search = '' } = {}) => {
+    const skip = (page - 1) * limit;
+
+    const pipeline = [
+        { $unwind: '$items' }
+    ];
+
+    // Filter by item status
+    if (status && status !== 'All') {
+        pipeline.push({ $match: { 'items.itemStatus': status } });
+    } else {
+        // Default to showing only return-related statuses
+        pipeline.push({ $match: { 'items.itemStatus': { $in: ['Return Requested', 'Returned', 'Return Rejected'] } } });
+    }
+
+    if (search && search.trim()) {
+        const term = search.trim();
+        const User = (await import('../../model/userModel.js')).default;
+        const uIds = (await User.find({
+            $or: [{ fullName: { $regex: term, $options: 'i' } }, { email: { $regex: term, $options: 'i' } }]
+        }, '_id').lean()).map(u => u._id);
+
+        pipeline.push({
+            $match: {
+                $or: [
+                    { orderId: { $regex: term, $options: 'i' } },
+                    ...(uIds.length ? [{ user: { $in: uIds } }] : [])
+                ]
+            }
+        });
+    }
+
+    pipeline.push(
+        { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'userObj' } },
+        { $unwind: { path: '$userObj', preserveNullAndEmptyArrays: true } },
+        { $lookup: { from: 'products', localField: 'items.product', foreignField: '_id', as: 'productObj' } },
+        { $unwind: { path: '$productObj', preserveNullAndEmptyArrays: true } },
+        { $sort: { 'items.updatedAt': -1, updatedAt: -1 } }
+    );
+
+    const [results, countResult] = await Promise.all([
+        Order.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
+        Order.aggregate([...pipeline, { $count: 'total' }])
     ]);
-    return { orders, total, totalPages: Math.ceil(total / limit), currentPage: page };
+
+    const total = countResult[0]?.total || 0;
+    
+    return {
+        returnItems: results,
+        total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page
+    };
 };
 
 // ── Approve or reject a return request (per item) ─────────────────────────────
