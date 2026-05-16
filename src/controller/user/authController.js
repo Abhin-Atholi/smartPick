@@ -6,6 +6,15 @@ import passport from "passport";
 export const loadLogin = (req, res) => res.render("user/login", { title: "Login", msg: req.query.msg || null, email: req.query.email || "" });
 export const loadRegister = (req, res) => res.render("user/register", { title: "Register", msg: req.query.msg || null, name: req.query.name || "", email: req.query.email || "", referralCode: req.query.ref || "" });
 
+export const checkEmail = async (req, res) => {
+  try {
+    const isAvailable = await authService.checkEmail(req.query.email);
+    res.json({ available: isAvailable });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 /** * FORGOT PASSWORD FLOW 
  */
 export const loadForgotPassword = (req, res) => {
@@ -76,7 +85,7 @@ export const loginUser = async (req, res) => {
     req.session.save(() => res.redirect("/home"));
   } catch (err) {
     if (err.needsVerify) return res.redirect(`/verify?email=${encodeURIComponent(err.email)}`);
-    res.redirect(`/login?msg=${encodeURIComponent(err.message)}&email=${encodeURIComponent(req.body.email || "")}`);
+    res.redirect(`/login?msg=${encodeURIComponent("Invalid email or password")}&email=${encodeURIComponent(req.body.email || "")}`);
   }
 };
 

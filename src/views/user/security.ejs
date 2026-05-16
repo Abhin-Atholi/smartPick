@@ -30,24 +30,57 @@
                 </div>
               <% } else { %>
                 <form id="updatePasswordForm" class="max-w-md space-y-5">
-                    <div id="current-password-group">
+                    <div id="current-password-group" class="relative">
                       <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">Current Password</label>
-                      <input type="password" id="currentPasswordInput" name="currentPassword" required
-                        class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+                      <div class="relative">
+                        <input type="password" id="currentPasswordInput" name="currentPassword" 
+                          class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 focus:outline-none toggle-password" data-target="currentPasswordInput">
+                          <svg class="w-5 h-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.352 7.088 7.423 4.75 12 4.75s8.648 2.338 9.964 6.928a1.012 1.012 0 0 1 0 .644c-1.316 4.908-5.387 7.246-12 7.246s-8.648-2.338-9.964-6.928Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                          </svg>
+                          <svg class="w-5 h-5 eye-slash-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822L21 21m-7.778-7.778-3.65-3.65m0 0a3 3 0 1 0 5.148 5.148m-5.148-5.148 3.65 3.65" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     
-                    <div>
+                    <div class="relative">
                       <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">New Password</label>
-                      <input type="password" name="newPassword" required minlength="8" placeholder="Min. 8 characters"
-                        class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+                      <div class="relative">
+                        <input type="password" id="newPasswordInput" name="newPassword" placeholder="Min. 8 characters"
+                          class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 focus:outline-none toggle-password" data-target="newPasswordInput">
+                          <svg class="w-5 h-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.352 7.088 7.423 4.75 12 4.75s8.648 2.338 9.964 6.928a1.012 1.012 0 0 1 0 .644c-1.316 4.908-5.387 7.246-12 7.246s-8.648-2.338-9.964-6.928Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                          </svg>
+                          <svg class="w-5 h-5 eye-slash-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822L21 21m-7.778-7.778-3.65-3.65m0 0a3 3 0 1 0 5.148 5.148m-5.148-5.148 3.65 3.65" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
-                    <div>
+                    <div class="relative">
                       <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-1">Confirm New
                         Password</label>
-                      <input type="password" name="confirmPassword" required minlength="8"
-                        placeholder="Repeat new password"
-                        class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+                      <div class="relative">
+                        <input type="password" id="confirmPasswordInput" name="confirmPassword"
+                          placeholder="Repeat new password"
+                          class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 focus:outline-none toggle-password" data-target="confirmPasswordInput">
+                          <svg class="w-5 h-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.352 7.088 7.423 4.75 12 4.75s8.648 2.338 9.964 6.928a1.012 1.012 0 0 1 0 .644c-1.316 4.908-5.387 7.246-12 7.246s-8.648-2.338-9.964-6.928Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                          </svg>
+                          <svg class="w-5 h-5 eye-slash-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822L21 21m-7.778-7.778-3.65-3.65m0 0a3 3 0 1 0 5.148 5.148m-5.148-5.148 3.65 3.65" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
                     <div class="pt-2">
@@ -69,6 +102,16 @@
         e.preventDefault(); 
         
         const form = e.target;
+        
+        // Manual validation check
+        const isValid = ValidationHelper.validateForm(form, {
+            currentPassword: (v) => (!v ? 'Current password is required' : null),
+            newPassword: AuthValidators.password,
+            confirmPassword: AuthValidators.confirmPassword
+        });
+
+        if (!isValid) return;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const msgContainer = document.getElementById('js-msg-container');
@@ -98,7 +141,29 @@
         }
       });
     }
-  </script>
 
+    // Password Toggles
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const eyeIcon = this.querySelector('.eye-icon');
+            const eyeSlashIcon = this.querySelector('.eye-slash-icon');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.classList.add('hidden');
+                eyeSlashIcon.classList.remove('hidden');
+            } else {
+                input.type = 'password';
+                eyeIcon.classList.remove('hidden');
+                eyeSlashIcon.classList.add('hidden');
+            }
+        });
+    });
+  </script>
+  
+  <script src="/js/validation.js"></script>
+  <script src="/js/authValidation.js"></script>
   <%- include("partials/footer") %>
   <%- include("partials/drawer") %>

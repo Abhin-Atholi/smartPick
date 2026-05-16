@@ -89,6 +89,14 @@ export const getCart = async (userId, page = 1, limit = 4) => {
             totalItems: 0,
             totalPages: 1,
             currentPage: page,
+            breakdown: {
+                originalSubtotal: 0,
+                subtotal: 0,
+                offerDiscount: 0,
+                couponDiscount: 0,
+                shippingFee: 0,
+                total: 0
+            },
             originalSubtotal: 0,
             totalOfferDiscount: 0,
             cartTotal: 0,

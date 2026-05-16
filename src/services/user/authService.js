@@ -3,18 +3,16 @@ import User from "../../model/userModel.js";
 import TempUser from "../../model/tempUserModel.js";
 import * as otpService from "../common/otpService.js";
 import { validateReferralCode } from "../../utils/referralHelper.js";
+import { registerSchema, loginSchema, resetPasswordSchema } from "../../validators/user/authValidation.js";
 
 /**
  * Register: Handles temporary user creation and OTP generation
  */
-export const register = async ({ name, email, password, confirmPassword, referralCode }) => {
-  if (!name && !email && !password && !confirmPassword) throw new Error("All fields are required");
-  email = email.trim().toLowerCase();
-  if (name.length<3) throw new Error("Name should have atleast 3 characters");
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) throw new Error("Invalid email format");
-  if (password.length < 8) throw new Error("Password must have at least 8 characters");
-  if (password !== confirmPassword) throw new Error("Passwords do not match");
+export const register = async (data) => {
+  const { error, value } = registerSchema.validate(data);
+  if (error) throw new Error(error.details[0].message);
+
+  let { name, email, password, referralCode } = value;
 
   const existing = await User.findOne({ email });
   if (existing) throw new Error("User already exists");
@@ -39,9 +37,11 @@ export const register = async ({ name, email, password, confirmPassword, referra
 /**
  * Login: Handles credentials, block status, and verification checks
  */
-export const login = async ({ email, password }) => {
-  if (!email || !password) throw new Error("Please fill all fields");
-  email = email.trim().toLowerCase();
+export const login = async (data) => {
+  const { error, value } = loginSchema.validate(data);
+  if (error) throw new Error(error.details[0].message);
+  
+  let { email, password } = value;
 
   const user = await User.findOne({ email });
   if (!user) throw new Error("No user found, please register first");
@@ -61,7 +61,7 @@ if (user.role !== 'user') {
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error("Email or password is wrong");
+  if (!isMatch) throw new Error("Invalid email or password");
 
   if (!user.isVerified) {
     const err = new Error("Please verify your account");
@@ -76,10 +76,13 @@ if (user.role !== 'user') {
 /**
  * Finalize Password Reset: Hashing new password after OTP success
  */
-export const finalizePasswordReset = async ({ email, otp, password, confirmPassword }) => {
-  if(!otp) throw new Error("Please enter the otp")
-  if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
-  if (password !== confirmPassword) throw new Error("Passwords do not match");
+export const finalizePasswordReset = async (data) => {
+  if (!data.otp) throw new Error("Please enter the otp");
+  
+  const { error, value } = resetPasswordSchema.validate(data);
+  if (error) throw new Error(error.details[0].message);
+
+  const { email, otp, password } = value;
 
   const result = await otpService.verifyOtp({ email, otp, purpose: "reset_password" });
   
@@ -90,4 +93,11 @@ export const finalizePasswordReset = async ({ email, otp, password, confirmPassw
   user.password = await bcrypt.hash(password, 12);
 
   await user.save();
+};
+
+export const checkEmail = async (email) => {
+  if (!email) return false;
+  email = email.trim().toLowerCase();
+  const existing = await User.findOne({ email });
+  return !existing;
 };
