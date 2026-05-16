@@ -78,7 +78,7 @@ export const updateOffer = async (id, data) => {
     const offer = await Offer.findById(id);
     if (!offer || offer.isDeleted) throw new Error('Offer not found.');
 
-    const { name, description, discountType, discountValue, expiryDate } = data;
+    const { name, description, offerType, discountType, discountValue, applicableTo, expiryDate, startDate, isActive } = data;
 
     if (Number(discountValue) < 1) throw new Error('Discount value must be at least 1.');
     if (discountType === 'percentage' && Number(discountValue) > 90) {
@@ -88,9 +88,13 @@ export const updateOffer = async (id, data) => {
 
     offer.name = name?.trim() || offer.name;
     offer.description = description;
+    offer.offerType = offerType || offer.offerType;
+    offer.applicableTo = applicableTo || offer.applicableTo;
     offer.discountType = discountType;
     offer.discountValue = Number(discountValue);
     offer.expiryDate = new Date(expiryDate);
+    if (startDate) offer.startDate = new Date(startDate);
+    if (isActive !== undefined) offer.isActive = isActive;
 
     await offer.save();
     return offer;

@@ -49,7 +49,7 @@ export const loadCheckout = async (req, res, next) => {
                 if (!stockIssue) {
                     subtotal += item.effectiveTotalPrice || item.totalPrice;
                     if (item.offerApplied) {
-                        totalOfferDiscount += (item.price - item.effectivePrice) * item.quantity;
+                        totalOfferDiscount += ((item.originalPrice || item.price) - (item.finalPrice || item.price)) * item.quantity;
                     }
                 }
                 return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };

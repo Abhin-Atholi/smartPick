@@ -305,10 +305,11 @@
           currentVariantId = v._id;
           document.getElementById('sizeNameLabel').innerText = v.size;
           let finalPrice = v.price;
-          if (initialBestOffer) {
-            const discount = initialBestOffer.discountType === 'flat' 
-              ? initialBestOffer.discountValue 
-              : (v.price * initialBestOffer.discountValue / 100);
+          if (initialBestOffer && initialBestOffer.appliedOffer) {
+            const offer = initialBestOffer.appliedOffer;
+            const discount = offer.discountType === 'flat' 
+              ? offer.discountValue 
+              : (v.price * offer.discountValue / 100);
             finalPrice = Math.max(v.price - discount, 1);
             
             document.getElementById('activePrice').innerText = `₹${finalPrice.toFixed(0)}`;

@@ -169,7 +169,7 @@
                                                         item.availableStock %> left</p>
                                                 <% } else { %>
                                                     <p class="text-sm font-black text-indigo-600 mt-1">₹<%=
-                                                            item.totalPrice.toLocaleString() %>
+                                                            (item.effectiveTotalPrice || item.totalPrice).toLocaleString() %>
                                                     </p>
                                                     <% } %>
                                     </div>
