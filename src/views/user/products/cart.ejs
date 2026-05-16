@@ -48,21 +48,32 @@
                                 <% 
                     cart.items.forEach(item => { 
                         const product = item.product;
-                        const isUnavailable = !product || !product.isCurrentlyAvailable;
+                        let isUnavailable = !product || !product.isCurrentlyAvailable;
                         let cartVariant = null;
+
+                        // 1. Primary Lookup: By variantId
                         if (product && item.variantId) {
                             cartVariant = product.variants.find(v => v._id.toString() === item.variantId.toString());
-                        } else if (product && item.size && item.color) {
-                            cartVariant = product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
                         }
-                        const itemSize = cartVariant ? cartVariant.size : 'N/A';
-                        const itemColorName = cartVariant ? cartVariant.color : 'N/A';
+                        
+                        // 2. Secondary Lookup: Fallback to size/color
+                        if (!cartVariant && product && item.size && item.color) {
+                            cartVariant = product.variants.find(v => 
+                                v.size === item.size && 
+                                (v.color === item.color || (v.color && v.color.name === item.color))
+                            );
+                        }
+
+                        const itemSize = cartVariant ? cartVariant.size : (item.size || 'N/A');
+                        const itemColorName = cartVariant ? cartVariant.color : (item.color || 'N/A');
                         const colorOption = product && product.colorOptions ? product.colorOptions.find(c => c.name === itemColorName) : null;
                         const itemColorCode = colorOption ? colorOption.code : '#ccc';
                         
                         const availableStock = cartVariant ? cartVariant.stock : 0;
-                        const isLowStock = !isUnavailable && availableStock > 0 && availableStock < item.quantity;
                         const isOutOfStock = !isUnavailable && availableStock === 0;
+                        const isLowStock = !isUnavailable && !isOutOfStock && availableStock < item.quantity;
+                        
+                        if (!cartVariant) isUnavailable = true;
                         const stockIssue = isUnavailable || isLowStock || isOutOfStock;
                         if (stockIssue) hasStockIssue = true;
                 %>
@@ -227,7 +238,9 @@
                         <% } %>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500 font-bold">Shipping Estimate</span>
-                                <span class="text-green-500 font-black uppercase tracking-wider text-[10px]">Free</span>
+                                <span id="summaryShipping" class="font-black uppercase tracking-wider text-[10px] <%= cart.breakdown.shippingFee > 0 ? 'text-gray-900' : 'text-green-500' %>">
+                                    <%= cart.breakdown.shippingFee > 0 ? '₹' + cart.breakdown.shippingFee : 'Free' %>
+                                </span>
                             </div>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500 font-bold">Tax Estimate</span>
@@ -244,8 +257,9 @@
                         </div>
                     </div>
 
+                        <div id="checkoutContainer">
                         <% if (hasStockIssue) { %>
-                            <div class="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mb-4">
+                            <div id="globalStockWarning" class="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mb-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                                     class="text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
@@ -267,6 +281,7 @@
                                     Proceed to Checkout
                                 </a>
                                 <% } %>
+                        </div>
 
                                     <a href="/products"
                                         class="block text-center mt-6 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-indigo-600 transition-colors">
@@ -402,22 +417,65 @@
         }
 
         function updateSummary(data) {
-            // data: { originalSubtotal, totalOfferDiscount, activeTotal, estimatedTax }
-            document.getElementById('summarySubtotal').innerText = (data.originalSubtotal || 0).toLocaleString();
+            // data: { breakdown, activeTotal, hasGlobalStockIssue, allItemsWithOffers }
+            const breakdown = data.breakdown || {};
+            document.getElementById('summarySubtotal').innerText = (breakdown.originalSubtotal || 0).toLocaleString();
             
             const offerRow = document.getElementById('summaryOfferDiscount')?.closest('.flex');
-            if (data.totalOfferDiscount > 0) {
+            if (breakdown.offerDiscount > 0) {
                 if (offerRow) {
                     offerRow.classList.remove('hidden');
-                    document.getElementById('summaryOfferDiscount').innerText = (data.totalOfferDiscount || 0).toLocaleString();
+                    document.getElementById('summaryOfferDiscount').innerText = (breakdown.offerDiscount || 0).toLocaleString();
                 }
             } else if (offerRow) {
                 offerRow.classList.add('hidden');
             }
 
             const tax = data.estimatedTax || 0;
+            const shipping = breakdown.shippingFee || 0;
+            
+            const shippingEl = document.getElementById('summaryShipping');
+            if (shippingEl) {
+                if (shipping > 0) {
+                    shippingEl.innerText = '₹' + shipping;
+                    shippingEl.classList.remove('text-green-500');
+                    shippingEl.classList.add('text-gray-900');
+                } else {
+                    shippingEl.innerText = 'Free';
+                    shippingEl.classList.remove('text-gray-900');
+                    shippingEl.classList.add('text-green-500');
+                }
+            }
+
             document.getElementById('summaryTax').innerText = tax.toLocaleString();
-            document.getElementById('summaryTotal').innerText = (data.activeTotal + tax).toLocaleString();
+            document.getElementById('summaryTotal').innerText = (breakdown.totalAmount || (data.activeTotal + tax + shipping)).toLocaleString();
+
+            // Dynamic Checkout Button & Warning Update
+            const container = document.getElementById('checkoutContainer');
+            if (data.hasGlobalStockIssue) {
+                container.innerHTML = `
+                    <div id="globalStockWarning" class="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                        <p class="text-xs font-bold text-red-600">Some items in your cart have stock issues. Please remove or adjust them before proceeding.</p>
+                    </div>
+                    <div class="block w-full h-14 rounded-2xl bg-gray-200 text-gray-400 font-black text-sm uppercase tracking-widest flex items-center justify-center cursor-not-allowed">
+                        Proceed to Checkout
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <a href="/checkout" class="block w-full h-14 rounded-2xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center shadow-xl shadow-indigo-100 active:scale-95">
+                        Proceed to Checkout
+                    </a>
+                `;
+            }
+
+            // Optional: Update individual item styles if they are in data.allItemsWithOffers
+            // For now, let's at least reload if it gets too complex, or just let the global warning handle it.
+            // A simple way is to reload the page if stock issue status changed from true to false or vice versa
+            // but the above innerHTML update handles the most critical part (the button).
         }
 
         // Pagination Bridge for the partial

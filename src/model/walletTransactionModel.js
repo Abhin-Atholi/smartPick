@@ -50,10 +50,12 @@ const walletTransactionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes for efficient querying and sorting
+// NOTE: transactionId index is created automatically via unique:true on the field — do not duplicate here
 walletTransactionSchema.index({ userId: 1 });
 walletTransactionSchema.index({ walletId: 1 });
-walletTransactionSchema.index({ transactionId: 1 });
 walletTransactionSchema.index({ orderId: 1 });
 walletTransactionSchema.index({ createdAt: -1 });
+// Phase 8: Compound index for analytics refund aggregations
+walletTransactionSchema.index({ type: 1, status: 1, createdAt: -1 });
 
 export default mongoose.model("WalletTransaction", walletTransactionSchema);

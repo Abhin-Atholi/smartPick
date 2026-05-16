@@ -2,6 +2,8 @@ import Order from '../../model/orderModel.js';
 import Product from '../../model/productModel.js';
 import * as walletService from '../user/walletService.js';
 import * as taxHelper from '../../utils/taxHelper.js';
+import * as orderLifecycleService from '../common/orderLifecycleService.js';
+import { withTransaction, sessionOpts } from '../../utils/transactionHelper.js';
 
 // ── Admin-settable status transitions ────────────────────────────────────────
 // "Return Requested" is user-triggered only; admin cannot set it manually.
@@ -16,15 +18,7 @@ const ALLOWED_TRANSITIONS = {
     'Cancelled':        []
 };
 
-// ── Helper: restore stock for one item ───────────────────────────────────────
-const restoreStock = (item) => {
-    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
-    return Product.updateOne(
-        { _id: item.product },
-        { $inc: { 'variants.$[v].stock': item.quantity } },
-        { arrayFilters: [arrayFilter] }
-    );
-};
+
 
 // ── Order listing with search / filter / sort / pagination ───────────────────
 export const getAllOrders = async ({
@@ -130,69 +124,37 @@ export const getOrderByIdAdmin = async (orderId) =>
         .lean();
 
 // ── Update whole-order status ─────────────────────────────────────────────────
-export const updateOrderStatus = async (orderId, newStatus) => {
-    const order = await Order.findById(orderId);
-    if (!order) return { success: false, message: 'Order not found' };
+export const updateOrderStatus = async (orderId, newStatus, adminId) => {
+    return withTransaction(async (session) => {
+        const q = Order.findById(orderId);
+        if (session) q.session(session);
+        const order = await q;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    const allowed = ALLOWED_TRANSITIONS[order.orderStatus] || [];
-    if (!allowed.includes(newStatus)) {
-        return { success: false, message: `Cannot move from "${order.orderStatus}" → "${newStatus}"` };
-    }
-
-    if (newStatus === 'Cancelled') {
-        for (const item of order.items) {
-            if (!['Cancelled','Returned'].includes(item.itemStatus)) {
-                await restoreStock(item);
-                item.itemStatus = 'Cancelled';
-            }
+        try {
+            await orderLifecycleService.updateOrderStatus(order, adminId, newStatus, session);
+            return { success: true, message: `Status updated to "${newStatus}"` };
+        } catch (err) {
+            return { success: false, message: err.message };
         }
-        if (order.paymentStatus === 'Paid') {
-            order.paymentStatus = 'Refunded';
-            await walletService.creditWallet(order.user, order.totalAmount, `Refund for admin-cancelled Order ${order.orderId}`, 'Cancellation Refund', orderId);
-        }
-    } else {
-        const syncMap = { Shipped: 'Shipped', 'Out for Delivery': 'Out for Delivery', Delivered: 'Delivered' };
-        if (syncMap[newStatus]) {
-            order.items.forEach(item => {
-                if (!['Cancelled','Returned', 'Return Rejected'].includes(item.itemStatus)) item.itemStatus = syncMap[newStatus];
-            });
-        }
-    }
-
-    order.orderStatus = newStatus;
-    if (newStatus === 'Delivered') order.paymentStatus = 'Paid';
-    await order.save();
-    return { success: true, message: `Status updated to "${newStatus}"` };
+    });
 };
 
 // ── Cancel a single item (admin) ──────────────────────────────────────────────
-export const cancelOrderItem = async (orderId, itemId) => {
-    const order = await Order.findById(orderId);
-    if (!order) return { success: false, message: 'Order not found' };
+export const cancelOrderItem = async (orderId, itemId, adminId) => {
+    return withTransaction(async (session) => {
+        const q = Order.findById(orderId);
+        if (session) q.session(session);
+        const order = await q;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    const item = order.items.id(itemId);
-    if (!item) return { success: false, message: 'Item not found' };
-    if (['Cancelled','Returned', 'Return Rejected', 'Shipped', 'Out for Delivery', 'Delivered'].includes(item.itemStatus)) {
-        return { success: false, message: `Item cannot be cancelled because it is ${item.itemStatus}` };
-    }
-
-    await restoreStock(item);
-    item.itemStatus = 'Cancelled';
-
-    // Auto-cancel whole order if all items are now cancelled/returned
-    const active = order.items.filter(i => !['Cancelled','Returned'].includes(i.itemStatus));
-    if (active.length === 0) order.orderStatus = 'Cancelled';
-
-    if (order.paymentStatus === 'Paid') {
-        const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
-        const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
-        const refundAmount = item.totalPrice + itemTaxRefund;
-        await walletService.creditWallet(order.user, refundAmount, `Refund for admin-cancelled item in Order ${order.orderId}`, 'Cancellation Refund', orderId);
-        if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
-    }
-
-    await order.save();
-    return { success: true, message: 'Item cancelled and stock restored' };
+        try {
+            await orderLifecycleService.cancelOrderItem(order, itemId, adminId, 'admin', 'Cancelled by admin', session);
+            return { success: true, message: 'Item cancelled and stock restored' };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    });
 };
 
 // ── Return requests listing ───────────────────────────────────────────────────
@@ -215,39 +177,19 @@ export const getReturnRequests = async ({ page = 1, limit = 10 } = {}) => {
 };
 
 // ── Approve or reject a return request (per item) ─────────────────────────────
-export const handleReturnDecision = async (orderId, itemId, decision) => {
-    const order = await Order.findById(orderId);
-    if (!order) return { success: false, message: 'Order not found' };
+export const handleReturnDecision = async (orderId, itemId, decisionPayload, adminId) => {
+    return withTransaction(async (session) => {
+        const q = Order.findById(orderId);
+        if (session) q.session(session);
+        const order = await q;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    const item = order.items.id(itemId);
-    if (!item) return { success: false, message: 'Item not found' };
-    if (item.itemStatus !== 'Return Requested') {
-        return { success: false, message: 'No pending return request for this item' };
-    }
-
-    if (decision === 'approve') {
-        await restoreStock(item);
-        item.itemStatus = 'Returned';
-        // If all returnable items are now returned/cancelled, mark order Returned
-        const nonReturned = order.items.filter(i => !['Returned','Cancelled', 'Return Rejected'].includes(i.itemStatus));
-        if (nonReturned.length === 0) order.orderStatus = 'Returned';
-
-        if (order.paymentStatus === 'Paid') {
-            const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
-            const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
-            const refundAmount = item.totalPrice + itemTaxRefund;
-            await walletService.creditWallet(order.user, refundAmount, `Refund for returned item in Order ${order.orderId}`, 'Refund', orderId);
-            if (order.orderStatus === 'Returned') order.paymentStatus = 'Refunded';
+        try {
+            await orderLifecycleService.handleReturnDecision(order, itemId, adminId, decisionPayload, session);
+            const msg = decisionPayload.decision === 'approve' ? 'Return approved & stock restored' : 'Return rejected — item reverted to Delivered';
+            return { success: true, message: msg };
+        } catch (err) {
+            return { success: false, message: err.message };
         }
-    } else {
-        item.itemStatus = 'Return Rejected';
-        // Mark order as Return Rejected if it was requested at order level
-        if (order.orderStatus === 'Return Requested') {
-            order.orderStatus = 'Return Rejected';
-        }
-    }
-
-    await order.save();
-    const msg = decision === 'approve' ? 'Return approved & stock restored' : 'Return rejected — item reverted to Delivered';
-    return { success: true, message: msg };
+    });
 };

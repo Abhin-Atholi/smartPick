@@ -1,4 +1,5 @@
 import * as reportService from '../../services/admin/reportService.js';
+import * as analyticsService from '../../services/admin/analyticsService.js';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 
@@ -150,5 +151,55 @@ export const exportPdfReport = async (req, res) => {
     } catch (error) {
         console.error('PDF Export Error:', error);
         res.status(500).send('Export failed');
+    }
+};
+
+// ── Phase 8: Analytics API Endpoints ────────────────────────────────────────
+
+/** Revenue time-series API: /admin/analytics/revenue-series?period=monthly */
+export const getRevenueSeriesData = async (req, res) => {
+    try {
+        const { period = 'monthly', customFrom, customTo } = req.query;
+        const data = await analyticsService.getRevenueTimeSeries(period, customFrom, customTo);
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('Revenue series error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch revenue series' });
+    }
+};
+
+/** Return analytics API: /admin/analytics/returns?filter=month */
+export const getReturnAnalyticsData = async (req, res) => {
+    try {
+        const { filter = 'all', customFrom, customTo } = req.query;
+        const data = await analyticsService.getReturnAnalytics(filter, customFrom, customTo);
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('Return analytics error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch return analytics' });
+    }
+};
+
+/** Coupon analytics API: /admin/analytics/coupons?filter=month */
+export const getCouponAnalyticsData = async (req, res) => {
+    try {
+        const { filter = 'all', customFrom, customTo } = req.query;
+        const data = await analyticsService.getCouponAnalytics(filter, customFrom, customTo);
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('Coupon analytics error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch coupon analytics' });
+    }
+};
+
+/** Full dashboard metrics API: /admin/analytics/dashboard?filter=month */
+export const getFullDashboardMetrics = async (req, res) => {
+    try {
+        const { filter = 'all', customFrom, customTo } = req.query;
+        const data = await analyticsService.getDashboardMetrics(filter, customFrom, customTo);
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('Dashboard metrics error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch metrics' });
     }
 };

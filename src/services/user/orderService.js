@@ -9,9 +9,9 @@ import * as walletService from './walletService.js';
 import * as offerHelper from '../../utils/offerHelper.js';
 import * as taxHelper from '../../utils/taxHelper.js';
 import cron from 'node-cron';
-
-// processRefund removed in favor of walletService.creditWallet
-
+import * as refundService from '../common/refundService.js';
+import * as orderLifecycleService from '../common/orderLifecycleService.js';
+import { withTransaction, sessionOpts } from '../../utils/transactionHelper.js';
 export const getOrderById = async (userId, orderId) => {
     const order = await Order.findOne({ _id: orderId, user: userId })
         .populate({ path: 'items.product', populate: { path: 'category' } });
@@ -44,172 +44,199 @@ export const getOrderById = async (userId, orderId) => {
 import * as pricingService from '../common/pricingService.js';
 
 export const placeOrder = async (userId, addressId, paymentMethod, couponData = null) => {
-    // 1. Fetch Cart
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
-    if (!cart || cart.items.length === 0) {
-        return { success: false, message: 'Your cart is empty' };
-    }
-
-    // 2. Fetch Address
-    const address = await Address.findOne({ _id: addressId, userId });
-    if (!address) {
-        return { success: false, message: 'Address not found' };
-    }
-
-    // 3. Pre-flight stock check & item building
-    const affectedItems = [];
-    const orderItems = [];
-
-    for (const item of cart.items) {
-        const product = item.product;
-        if (!product || product.isDeleted || !product.isActive) {
-            affectedItems.push({ name: product?.name || 'Unknown', reason: 'Product is unavailable' });
-            continue;
-        }
-        const variant = product.variants.find(v => v._id.toString() === item.variantId.toString());
-        if (!variant) {
-            affectedItems.push({ name: product.name, reason: `Requested variant not found` });
-            continue;
-        }
-        if (variant.stock < item.quantity) {
-            affectedItems.push({ name: product.name, reason: `Only ${variant.stock} unit(s) left (you need ${item.quantity})` });
-            continue;
+    return withTransaction(async (session) => {
+        // 1. Fetch Cart
+        const cartQuery = Cart.findOne({ user: userId }).populate('items.product');
+        if (session) cartQuery.session(session);
+        const cart = await cartQuery;
+        if (!cart || cart.items.length === 0) {
+            return { success: false, message: 'Your cart is empty' };
         }
 
-        // Recalculate Offer using centralized pricing engine
-        const categoryId = product.category?._id || product.category;
-        const pricing = await offerHelper.getBestOffer(product._id, categoryId, variant.price) || {
-            originalPrice: variant.price,
-            finalPrice: variant.price,
-            discountAmount: 0,
-            appliedOffer: null
-        };
-
-        const itemTotal = pricing.finalPrice * item.quantity;
-
-        orderItems.push({
-            product: product._id,
-            quantity: item.quantity,
-            variantId: item.variantId,
-            size: variant.size,
-            color: variant.color,
-            price: pricing.finalPrice,
-            originalPrice: pricing.originalPrice,
-            discountAmount: pricing.discountAmount,
-            totalPrice: itemTotal,
-            offerApplied: pricing.appliedOffer ? {
-                offerId: pricing.appliedOffer.offerId,
-                offerName: pricing.appliedOffer.name,
-                offerType: pricing.appliedOffer.offerType,
-                discountType: pricing.appliedOffer.discountType,
-                discountAmount: pricing.discountAmount * item.quantity
-            } : undefined,
-            itemStatus: (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing'
-        });
-    }
-
-    if (affectedItems.length > 0) {
-        return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
-    }
-
-    // 4. Calculate Totals via Pricing Engine
-    const totals = pricingService.calculateOrderTotals(orderItems, couponData);
-    const totalAmount = totals.grandTotal;
-
-    // 5. Initial Statuses
-    let walletAmountUsed = 0;
-    let finalPaymentStatus = 'Pending';
-    let finalOrderStatus = (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing';
-
-    // Handle Wallet logic early to check balance
-    if (paymentMethod === 'Wallet') {
-        const wallet = await walletService.getOrCreateWallet(userId);
-        if (wallet.balance < totalAmount) {
-            return { success: false, message: `Insufficient wallet balance. Available: ₹${wallet.balance.toFixed(2)}, Required: ₹${totalAmount.toFixed(2)}` };
+        // 2. Fetch Address
+        const addrQuery = Address.findOne({ _id: addressId, userId });
+        if (session) addrQuery.session(session);
+        const address = await addrQuery;
+        if (!address) {
+            return { success: false, message: 'Address not found' };
         }
-        walletAmountUsed = totalAmount;
-        finalPaymentStatus = 'Paid';
-    }
 
-    // 6. Build order document
-    const orderIdObj = new mongoose.Types.ObjectId();
-    const order = new Order({
-        _id: orderIdObj,
-        orderId: `SP-${orderIdObj.toString().slice(-6).toUpperCase()}`,
-        user: userId,
-        items: orderItems,
-        shippingAddress: {
-            fullName: address.fullName,
-            phone: address.phone,
-            addressLine1: `${address.house}, ${address.locality}, ${address.area}`,
-            addressLine2: '',
-            city: address.city,
-            state: address.state,
-            postalCode: address.pincode,
-            country: address.country
-        },
-        originalSubtotal: totals.originalSubtotal,
-        totalOfferDiscount: totals.offerDiscount,
-        subtotal: totals.subtotal,
-        shippingFee: totals.shipping,
-        tax: totals.tax,
-        discount: totals.couponDiscount,
-        walletAmountUsed,
-        totalAmount,
-        paymentMethod,
-        paymentStatus: finalPaymentStatus,
-        orderStatus: finalOrderStatus,
-        couponApplied: couponData ? {
-            code: couponData.code,
-            discountAmount: couponData.discountAmount,
-            discountType: couponData.discountType
-        } : undefined
-    });
+        // 3. Pre-flight stock check & item building
+        const affectedItems = [];
+        const orderItems = [];
 
-    if (paymentMethod === 'Razorpay') {
-        order.retryExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-        order.paymentDetails = {
-            retryExpiryTime: new Date(Date.now() + 5 * 60 * 1000),
-            failedAttempts: 0
-        };
-    }
+        for (const item of cart.items) {
+            const product = item.product;
+            if (!product || product.isDeleted || !product.isActive) {
+                affectedItems.push({ name: product?.name || 'Unknown', reason: 'Product is unavailable' });
+                continue;
+            }
+            let variant = product.variants.find(v => v._id.toString() === item.variantId.toString());
+            
+            // Secondary Lookup: Fallback to size/color if ID lookup fails (Self-Healing during checkout)
+            // This handles cases where admin edited the product and Regenerated variant IDs, 
+            // but the cart DB still has the old ID.
+            if (!variant && item.size && item.color) {
+                variant = product.variants.find(v => 
+                    v.size === item.size && 
+                    (v.color === item.color || (v.color && v.color.name === item.color))
+                );
+                // Temporarily update the in-memory item so order generation and stock reduction use the NEW ID
+                if (variant) {
+                    item.variantId = variant._id;
+                }
+            }
 
-    // 7. STOCK RESERVATION
-    for (const item of orderItems) {
-        const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
-        await Product.updateOne(
-            { _id: item.product },
-            { $inc: { 'variants.$[v].stock': -item.quantity } },
-            { arrayFilters: [arrayFilter] }
-        );
-    }
+            if (!variant) {
+                affectedItems.push({ name: product.name, reason: `Requested variant not found` });
+                continue;
+            }
+            if (variant.stock < item.quantity) {
+                affectedItems.push({ name: product.name, reason: `Only ${variant.stock} unit(s) left (you need ${item.quantity})` });
+                continue;
+            }
 
-    // 8. Wallet debit (Atomic)
-    if (paymentMethod === 'Wallet' && walletAmountUsed > 0) {
-        await walletService.debitWallet(
-            userId,
+            // Recalculate Offer using centralized pricing engine
+            const categoryId = product.category?._id || product.category;
+            const pricing = await offerHelper.getBestOffer(product._id, categoryId, variant.price) || {
+                originalPrice: variant.price,
+                finalPrice: variant.price,
+                discountAmount: 0,
+                appliedOffer: null
+            };
+
+            const itemTotal = pricing.finalPrice * item.quantity;
+
+            orderItems.push({
+                product: product._id,
+                quantity: item.quantity,
+                variantId: item.variantId,
+                size: variant.size,
+                color: variant.color,
+                price: pricing.finalPrice,
+                originalPrice: pricing.originalPrice,
+                discountAmount: pricing.discountAmount,
+                totalPrice: itemTotal,
+                offerApplied: pricing.appliedOffer ? {
+                    offerId: pricing.appliedOffer.offerId,
+                    offerName: pricing.appliedOffer.name,
+                    offerType: pricing.appliedOffer.offerType,
+                    discountType: pricing.appliedOffer.discountType,
+                    discountAmount: pricing.discountAmount * item.quantity
+                } : undefined,
+                itemStatus: (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing'
+            });
+        }
+
+        if (affectedItems.length > 0) {
+            return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
+        }
+
+        // 4. Calculate Totals via Centralized Pricing Engine
+        const pricingResult = pricingService.processPricing(orderItems, couponData);
+        const breakdown = pricingResult.breakdown;
+        const finalOrderItems = pricingResult.items;
+        
+        const totalAmount = breakdown.totalAmount;
+
+        // 5. Initial Statuses
+        let walletAmountUsed = 0;
+        let finalPaymentStatus = 'Pending';
+        let finalOrderStatus = (paymentMethod === 'Razorpay') ? 'Payment Pending' : 'Processing';
+
+        // Handle Wallet logic early to check balance
+        if (paymentMethod === 'Wallet') {
+            const wallet = await walletService.getOrCreateWallet(userId, session);
+            if (wallet.balance < totalAmount) {
+                return { success: false, message: `Insufficient wallet balance. Available: ₹${wallet.balance.toFixed(2)}, Required: ₹${totalAmount.toFixed(2)}` };
+            }
+            walletAmountUsed = totalAmount;
+            finalPaymentStatus = 'Paid';
+        }
+
+        // 6. Build order document
+        const orderIdObj = new mongoose.Types.ObjectId();
+        const order = new Order({
+            _id: orderIdObj,
+            orderId: `SP-${orderIdObj.toString().slice(-6).toUpperCase()}`,
+            user: userId,
+            items: finalOrderItems, // Use processed items from Pricing Engine
+            shippingAddress: {
+                fullName: address.fullName,
+                phone: address.phone,
+                addressLine1: `${address.house}, ${address.locality}, ${address.area}`,
+                addressLine2: '',
+                city: address.city,
+                state: address.state,
+                postalCode: address.pincode,
+                country: address.country
+            },
+            // Phase 1: Map Standardized Breakdown to legacy schema fields
+            originalSubtotal: breakdown.originalSubtotal,
+            totalOfferDiscount: breakdown.offerDiscount,
+            subtotal: breakdown.subtotal,
+            shippingFee: breakdown.shippingFee,
+            tax: breakdown.tax,
+            discount: breakdown.couponDiscount,
             walletAmountUsed,
-            `Order ${order.orderId} — Wallet Payment`,
-            'Order Payment',
-            order._id
-        );
-    }
+            totalAmount,
+            paymentMethod,
+            paymentStatus: finalPaymentStatus,
+            orderStatus: finalOrderStatus,
+            couponApplied: couponData ? {
+                code: couponData.code,
+                discountAmount: breakdown.couponDiscount, 
+                discountType: couponData.discountType
+            } : undefined
+        });
 
-    // 9. Finalize Order and Clear Cart
-    await order.save();
-    cart.items = [];
-    cart.cartTotal = 0;
-    await cart.save();
+        if (paymentMethod === 'Razorpay') {
+            order.retryExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+            order.paymentDetails = {
+                retryExpiryTime: new Date(Date.now() + 5 * 60 * 1000),
+                failedAttempts: 0
+            };
+        }
 
-    // 10. Mark coupon used (Only for immediate payment methods)
-    if (couponData?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
-        await Coupon.updateOne(
-            { code: couponData.code },
-            { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
-        );
-    }
+        // 7. STOCK RESERVATION
+        for (const item of orderItems) {
+            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
+            await Product.updateOne(
+                { _id: item.product },
+                { $inc: { 'variants.$[v].stock': -item.quantity } },
+                { arrayFilters: [arrayFilter], ...sessionOpts(session) }
+            );
+        }
 
-    return { success: true, orderId: order._id, totalAmount: order.totalAmount };
+        // 8. Wallet debit (Atomic)
+        if (paymentMethod === 'Wallet' && walletAmountUsed > 0) {
+            await walletService.debitWallet(
+                userId,
+                walletAmountUsed,
+                `Order ${order.orderId} — Wallet Payment`,
+                'Order Payment',
+                order._id,
+                session
+            );
+        }
+
+        // 9. Finalize Order and Clear Cart
+        await order.save(sessionOpts(session));
+        cart.items = [];
+        cart.cartTotal = 0;
+        await cart.save(sessionOpts(session));
+
+        // 10. Mark coupon used (Only for immediate payment methods)
+        if (couponData?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
+            await Coupon.updateOne(
+                { code: couponData.code },
+                { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } },
+                sessionOpts(session)
+            );
+        }
+
+        return { success: true, orderId: order._id, totalAmount: order.totalAmount };
+    });
 };
 
 export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', search = {}) => {
@@ -292,126 +319,74 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
 };
 
 export const cancelOrder = async (userId, orderId, reason) => {
-    const order = await Order.findOne({ _id: orderId, user: userId });
-    if (!order) return { success: false, message: "Order not found" };
+    return withTransaction(async (session) => {
+        const orderQuery = Order.findOne({ _id: orderId, user: userId });
+        if (session) orderQuery.session(session);
+        const order = await orderQuery;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    if (order.orderStatus !== 'Processing') {
-        return { success: false, message: `Cannot cancel an order that is already ${order.orderStatus.toLowerCase()}` };
-    }
-
-    order.orderStatus = 'Cancelled';
-    order.cancelReason = reason;
-
-    for (const item of order.items) {
-        if (item.itemStatus !== 'Cancelled' && item.itemStatus !== 'Returned') {
-            item.itemStatus = 'Cancelled';
-            item.cancelReason = reason;
-            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
-            await Product.updateOne(
-                { _id: item.product },
-                { $inc: { 'variants.$[v].stock': item.quantity } },
-                { arrayFilters: [arrayFilter] }
-            );
+        try {
+            await orderLifecycleService.cancelOrder(order, userId, 'user', reason, session);
+            return { success: true, message: 'Order cancelled successfully' };
+        } catch (err) {
+            return { success: false, message: err.message };
         }
-    }
-
-    if (order.paymentStatus === 'Paid') {
-        order.paymentStatus = 'Refunded';
-        // Full order totalAmount already includes tax — refund the whole thing
-        await walletService.creditWallet(userId, order.totalAmount, `Refund for cancelled Order ${order.orderId}`, 'Cancellation Refund', orderId);
-    }
-
-    await order.save();
-    return { success: true, message: "Order cancelled successfully" };
+    });
 };
 
 export const returnOrder = async (userId, orderId, reason) => {
-    const order = await Order.findOne({ _id: orderId, user: userId });
-    if (!order) return { success: false, message: "Order not found" };
+    return withTransaction(async (session) => {
+        const orderQuery = Order.findOne({ _id: orderId, user: userId });
+        if (session) orderQuery.session(session);
+        const order = await orderQuery;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    if (order.orderStatus !== 'Delivered') {
-        return { success: false, message: "Only delivered orders can be returned" };
-    }
-
-    let updatedCount = 0;
-    for (const item of order.items) {
-        if (item.itemStatus === 'Delivered') {
-            item.itemStatus = 'Return Requested';
-            item.returnReason = reason;
-            updatedCount++;
+        try {
+            let requestedCount = 0;
+            for (const item of order.items) {
+                if (item.itemStatus === 'Delivered') {
+                    await orderLifecycleService.requestItemReturn(order, item._id, userId, reason, session);
+                    requestedCount++;
+                }
+            }
+            if (requestedCount === 0) return { success: false, message: 'No eligible delivered items to return' };
+            return { success: true, message: 'Return requested successfully' };
+        } catch (err) {
+            return { success: false, message: err.message };
         }
-    }
-
-    if (updatedCount === 0) {
-        return { success: false, message: "No eligible delivered items to return" };
-    }
-
-    order.orderStatus = 'Return Requested';
-    order.returnReason = reason;
-
-    await order.save();
-    return { success: true, message: "Return requested successfully" };
+    });
 };
 
 export const cancelOrderItem = async (userId, orderId, itemId, reason) => {
-    const order = await Order.findOne({ _id: orderId, user: userId });
-    if (!order) return { success: false, message: "Order not found" };
+    return withTransaction(async (session) => {
+        const orderQuery = Order.findOne({ _id: orderId, user: userId });
+        if (session) orderQuery.session(session);
+        const order = await orderQuery;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    const item = order.items.id(itemId);
-    if (!item) return { success: false, message: "Item not found in order" };
-
-    if (item.itemStatus !== 'Processing') {
-        return { success: false, message: `Cannot cancel an item that is already ${item.itemStatus.toLowerCase()}` };
-    }
-
-    item.itemStatus = 'Cancelled';
-    item.cancelReason = reason;
-
-    const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
-    await Product.updateOne(
-        { _id: item.product },
-        { $inc: { 'variants.$[v].stock': item.quantity } },
-        { arrayFilters: [arrayFilter] }
-    );
-
-    const activeItems = order.items.filter(i => i.itemStatus !== 'Cancelled' && i.itemStatus !== 'Returned');
-    if (activeItems.length === 0) order.orderStatus = 'Cancelled';
-
-    if (order.paymentStatus === 'Paid') {
-        // Proportional tax refund: refund item amount + its share of the total tax
-        const taxableAmount = taxHelper.calculateTaxableAmount(order.subtotal, order.discount || 0);
-        const itemTaxRefund = taxHelper.calculateRefundTax(item.totalPrice, order.tax || 0, taxableAmount);
-        const refundAmount = item.totalPrice + itemTaxRefund;
-        await walletService.creditWallet(userId, refundAmount, `Refund for cancelled item in Order ${order.orderId}`, 'Cancellation Refund', orderId);
-
-        if (order.orderStatus === 'Cancelled') order.paymentStatus = 'Refunded';
-    }
-
-    await order.save();
-    return { success: true, message: "Item cancelled successfully" };
+        try {
+            await orderLifecycleService.cancelOrderItem(order, itemId, userId, 'user', reason, session);
+            return { success: true, message: 'Item cancelled successfully' };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    });
 };
 
 export const returnOrderItem = async (userId, orderId, itemId, reason) => {
-    const order = await Order.findOne({ _id: orderId, user: userId });
-    if (!order) return { success: false, message: "Order not found" };
+    return withTransaction(async (session) => {
+        const orderQuery = Order.findOne({ _id: orderId, user: userId });
+        if (session) orderQuery.session(session);
+        const order = await orderQuery;
+        if (!order) return { success: false, message: 'Order not found' };
 
-    const item = order.items.id(itemId);
-    if (!item) return { success: false, message: "Item not found in order" };
-
-    if (item.itemStatus !== 'Delivered') {
-        return { success: false, message: "Only delivered items can be returned" };
-    }
-
-    item.itemStatus = 'Return Requested';
-    item.returnReason = reason;
-
-    const allReturnedOrCancelled = order.items.every(i => ['Return Requested', 'Returned', 'Cancelled'].includes(i.itemStatus));
-    if (allReturnedOrCancelled && order.orderStatus !== 'Returned') {
-        order.orderStatus = 'Return Requested';
-    }
-
-    await order.save();
-    return { success: true, message: "Item return requested successfully" };
+        try {
+            await orderLifecycleService.requestItemReturn(order, itemId, userId, reason, session);
+            return { success: true, message: 'Item return requested successfully' };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    });
 };
 
 export const checkPaymentStatus = async (userId, orderId) => {

@@ -60,13 +60,15 @@ const couponBaseFields = {
         'any.required': 'Usage limit is required.'
     }),
 
-    startDate: Joi.date().optional().allow(null, '').messages({
-        'date.base': 'Invalid start date.'
+    startDate: Joi.date().min(new Date().setHours(0, 0, 0, 0)).required().messages({
+        'date.base': 'Invalid start date format.',
+        'date.min': 'Start date cannot be in the past.',
+        'any.required': 'Start date is required.'
     }),
 
-    expiryDate: Joi.date().greater('now').required().messages({
+    expiryDate: Joi.date().greater(new Date().setHours(0, 0, 0, 0)).required().messages({
         'date.base': 'Invalid expiry date format.',
-        'date.greater': 'Expiry date must be a future date.',
+        'date.greater': 'Expiry date must be today or in the future.',
         'any.required': 'Expiry date is required.'
     }),
 

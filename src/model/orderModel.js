@@ -17,9 +17,31 @@ const orderItemSchema = new mongoose.Schema({
         discountType: { type: String },
         discountAmount: { type: Number } // This is the total discount for all units of this item
     },
+    // Phase 2: Immutable Financial Snapshots
+    couponAllocated: { type: Number, default: 0 },
+    taxableAmount: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
+    finalPriceAfterCoupon: { type: Number, default: 0 },
+    
+    // Phase 3: Idempotency & Refund Tracking
+    refundProcessed: { type: Boolean, default: false },
+    refundProcessedAt: { type: Date },
+    refundTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'WalletTransaction' },
+    
     itemStatus: { type: String, enum: ['Payment Pending', 'Payment Failed', 'Expired', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Requested',"Out for Delivery", 'Returned', 'Return Rejected'], default: 'Processing' },
     cancelReason: { type: String },
-    returnReason: { type: String }
+    returnReason: { type: String },
+
+    // Phase 7: Return Inspection & Inventory Reconciliation
+    inventoryReconciled: { type: Boolean, default: false },
+    inventoryReconciledAt: { type: Date },
+    returnInspection: {
+        status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Damaged', 'Restockable', 'Non-Restockable'] },
+        notes: { type: String },
+        restockable: { type: Boolean },
+        inspectedAt: { type: Date },
+        inspectedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }
 });
 
 const orderSchema = new mongoose.Schema({
@@ -62,7 +84,47 @@ const orderSchema = new mongoose.Schema({
     retryExpiresAt: { type: Date },
     stockRestored: { type: Boolean, default: false },
     cancelReason: { type: String },
-    returnReason: { type: String }
+    returnReason: { type: String },
+    
+    // ── Phase 8: Polymorphic Lifecycle Audit Trail ────────────────────────────
+    // actor is nullable — System events have no actor ObjectId.
+    // actorModel drives the refPath so Mongoose knows which collection to populate.
+    lifecycleHistory: [{
+        actor: {
+            type: mongoose.Schema.Types.ObjectId,
+            refPath: 'lifecycleHistory.actorModel',
+            default: null
+        },
+        actorModel: {
+            type: String,
+            enum: ['User', 'Admin', 'System'],
+            default: 'System'
+        },
+        action:     { type: String, required: true },
+        fromStatus: { type: String },
+        toStatus:   { type: String },
+        reason:     { type: String },
+        metadata:   { type: mongoose.Schema.Types.Mixed },
+        createdAt:  { type: Date, default: Date.now }
+    }]
 }, { timestamps: true });
+
+// ── Phase 8: Production Indexes ─────────────────────────────────────────────
+// User order history (most common query)
+orderSchema.index({ user: 1, createdAt: -1 });
+// Admin order listing with status filter
+orderSchema.index({ orderStatus: 1, createdAt: -1 });
+// Payment reconciliation
+orderSchema.index({ paymentStatus: 1, paymentMethod: 1 });
+// Expired order cleanup cron
+orderSchema.index({ orderStatus: 1, stockRestored: 1, retryExpiresAt: 1 });
+// Return management
+orderSchema.index({ 'items.itemStatus': 1 });
+// Refund tracking
+orderSchema.index({ 'items.refundProcessed': 1, paymentStatus: 1 });
+// Inventory reconciliation audit
+orderSchema.index({ 'items.inventoryReconciled': 1 });
+// Analytics time-series aggregations
+orderSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

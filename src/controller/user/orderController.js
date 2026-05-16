@@ -5,6 +5,7 @@ import { generateInvoice } from '../../utils/invoiceGenerator.js';
 import * as couponHelper from '../../utils/couponHelper.js';
 import * as walletService from '../../services/user/walletService.js';
 import * as taxHelper from '../../utils/taxHelper.js';
+import * as orderPresentationService from '../../services/common/orderPresentationService.js';
 
 export const loadCheckout = async (req, res, next) => {
     try {
@@ -264,10 +265,13 @@ export const getOrderDetails = async (req, res, next) => {
         const userReviews = {};
         reviews.forEach(r => userReviews[r.productId.toString()] = r);
 
+        const formattedOrder = orderPresentationService.formatOrderForDisplay(order);
+
         res.render('user/orders/details', {
-            title: `Order ${order.orderId || '#' + id.slice(-6).toUpperCase()} — SmartPick`,
+            title: `Order ${formattedOrder.orderId} — SmartPick`,
             activePath: '/orders',
-            order,
+            order, // Keep original order for legacy JS modals if needed
+            formattedOrder,
             userReviews
         });
     } catch (err) {

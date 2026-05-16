@@ -4,6 +4,7 @@ import User from '../../model/userModel.js';
 import Product from '../../model/productModel.js';
 import Category from '../../model/categoryModel.js';
 import Subcategory from '../../model/subcategoryModel.js';
+import * as analyticsService from './analyticsService.js';
 
 import { getDateRange, getPreviousDateRange, getGroupByFormat, validOrderStatuses } from '../../utils/dateFilterHelper.js';
 
@@ -19,23 +20,9 @@ export const getDashboardData = async (filter, customFrom, customTo) => {
 
     const prevMatchStage = {
         createdAt: { $gte: prevStart, $lte: prevEnd },
-        orderStatus: { $in: validOrderStatuses },
-        paymentStatus: { $nin: ['Failed', 'Expired'] }
+        orderStatus: { $nin: ['Payment Pending', 'Payment Failed', 'Expired'] }
     };
-
-    // 1. Summary Cards
-    const summaryData = await Order.aggregate([
-        { $match: matchStage },
-        {
-            $group: {
-                _id: null,
-                totalRevenue: { $sum: '$totalAmount' },
-                totalOrders: { $sum: 1 },
-                uniqueCustomers: { $addToSet: '$user' }
-            }
-        }
-    ]);
-
+    
     const prevSummaryData = await Order.aggregate([
         { $match: prevMatchStage },
         {
@@ -47,22 +34,21 @@ export const getDashboardData = async (filter, customFrom, customTo) => {
         }
     ]);
 
+    // 1. Summary Cards from Analytics Service
+    const advancedMetrics = await analyticsService.getDashboardMetrics(filter, customFrom, customTo);
+    
+    // We keep growth calculation if needed, but advanced metrics covers most requirements.
     const totalCustomers = await User.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } });
     
-    const summary = summaryData.length > 0 ? {
-        totalRevenue: summaryData[0].totalRevenue,
-        totalOrders: summaryData[0].totalOrders,
-        totalCustomers: summaryData[0].uniqueCustomers.length,
-        averageOrderValue: summaryData[0].totalRevenue / summaryData[0].totalOrders
-    } : { totalRevenue: 0, totalOrders: 0, totalCustomers: 0, averageOrderValue: 0 };
-
-    // Calculate growth
     const prevRevenue = prevSummaryData.length > 0 ? prevSummaryData[0].totalRevenue : 0;
     const prevOrders = prevSummaryData.length > 0 ? prevSummaryData[0].totalOrders : 0;
 
-    summary.revenueGrowth = prevRevenue === 0 ? 100 : ((summary.totalRevenue - prevRevenue) / prevRevenue) * 100;
-    summary.orderGrowth = prevOrders === 0 ? 100 : ((summary.totalOrders - prevOrders) / prevOrders) * 100;
-    summary.totalNewUsers = totalCustomers;
+    const summary = {
+        ...advancedMetrics,
+        totalCustomers,
+        revenueGrowth: prevRevenue === 0 ? 100 : ((advancedMetrics.revenue.gross - prevRevenue) / prevRevenue) * 100,
+        orderGrowth: prevOrders === 0 ? 100 : ((advancedMetrics.orders.total - prevOrders) / prevOrders) * 100
+    };
 
     // 2. Sales Chart Data
     const groupByFormat = getGroupByFormat(filter, startDate, endDate);

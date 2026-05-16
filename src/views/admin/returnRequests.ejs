@@ -23,7 +23,7 @@
 </div>
 
 <!-- Return Request Cards -->
-<% if (!orders || orders.length === 0) { %>
+<% if (!formattedOrders || formattedOrders.length === 0) { %>
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm py-24 text-center">
     <div class="text-5xl mb-4">📬</div>
     <p class="text-gray-400 font-semibold text-lg">No pending return requests.</p>
@@ -31,7 +31,7 @@
   </div>
 <% } else { %>
   <div class="space-y-6">
-    <% orders.forEach(order => { %>
+    <% formattedOrders.forEach(order => { %>
       <%
         const returnItems = order.items.filter(i => i.itemStatus === 'Return Requested');
         if (returnItems.length === 0) return;
@@ -57,11 +57,11 @@
           <div class="flex items-center gap-4">
             <div class="text-right">
               <p class="text-xs text-gray-400 font-bold">Order ID</p>
-              <p class="text-sm font-black text-slate-800"><%= order.orderId || '#'+order._id.toString().slice(-6).toUpperCase() %></p>
+              <p class="text-sm font-black text-slate-800"><%= order.orderId %></p>
             </div>
             <div class="text-right">
               <p class="text-xs text-gray-400 font-bold">Date</p>
-              <p class="text-sm font-bold text-slate-600"><%= new Date(order.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) %></p>
+              <p class="text-sm font-bold text-slate-600"><%= order.formattedDate %></p>
             </div>
             <a href="/admin/orders/<%= order._id %>" class="px-4 py-2 text-xs font-bold text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition">
               View Order
@@ -71,23 +71,19 @@
 
         <!-- Requested Items -->
         <div class="divide-y divide-gray-50">
-          <% returnItems.forEach(item => {
-            const prod = item.product;
-            const colorOption = prod?.colorOptions?.find(c => c.name === item.color);
-            const imgUrl = colorOption?.images?.[0] || prod?.defaultImage || '/images/placeholder.jpg';
-          %>
+          <% returnItems.forEach(item => { %>
           <div class="px-6 py-5 flex flex-wrap gap-5 items-center" id="return-row-<%= item._id %>">
             <!-- Product Image -->
             <div class="w-16 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-              <img src="<%= imgUrl %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
+              <img src="<%= item.image %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
             </div>
 
             <!-- Product Info -->
             <div class="flex-1 min-w-[160px]">
-              <p class="font-black text-slate-800 text-sm"><%= prod?.name || 'Unavailable' %></p>
+              <p class="font-black text-slate-800 text-sm"><%= item.productName %></p>
               <p class="text-xs text-gray-400 mt-0.5">Size: <%= item.size %> • Color: <%= item.color %> • Qty: <%= item.quantity %></p>
-              <p class="text-sm font-black text-indigo-600 mt-1">₹<%= item.totalPrice.toLocaleString() %></p>
-              <span class="inline-block mt-2 px-2.5 py-1 bg-orange-50 text-orange-600 border border-orange-200 rounded-full text-xs font-bold">Return Requested</span>
+              <p class="text-sm font-black text-indigo-600 mt-1"><%= item.formatted.finalPaidAmount %></p>
+              <span class="inline-block mt-2 px-2.5 py-1 <%= item.badge.classes %> border-current/20 border text-xs font-bold"><%= item.badge.text %></span>
             </div>
 
             <!-- Return Reason -->
@@ -144,22 +140,62 @@
 <script>
   async function handleReturn(orderId, itemId, decision) {
     const isApprove = decision === 'approve';
-    const { isConfirmed } = await Swal.fire({
-      title: isApprove ? 'Approve Return?' : 'Reject Return?',
-      text: isApprove
-        ? 'Stock will be restored and the item marked as Returned.'
-        : 'The return request will be rejected and the item reverted to Delivered.',
-      icon: isApprove ? 'question' : 'warning',
+    
+    const { value: formValues, isConfirmed } = await Swal.fire({
+      title: isApprove ? 'Approve & Inspect Return' : 'Reject Return',
+      html: `
+        <div class="text-left space-y-4 mt-4">
+          ${isApprove ? `
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-1">Inspection Status</label>
+            <select id="swal-status" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none">
+              <option value="Approved">Approved</option>
+              <option value="Restockable">Restockable</option>
+              <option value="Damaged">Damaged</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 mt-3">
+            <input type="checkbox" id="swal-restockable" class="w-4 h-4 text-indigo-600 rounded" checked>
+            <label class="text-sm font-bold text-gray-700">Item is restockable (Restore Inventory)</label>
+          </div>
+          ` : `
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-1">Rejection Reason</label>
+            <select id="swal-status" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none">
+              <option value="Rejected">Rejected</option>
+              <option value="Non-Restockable">Non-Restockable</option>
+            </select>
+          </div>
+          `}
+          <div class="mt-3">
+            <label class="block text-sm font-bold text-gray-700 mb-1">Inspection Notes</label>
+            <textarea id="swal-notes" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none" rows="2" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+      `,
+      icon: isApprove ? 'info' : 'warning',
       showCancelButton: true,
       confirmButtonColor: isApprove ? '#16a34a' : '#dc2626',
       cancelButtonColor: '#94a3b8',
-      confirmButtonText: isApprove ? 'Yes, Approve' : 'Yes, Reject',
-      customClass: { popup: 'rounded-3xl' }
+      confirmButtonText: isApprove ? 'Confirm Approval' : 'Confirm Rejection',
+      customClass: { popup: 'rounded-3xl' },
+      preConfirm: () => {
+        return {
+          inspectionStatus: document.getElementById('swal-status').value,
+          restockable: isApprove ? document.getElementById('swal-restockable').checked : false,
+          notes: document.getElementById('swal-notes').value
+        }
+      }
     });
+
     if (!isConfirmed) return;
 
     try {
-      const res = await axios.post(`/admin/orders/${orderId}/return-decision`, { itemId, decision });
+      const res = await axios.post(`/admin/orders/${orderId}/return-decision`, { 
+          itemId, 
+          decision,
+          ...formValues
+      });
       if (res.data.success) {
         await Swal.fire({ icon: 'success', title: 'Done!', text: res.data.message, timer: 1800, showConfirmButton: false });
         // Remove the row visually

@@ -11,7 +11,11 @@ import {
     getSalesReportsPage, 
     getSalesReportData, 
     exportExcelReport, 
-    exportPdfReport 
+    exportPdfReport,
+    getRevenueSeriesData,
+    getReturnAnalyticsData,
+    getCouponAnalyticsData,
+    getFullDashboardMetrics
 } from "../../controller/admin/reportController.js";
 
 import { isAdmin, redirectIfAdminAuth } from "../../middleware/admin/adminAuth.js";
@@ -39,6 +43,12 @@ router.get("/sales-reports", getSalesReportsPage);
 router.get("/sales-reports/data", getSalesReportData);
 router.get("/sales-reports/export/excel", exportExcelReport);
 router.get("/sales-reports/export/pdf", exportPdfReport);
+
+// --- Phase 8: Analytics API ---
+router.get("/analytics/dashboard", getFullDashboardMetrics);
+router.get("/analytics/revenue-series", getRevenueSeriesData);
+router.get("/analytics/returns", getReturnAnalyticsData);
+router.get("/analytics/coupons", getCouponAnalyticsData);
 
 // --- Customers ---
 router.get("/customers", getCustomers);

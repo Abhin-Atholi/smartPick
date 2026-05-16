@@ -1,13 +1,4 @@
 <%
-  const statusColors = {
-    Processing:         'bg-blue-50 text-blue-700 border-blue-200',
-    Shipped:            'bg-indigo-50 text-indigo-700 border-indigo-200',
-    'Out for Delivery': 'bg-purple-50 text-purple-700 border-purple-200',
-    Delivered:          'bg-green-50 text-green-700 border-green-200',
-    Cancelled:          'bg-red-50 text-red-700 border-red-200',
-    'Return Requested': 'bg-orange-50 text-orange-700 border-orange-200',
-    Returned:           'bg-yellow-50 text-yellow-700 border-yellow-200'
-  };
   // Admin-settable transitions only (no "Return Requested")
   const TRANSITIONS = {
     Processing:         ['Shipped', 'Cancelled'],
@@ -19,7 +10,6 @@
     Cancelled:          []
   };
   const allowedNext = TRANSITIONS[order.orderStatus] || [];
-  const sc = statusColors[order.orderStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
   const isDelivered = order.orderStatus === 'Delivered';
 %>
 
@@ -29,18 +19,18 @@
   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
   <a href="/admin/orders" class="hover:text-indigo-600 transition">Orders</a>
   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-  <span class="text-gray-900 font-bold"><%= order.orderId || order._id.toString().slice(-6).toUpperCase() %></span>
+  <span class="text-gray-900 font-bold"><%= formattedOrder.orderId %></span>
 </div>
 
 <!-- Page Header -->
 <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
   <div>
-    <h1 class="text-2xl font-black text-slate-800">Order <%= order.orderId || '#'+order._id.toString().slice(-6).toUpperCase() %></h1>
-    <p class="text-sm text-gray-400 mt-1">Placed on <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' }) %></p>
+    <h1 class="text-2xl font-black text-slate-800">Order <%= formattedOrder.orderId %></h1>
+    <p class="text-sm text-gray-400 mt-1">Placed on <%= formattedOrder.formattedDate %></p>
   </div>
   <div class="flex items-center gap-3 flex-wrap">
     <!-- Current status badge -->
-    <span class="px-4 py-2 rounded-xl border text-sm font-black <%= sc %>"><%= order.orderStatus %></span>
+    <span class="px-4 py-2 rounded-xl border text-sm font-black <%= formattedOrder.statusBadge.classes %>"><%= formattedOrder.statusBadge.text %></span>
 
     <!-- Status update dropdown (admin-settable only) -->
     <% if (allowedNext.length > 0) { %>
@@ -63,18 +53,6 @@
       <span class="text-xs text-gray-400 font-bold italic">No further transitions available</span>
     <% } %>
 
-    <!-- Invoice buttons: only when Delivered -->
-    <% if (isDelivered) { %>
-      <a href="/admin/orders/<%= order._id %>/view-invoice" target="_blank"
-        class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        View Invoice
-      </a>
-      <a href="/admin/orders/<%= order._id %>/download-invoice"
-        class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl transition">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Invoice
-      </a>
     <% } %>
   </div>
 </div>
@@ -101,35 +79,68 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <% order.items.forEach((item) => {
-              const prod = item.product;
-              const colorOpt = prod?.colorOptions?.find(c => c.name === item.color);
-              const imgUrl = item.image || colorOpt?.images?.[0] || prod?.defaultImage || '/images/placeholder.jpg';
-              const isc = statusColors[item.itemStatus] || 'bg-gray-50 text-gray-500 border-gray-200';
-              const canCancel = item.itemStatus === 'Processing';
-            %>
+            <% formattedOrder.items.forEach((item) => { %>
             <tr class="hover:bg-gray-50/50 transition-colors" id="item-row-<%= item._id %>">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-4">
                   <div class="w-14 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                    <img src="<%= imgUrl %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
+                    <img src="<%= item.image %>" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg'">
                   </div>
                   <div>
-                    <p class="text-sm font-black text-slate-800 max-w-[180px] truncate"><%= prod?.name || 'Unavailable' %></p>
+                    <p class="text-sm font-black text-slate-800 max-w-[180px] truncate"><%= item.productName %></p>
                     <p class="text-xs text-gray-400 mt-0.5">Size: <%= item.size %> • Color: <%= item.color %></p>
-                    <% if (prod?.category?.name) { %><p class="text-xs text-gray-400"><%= prod.category.name %></p><% } %>
+                    <% if (item.categoryName) { %><p class="text-xs text-gray-400"><%= item.categoryName %></p><% } %>
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4 text-center"><span class="text-sm font-bold text-slate-700"><%= item.quantity %></span></td>
-              <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-slate-700">₹<%= item.price.toLocaleString() %></span></td>
-              <td class="px-6 py-4 text-right"><span class="text-sm font-black text-slate-800">₹<%= item.totalPrice.toLocaleString() %></span></td>
-              <td class="px-6 py-4 text-center">
-                <span id="item-status-<%= item._id %>" class="px-2.5 py-1 rounded-full text-xs font-bold border <%= isc %>"><%= item.itemStatus %></span>
+              <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-slate-700"><%= item.formatted.unitPrice %></span></td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-black text-indigo-600"><%= item.formatted.finalPaidAmount %></span>
+                <% if (item.hasDiscount || item.hasOffer || item.hasCoupon || item.hasTax) { %>
+                  <div class="flex flex-col items-end mt-1 space-y-0.5">
+                    <% if (item.hasDiscount) { %><span class="text-[10px] text-gray-400 line-through"><%= item.formatted.totalOriginalAmount %></span><% } %>
+                    <% if (item.hasOffer) { %><span class="text-[10px] text-rose-500 font-bold">Offer: -<%= item.formatted.offerDiscount %></span><% } %>
+                    <% if (item.hasCoupon) { %><span class="text-[10px] text-indigo-500 font-bold">Coupon: -<%= item.formatted.couponAllocated %></span><% } %>
+                    <% if (item.hasTax) { %><span class="text-[10px] text-gray-500">Tax: +<%= item.formatted.taxAmount %></span><% } %>
+                  </div>
+                <% } %>
               </td>
               <td class="px-6 py-4 text-center">
-                <% if (canCancel && order.orderStatus !== 'Cancelled') { %>
-                  <button onclick="cancelItem('<%= order._id %>', '<%= item._id %>')"
+                <div class="flex flex-col items-center gap-1.5">
+                  <span id="item-status-<%= item._id %>" class="px-2.5 py-1 rounded-full text-[11px] font-bold border <%= item.badge.classes %> border-current/20">
+                    <%= item.badge.text %>
+                  </span>
+                  
+                  <!-- Refund Visibility -->
+                  <% if (item.refundProcessed) { %>
+                    <div class="flex flex-col items-center mt-1" title="Transaction ID: <%= item.refundStatus.transactionId %>">
+                      <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                        Refunded
+                      </span>
+                      <span class="text-[9px] text-gray-400 mt-0.5"><%= item.refundStatus.processedAt %></span>
+                    </div>
+                  <% } %>
+
+                  <!-- Inspection & Reconciled Visibility -->
+                  <% if (item.returnInspection) { %>
+                    <div class="mt-1 flex flex-col items-center" title="Notes: <%= item.returnInspection.notes %>">
+                      <span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
+                        Inspected: <%= item.returnInspection.status %>
+                      </span>
+                    </div>
+                  <% } %>
+                  <% if (item.inventoryReconciled) { %>
+                    <div class="mt-0.5">
+                      <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Stock Restored</span>
+                    </div>
+                  <% } %>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <% if (item.canCancel) { %>
+                  <button onclick="cancelItem('<%= formattedOrder._id %>', '<%= item._id %>')"
                     class="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition">
                     Cancel
                   </button>
@@ -166,25 +177,31 @@
     <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
       <h2 class="text-base font-black text-slate-800 mb-4">Order Summary</h2>
       <div class="space-y-3 text-sm">
-        <div class="flex justify-between"><span class="text-gray-500 font-bold">Subtotal</span><span class="font-black text-slate-800">₹<%= order.subtotal.toLocaleString() %></span></div>
-        <div class="flex justify-between"><span class="text-gray-500 font-bold">Shipping</span><span class="font-black text-slate-800"><%= order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}` %></span></div>
-        <div class="flex justify-between"><span class="text-gray-500 font-bold">Tax</span><span class="font-black text-slate-800">₹<%= (order.tax || 0).toLocaleString() %></span></div>
-        <% if (order.discount > 0) { %>
-          <div class="flex justify-between"><span class="text-gray-500 font-bold">Discount</span><span class="font-black text-red-600">-₹<%= order.discount.toLocaleString() %></span></div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Subtotal</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.subtotal %></span></div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Shipping</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.shipping %></span></div>
+        <div class="flex justify-between"><span class="text-gray-500 font-bold">Tax</span><span class="font-black text-slate-800"><%= formattedOrder.summary.formatted.tax %></span></div>
+        <% if (formattedOrder.summary.hasOfferDiscount) { %>
+          <div class="flex justify-between"><span class="text-gray-500 font-bold">Offer Save</span><span class="font-black text-rose-600">-<%= formattedOrder.summary.formatted.offerDiscount %></span></div>
+        <% } %>
+        <% if (formattedOrder.summary.hasCouponDiscount) { %>
+          <div class="flex justify-between"><span class="text-gray-500 font-bold">Coupon</span><span class="font-black text-indigo-600">-<%= formattedOrder.summary.formatted.couponDiscount %></span></div>
         <% } %>
         <div class="border-t border-dashed border-gray-200 pt-3 flex justify-between">
           <span class="font-black text-slate-800 text-base">Total</span>
-          <span class="font-black text-indigo-600 text-xl">₹<%= order.totalAmount.toLocaleString() %></span>
+          <span class="font-black text-indigo-600 text-xl"><%= formattedOrder.summary.formatted.total %></span>
         </div>
       </div>
       <div class="mt-5 pt-4 border-t border-gray-100 space-y-2 text-sm">
         <div class="flex justify-between">
           <span class="text-gray-400 font-bold">Payment Method</span>
-          <span class="font-black text-slate-700"><%= order.paymentMethod %></span>
+          <span class="font-black text-slate-700"><%= formattedOrder.paymentMethod %></span>
         </div>
         <div class="flex justify-between">
           <span class="text-gray-400 font-bold">Payment Status</span>
-          <span class="font-black <%= order.paymentStatus === 'Paid' ? 'text-green-600' : 'text-orange-500' %>"><%= order.paymentStatus %></span>
+          <span class="font-black <%= formattedOrder.paymentBadge.classes %> flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full <%= formattedOrder.paymentBadge.iconClass %>"></span>
+            <%= formattedOrder.paymentBadge.text %>
+          </span>
         </div>
       </div>
     </div>

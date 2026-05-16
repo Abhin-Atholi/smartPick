@@ -19,23 +19,41 @@ const _calculateBreakdown = async (fullCartItems) => {
 
     allItemsWithOffers.forEach(item => {
         const product = item.product;
-        const isUnavailable = !product || !product.isCurrentlyAvailable;
+        let isUnavailable = !product || !product.isCurrentlyAvailable;
         let isOutOfStock = false;
         let isLowStock = false;
 
         if (product && product.variants) {
-            let variant;
+            let variant = null;
+            
+            // 1. Primary Lookup: By variantId
             if (item.variantId) {
                 variant = product.variants.find(v => v._id.toString() === item.variantId.toString());
-            } else if (item.size && item.color) {
-                // Fallback for old carts
-                variant = product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
             }
+            
+            // 2. Secondary Lookup: Fallback to size/color if ID lookup fails (Self-Healing)
+            if (!variant && item.size && item.color) {
+                variant = product.variants.find(v => 
+                    v.size === item.size && 
+                    (v.color === item.color || (v.color && v.color.name === item.color))
+                );
+                
+                // Self-Heal: If we found a match by attributes, update the variantId in the cart document
+                // This handles cases where variant IDs changed during admin edits
+                if (variant) {
+                    item.variantId = variant._id;
+                }
+            }
+
             const availableStock = variant ? variant.stock : 0;
             isOutOfStock = !isUnavailable && availableStock === 0;
-            isLowStock = !isUnavailable && availableStock > 0 && availableStock < item.quantity;
+            isLowStock = !isUnavailable && !isOutOfStock && availableStock < item.quantity;
+            
+            // If we absolutely couldn't find a variant, treat as unavailable
+            if (!variant) isUnavailable = true;
+
         } else {
-            isOutOfStock = true;
+            isUnavailable = true;
         }
 
         if (!isUnavailable && !isOutOfStock && !isLowStock) {
@@ -46,13 +64,12 @@ const _calculateBreakdown = async (fullCartItems) => {
         }
     });
 
-    const pricingTotals = pricingService.calculateOrderTotals(allItemsWithOffers);
+    // Calculate standard financial breakdown using Centralized Pricing Engine
+    const pricingResult = pricingService.processPricing(allItemsWithOffers);
 
     return {
-        allItemsWithOffers,
-        originalSubtotal: pricingTotals.originalSubtotal,
-        totalOfferDiscount: pricingTotals.offerDiscount,
-        cartTotal: pricingTotals.subtotal,
+        allItemsWithOffers: pricingResult.items,
+        breakdown: pricingResult.breakdown,
         activeTotal,
         hasGlobalStockIssue: hasStockIssue
     };
@@ -90,9 +107,12 @@ export const getCart = async (userId, page = 1, limit = 4) => {
         totalItems,
         totalPages: Math.ceil(totalItems / limit),
         currentPage: page,
-        originalSubtotal: breakdown.originalSubtotal,
-        totalOfferDiscount: breakdown.totalOfferDiscount,
-        cartTotal: breakdown.cartTotal,
+        // Standardized Breakdown (Phase 1 Integration)
+        breakdown: breakdown.breakdown,
+        // Legacy properties for backward compatibility with EJS views (Removed in later phases)
+        originalSubtotal: breakdown.breakdown.originalSubtotal,
+        totalOfferDiscount: breakdown.breakdown.offerDiscount,
+        cartTotal: breakdown.breakdown.subtotal,
         activeTotal: breakdown.activeTotal,
         hasGlobalStockIssue: breakdown.hasGlobalStockIssue
     };
@@ -114,7 +134,9 @@ export const addToCart = async (userId, productId, quantity, variantId) => {
     if (!variant) throw new Error("Requested product variant not found");
 
     // Check stock
-    if (variant.stock < quantity) throw new Error(`Only ${variant.stock} items left in stock`);
+    if (variant.stock < quantity) {
+        return { success: false, message: `Only ${variant.stock} items left in stock`, code: "OUT_OF_STOCK" };
+    }
 
     let cart = await Cart.findOne({ user: userId });
     if (!cart) {
@@ -124,10 +146,13 @@ export const addToCart = async (userId, productId, quantity, variantId) => {
     const price = variant.price;
     const totalPrice = price * quantity;
 
-    // Check if item with same ID and variantId already exists
+    // Check if item with same ID and variantId already exists, using fallback for robustness
     const existingItemIndex = cart.items.findIndex(item =>
         item.product.toString() === productId &&
-        (item.variantId && item.variantId.toString() === variantId.toString())
+        (
+            (item.variantId && item.variantId.toString() === variantId.toString()) ||
+            (variant && item.size && item.color && item.size === variant.size && item.color === variant.color)
+        )
     );
 
     const MAX_PER_PRODUCT = 5;
@@ -136,7 +161,7 @@ export const addToCart = async (userId, productId, quantity, variantId) => {
         return { success: false, message: "Item already in your cart. You can update the quantity from the cart page.", isDuplicate: true };
     } else {
         if (quantity > MAX_PER_PRODUCT) {
-            throw new Error(`Maximum limit reached. You can only add up to ${MAX_PER_PRODUCT} units.`);
+            return { success: false, message: `Maximum limit reached. You can only add up to ${MAX_PER_PRODUCT} units.`, code: "LIMIT_REACHED" };
         }
 
         // Add new item
@@ -144,6 +169,8 @@ export const addToCart = async (userId, productId, quantity, variantId) => {
             product: productId,
             quantity,
             variantId: variant._id,
+            size: variant.size,
+            color: variant.color,
             price,
             totalPrice
         });
@@ -164,9 +191,23 @@ export const updateQuantity = async (userId, productId, variantId, quantity) => 
     const cart = await Cart.findOne({ user: userId });
     if (!cart) throw new Error("Cart not found");
 
+    // Fetch product first to resolve variant details for robust matching
+    const product = await Product.findById(productId).populate('category subcategory');
+    if (!product || !product.isCurrentlyAvailable) {
+        return { success: false, message: "This product is no longer available.", code: "PRODUCT_UNAVAILABLE" };
+    }
+
+    let variant = product.variants.find(v => v._id.toString() === variantId.toString());
+
+    // Find the cart item. 
+    // Fallback: If the frontend sent a new self-healed variantId but the DB still has the old one,
+    // we match using the resolved variant's size and color.
     const itemIndex = cart.items.findIndex(item =>
         item.product.toString() === productId &&
-        (item.variantId && item.variantId.toString() === variantId.toString())
+        (
+            (item.variantId && item.variantId.toString() === variantId.toString()) ||
+            (variant && item.size && item.color && item.size === variant.size && item.color === variant.color)
+        )
     );
 
     if (itemIndex === -1) throw new Error("Item not found in cart");
@@ -175,16 +216,30 @@ export const updateQuantity = async (userId, productId, variantId, quantity) => 
         return { success: false, message: `Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`, code: "LIMIT_REACHED" };
     }
 
-    // Check product status and stock again
-    const product = await Product.findById(productId).populate('category subcategory');
-    if (!product || !product.isCurrentlyAvailable) {
-        throw new Error("This product is no longer available.");
+    const cartItem = cart.items[itemIndex];
+
+    // Secondary Lookup: Fallback to size/color if ID lookup fails (Self-Healing)
+    // This happens if the admin edits the product and the variant ID is regenerated.
+    if (!variant && cartItem.size && cartItem.color) {
+        variant = product.variants.find(v => 
+            v.size === cartItem.size && 
+            (v.color === cartItem.color || (v.color && v.color.name === cartItem.color))
+        );
+        
+        // Self-Heal: update the variantId in the cart document
+        if (variant) {
+            cartItem.variantId = variant._id;
+        }
     }
 
-    const variant = product.variants.find(v => v._id.toString() === variantId.toString());
-
     if (!variant || variant.stock < quantity) {
-        throw new Error(`Only ${variant ? variant.stock : 0} items available in stock`);
+        const available = variant ? variant.stock : 0;
+        return { 
+            success: false, 
+            message: available <= 0 ? "This item is currently out of stock." : `Only ${available} items available in stock`, 
+            code: "OUT_OF_STOCK",
+            availableStock: available
+        };
     }
 
     cart.items[itemIndex].quantity = quantity;
@@ -204,9 +259,18 @@ export const removeItem = async (userId, productId, variantId) => {
     const cart = await Cart.findOne({ user: userId });
     if (!cart) throw new Error("Cart not found");
 
-    cart.items = cart.items.filter(item =>
-        !(item.product.toString() === productId && item.variantId && item.variantId.toString() === variantId.toString())
-    );
+    // Fetch product to resolve variant details for robust matching
+    const product = await Product.findById(productId);
+    let variant = product ? product.variants.find(v => v._id.toString() === variantId.toString()) : null;
+
+    cart.items = cart.items.filter(item => {
+        const isSameProduct = item.product.toString() === productId;
+        const isSameVariantId = item.variantId && item.variantId.toString() === variantId.toString();
+        const isSameAttributes = variant && item.size && item.color && item.size === variant.size && item.color === variant.color;
+        
+        // Keep the item if it does NOT match our target
+        return !(isSameProduct && (isSameVariantId || isSameAttributes));
+    });
 
     await cart.save();
 

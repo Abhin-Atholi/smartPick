@@ -242,13 +242,13 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-1.5">Start Date <span class="text-red-500">*</span></label>
-                    <input type="datetime-local" id="startDate"
+                    <input type="date" id="startDate"
                         class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
                     <p id="startDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
                 </div>
                 <div>
                     <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-1.5">Expiry Date <span class="text-red-500">*</span></label>
-                    <input type="datetime-local" id="expiryDate"
+                    <input type="date" id="expiryDate"
                         class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
                     <p id="expiryDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
                 </div>
@@ -358,13 +358,27 @@
         dates() {
             const start  = document.getElementById('startDate').value;
             const expiry = document.getElementById('expiryDate').value;
+            const today  = new Date();
+            today.setHours(0,0,0,0);
+
             let ok = true;
-            if (!expiry) { this._show('expiryDate','expiryDateError','Expiry date is required.'); ok = false; }
-            else if (new Date(expiry) <= new Date()) { this._show('expiryDate','expiryDateError','Expiry must be a future date.'); ok = false; }
-            else this._clear('expiryDate','expiryDateError');
-            if (start && expiry && new Date(start) >= new Date(expiry)) {
-                this._show('startDate','startDateError','Start date must be before expiry date.'); ok = false;
-            } else { this._clear('startDate','startDateError'); }
+            if (!expiry) { 
+                this._show('expiryDate','expiryDateError','Expiry date is required.'); ok = false; 
+            } else if (new Date(expiry) < today) { 
+                this._show('expiryDate','expiryDateError','Expiry date cannot be in the past.'); ok = false; 
+            } else { 
+                this._clear('expiryDate','expiryDateError'); 
+            }
+
+            if (!start) {
+                this._show('startDate','startDateError','Start date is required.'); ok = false;
+            } else if (new Date(start) < today) {
+                this._show('startDate','startDateError','Start date cannot be in the past.'); ok = false;
+            } else if (start && expiry && new Date(start) > new Date(expiry)) {
+                this._show('startDate','startDateError','Start date must be on or before expiry date.'); ok = false;
+            } else { 
+                this._clear('startDate','startDateError'); 
+            }
             return ok;
         },
         all() {
@@ -381,7 +395,10 @@
 
     // ── Modal controls ────────────────────────────────────────────────────────
     const pad = n => n < 10 ? '0'+n : n;
-    const toLocalDT = d => { const dt=new Date(d); return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`; };
+    const toDateStr = d => { 
+        const dt = new Date(d); 
+        return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; 
+    };
 
     function openAddModal() {
         document.getElementById('modalTitle').textContent = 'Add New Offer';
@@ -392,7 +409,7 @@
         document.getElementById('categorySearch').value   = '';
         document.getElementById('categorySelector').value = '';
         document.getElementById('offerIsActive').checked = true;
-        document.getElementById('startDate').value = toLocalDT(new Date());
+        document.getElementById('startDate').value = toDateStr(new Date());
         document.getElementById('productSelectorWrap').classList.remove('hidden');
         document.getElementById('categorySelectorWrap').classList.add('hidden');
         OfferV.clearAll();
@@ -408,8 +425,8 @@
         document.getElementById('discountType').value   = offer.discountType;
         document.getElementById('discountValue').value  = offer.discountValue;
         document.getElementById('offerIsActive').checked = offer.isActive !== false;
-        document.getElementById('expiryDate').value = toLocalDT(offer.expiryDate);
-        if (offer.startDate) document.getElementById('startDate').value = toLocalDT(offer.startDate);
+        document.getElementById('expiryDate').value = toDateStr(offer.expiryDate);
+        if (offer.startDate) document.getElementById('startDate').value = toDateStr(offer.startDate);
         handleTypeChange();
         if (offer.offerType === 'product') {
             document.getElementById('productSelector').value = offer.applicableTo;

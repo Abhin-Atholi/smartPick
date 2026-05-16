@@ -33,9 +33,16 @@ export const addToCart = async (req, res, next) => {
 
         const { productId, quantity, variantId } = req.body;
         const result = await cartService.addToCart(userId, productId, parseInt(quantity) || 1, variantId);
-        if (result.isDuplicate) {
-            return res.status(400).json({ success: false, message: result.message });
+        
+        if (result.success === false) {
+            return res.status(400).json({ 
+                success: false, 
+                message: result.message, 
+                code: result.code,
+                isDuplicate: result.isDuplicate 
+            });
         }
+
         res.json({ success: true, message: "Added to cart successfully!", itemCount: result.items.length });
     } catch (err) {
         if (!err.message.includes("already in your cart")) {
@@ -51,8 +58,14 @@ export const updateQuantity = async (req, res, next) => {
         const { productId, variantId, quantity } = req.body;
 
         const result = await cartService.updateQuantity(userId, productId, variantId, parseInt(quantity));
-        if (result && result.code === "LIMIT_REACHED") {
-            return res.status(400).json({ success: false, message: result.message, code: result.code });
+        
+        if (result.success === false) {
+            return res.status(400).json({ 
+                success: false, 
+                message: result.message, 
+                code: result.code,
+                availableStock: result.availableStock
+            });
         }
 
         res.json({

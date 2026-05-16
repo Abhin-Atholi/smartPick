@@ -204,10 +204,13 @@
 
   function updateDashboardUI(data) {
     // 1. Update Summary Cards
-    document.getElementById('valTotalRevenue').innerText = `₹${data.summary.totalRevenue.toLocaleString()}`;
-    document.getElementById('valTotalOrders').innerText = data.summary.totalOrders.toLocaleString();
+    document.getElementById('valTotalRevenue').innerText = `₹${data.summary.revenue.gross.toLocaleString()}`;
+    document.getElementById('valTotalOrders').innerText = data.summary.orders.total.toLocaleString();
     document.getElementById('valTotalCustomers').innerText = data.summary.totalCustomers.toLocaleString();
-    document.getElementById('valAvgOrderValue').innerText = `₹${Math.round(data.summary.averageOrderValue || 0).toLocaleString()}`;
+    
+    // Average Order Value (using gross revenue and total valid orders)
+    const avgOrderValue = data.summary.orders.total > 0 ? (data.summary.revenue.gross / data.summary.orders.total) : 0;
+    document.getElementById('valAvgOrderValue').innerText = `₹${Math.round(avgOrderValue).toLocaleString()}`;
     
     // Update Growth Indicators
     updateGrowthIndicator('growthRevenue', data.summary.revenueGrowth);

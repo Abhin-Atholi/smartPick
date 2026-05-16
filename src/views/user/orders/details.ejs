@@ -62,25 +62,14 @@
     <div class="mb-8">
       <h1 class="text-3xl font-black text-gray-900">Order Details</h1>
       <div class="flex flex-wrap items-center gap-3 mt-2">
-        <span class="text-lg font-black text-gray-800"><%= order.orderId || `#${order._id.toString().slice(-6).toUpperCase()}` %></span>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
-          <%= order.orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' :
-              order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Rejected' ? 'bg-red-100 text-red-700' :
-              order.orderStatus === 'Shipped' ? 'bg-blue-100 text-blue-700' :
-              order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-100 text-orange-700' :
-              'bg-yellow-100 text-yellow-800' %>">
-          <span class="w-1.5 h-1.5 rounded-full
-            <%= order.orderStatus === 'Delivered' ? 'bg-green-500' :
-                order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Rejected' ? 'bg-red-500' :
-                order.orderStatus === 'Shipped' ? 'bg-blue-500' :
-                order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ? 'bg-orange-500' :
-                'bg-yellow-500' %>">
-          </span>
-          <%= order.orderStatus %>
+        <span class="text-lg font-black text-gray-800"><%= formattedOrder.orderId %></span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold <%= formattedOrder.statusBadge.classes %>">
+          <span class="w-1.5 h-1.5 rounded-full <%= formattedOrder.statusBadge.iconClass %>"></span>
+          <%= formattedOrder.statusBadge.text %>
         </span>
       </div>
       <p class="text-sm text-gray-400 mt-1">
-        Placed on <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) %>
+        Placed on <%= formattedOrder.formattedDate %>
       </p>
     </div>
 
@@ -96,22 +85,18 @@
             <h2 class="text-base font-black text-gray-900">Order Items</h2>
           </div>
           <div class="divide-y divide-gray-100">
-            <% order.items.forEach(item => { %>
-              <% 
-                const colorOpt = item.product?.colorOptions?.find(c => c.name === item.color);
-                const imgUrl = item.image || colorOpt?.images?.[0] || item.product?.defaultImage || '/images/placeholder.jpg';
-              %>
+            <% formattedOrder.items.forEach(item => { %>
               <div id="item-row-<%= item._id %>" class="flex gap-4 px-6 py-5 hover:bg-gray-50/50 transition-colors">
                 <!-- Product Image -->
                 <div class="w-20 h-24 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0">
-                  <img src="<%= imgUrl %>" class="w-full h-full object-cover">
+                  <img src="<%= item.image %>" class="w-full h-full object-cover">
                 </div>
 
                   <!-- Product Info -->
                 <div class="flex-grow min-w-0">
-                  <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.product?.name || 'Product Unavailable' %></p>
-                  <% if (item.product?.category) { %>
-                    <p class="text-xs text-gray-400 mb-2"><%= item.product.category?.name || '' %></p>
+                  <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.productName %></p>
+                  <% if (item.categoryName) { %>
+                    <p class="text-xs text-gray-400 mb-2"><%= item.categoryName %></p>
                   <% } %>
                   <div class="flex flex-wrap gap-3 text-xs text-gray-500">
                     <span>Size: <span class="font-bold text-gray-700"><%= item.size %></span></span>
@@ -119,28 +104,29 @@
                   </div>
                   <!-- Item Status Badge & Action -->
                   <div class="mt-3 flex items-center gap-3">
-                    <span class="text-xs font-bold px-2 py-1 rounded-full
-                      <%= item.itemStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
-                          item.itemStatus === 'Cancelled' || item.itemStatus === 'Return Rejected' ? 'bg-red-50 text-red-700' :
-                          item.itemStatus === 'Returned' || item.itemStatus === 'Return Requested' ? 'bg-orange-50 text-orange-700' :
-                          item.itemStatus === 'Shipped' ? 'bg-blue-50 text-blue-700' :
-                          'bg-yellow-50 text-yellow-700' %>">
-                      <%= item.itemStatus %>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full <%= item.badge.classes %>">
+                      <%= item.badge.text %>
                     </span>
-                    <% if (item.itemStatus === 'Processing' && order.orderStatus !== 'Cancelled') { %>
-                      <button onclick="openActionModal('cancel', '<%= order._id %>', '<%= item._id %>', 'Cancel Item')" 
+                    <% if (item.refundProcessed) { %>
+                      <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 flex items-center gap-1" title="Amount refunded securely to your SmartPick Wallet">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                        Refunded to Wallet
+                      </span>
+                    <% } %>
+                    <% if (item.canCancel) { %>
+                      <button onclick="openActionModal('cancel', '<%= formattedOrder._id %>', '<%= item._id %>', 'Cancel Item')" 
                               class="text-xs font-bold text-red-600 hover:text-red-700 transition">
                         Cancel Item
                       </button>
                     <% } %>
-                    <% if (item.itemStatus === 'Delivered' && order.orderStatus !== 'Returned' && order.orderStatus !== 'Cancelled') { %>
-                      <button onclick="openActionModal('return', '<%= order._id %>', '<%= item._id %>', 'Return Item')" 
+                    <% if (item.canReturn) { %>
+                      <button onclick="openActionModal('return', '<%= formattedOrder._id %>', '<%= item._id %>', 'Return Item')" 
                               class="text-xs font-bold text-orange-500 hover:text-orange-600 transition">
                         Return Item
                       </button>
-                      <% const existingReview = typeof userReviews !== 'undefined' ? userReviews[(item.product?._id || item.product).toString()] : null; %>
+                      <% const existingReview = typeof userReviews !== 'undefined' ? userReviews[item.productId.toString()] : null; %>
                       <% if (!existingReview) { %>
-                        <button onclick='openReviewModal("<%= item.product?._id || item.product %>", null)' 
+                        <button onclick='openReviewModal("<%= item.productId %>", null)' 
                                 class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition">
                           Write Review
                         </button>
@@ -148,7 +134,7 @@
                     <% } %>
                   </div>
                   
-                  <% const existingReviewForCard = typeof userReviews !== 'undefined' ? userReviews[(item.product?._id || item.product).toString()] : null; %>
+                  <% const existingReviewForCard = typeof userReviews !== 'undefined' ? userReviews[item.productId.toString()] : null; %>
                   <% if (existingReviewForCard) { %>
                     <div class="mt-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
                       <div class="flex items-start justify-between mb-2">
@@ -165,7 +151,7 @@
                               <svg class="w-3.5 h-3.5 <%= existingReviewForCard.rating >= i ? 'fill-current' : 'text-gray-200 fill-current' %>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                             <% } %>
                           </div>
-                          <button onclick='openReviewModal("<%= item.product?._id || item.product %>", <%= JSON.stringify({id: existingReviewForCard._id, rating: existingReviewForCard.rating, text: existingReviewForCard.reviewText}) %>)' 
+                          <button onclick='openReviewModal("<%= item.productId %>", <%= JSON.stringify({id: existingReviewForCard._id, rating: existingReviewForCard.rating, text: existingReviewForCard.reviewText}) %>)' 
                                   class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             Edit Review
@@ -179,14 +165,28 @@
                   <% } %>
                 </div>
 
-                <!-- Price & Qty -->
+                <!-- Price & Qty (Phase 2 Immutable Snapshots + Phase 4 Formatter) -->
                 <div class="text-right flex-shrink-0">
-                  <p class="text-base font-black text-indigo-600">₹<%= (isNaN(item.price) ? (item.totalPrice / item.quantity) || 0 : item.price).toLocaleString() %></p>
-                  <% if (item.originalPrice && !isNaN(item.originalPrice) && item.originalPrice > item.price) { %>
-                    <p class="text-[11px] text-gray-400 line-through">₹<%= item.originalPrice.toLocaleString() %></p>
-                    <p class="text-[10px] text-rose-500 font-bold"><%= item.offerApplied?.offerName %></p>
+                  <!-- Final Paid Amount for this Line Item -->
+                  <p class="text-base font-black text-indigo-600"><%= item.formatted.finalPaidAmount %></p>
+                  
+                  <% if (item.hasDiscount) { %>
+                    <p class="text-[11px] text-gray-400 line-through"><%= item.formatted.totalOriginalAmount %></p>
                   <% } %>
-                  <p class="text-xs text-gray-400 mt-1">Qty: <%= item.quantity %></p>
+                  
+                  <% if (item.hasOffer) { %>
+                    <p class="text-[10px] text-rose-500 font-bold">Offer: -<%= item.formatted.offerDiscount %></p>
+                  <% } %>
+                  
+                  <% if (item.hasCoupon) { %>
+                    <p class="text-[10px] text-indigo-500 font-bold">Coupon: -<%= item.formatted.couponAllocated %></p>
+                  <% } %>
+                  
+                  <% if (item.hasTax) { %>
+                    <p class="text-[10px] text-gray-500">Tax (5%): +<%= item.formatted.taxAmount %></p>
+                  <% } %>
+                  
+                  <p class="text-xs text-gray-400 mt-1">Qty: <%= item.quantity %> &times; <%= item.formatted.unitPrice %></p>
                 </div>
               </div>
             <% }) %>
@@ -234,16 +234,9 @@
               </div>
               <div>
                 <p class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Payment Status</p>
-                  <span class="inline-flex items-center gap-1.5 text-sm font-bold
-                    <%= order.paymentStatus === 'Paid' ? 'text-green-600' :
-                        order.paymentStatus === 'Refunded' ? 'text-orange-600' :
-                        order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'text-red-600' : 'text-yellow-600' %>">
-                    <span class="w-2 h-2 rounded-full inline-block
-                      <%= order.paymentStatus === 'Paid' ? 'bg-green-500' :
-                          order.paymentStatus === 'Refunded' ? 'bg-orange-500' :
-                          order.paymentStatus === 'Failed' || order.paymentStatus === 'Expired' ? 'bg-red-500' : 'bg-yellow-500' %>">
-                  </span>
-                  <%= order.paymentStatus %>
+                  <span class="inline-flex items-center gap-1.5 text-sm font-bold <%= formattedOrder.paymentBadge.classes %>">
+                    <span class="w-2 h-2 rounded-full inline-block <%= formattedOrder.paymentBadge.iconClass %>"></span>
+                  <%= formattedOrder.paymentBadge.text %>
                 </span>
               </div>
             </div>
@@ -260,32 +253,32 @@
           <div class="space-y-3">
             <div class="flex justify-between text-sm">
               <span class="text-gray-400 font-semibold">Subtotal</span>
-              <span class="text-gray-800 font-bold">₹<%= (isNaN(order.originalSubtotal) ? (order.subtotal || 0) : (order.originalSubtotal || order.subtotal || 0)).toLocaleString() %></span>
+              <span class="text-gray-800 font-bold"><%= formattedOrder.summary.formatted.subtotal %></span>
             </div>
-            <% if (order.totalOfferDiscount > 0 && !isNaN(order.totalOfferDiscount)) { %>
+            <% if (formattedOrder.summary.hasOfferDiscount) { %>
             <div class="flex justify-between text-sm">
               <span class="text-rose-400 font-semibold">Offer Save</span>
-              <span class="text-rose-600 font-bold">-₹<%= order.totalOfferDiscount.toLocaleString() %></span>
+              <span class="text-rose-600 font-bold">-<%= formattedOrder.summary.formatted.offerDiscount %></span>
             </div>
             <% } %>
-            <% if (order.discount > 0 && !isNaN(order.discount)) { %>
+            <% if (formattedOrder.summary.hasCouponDiscount) { %>
             <div class="flex justify-between text-sm">
               <span class="text-indigo-400 font-semibold">Coupon</span>
-              <span class="text-indigo-600 font-bold">-₹<%= order.discount.toLocaleString() %></span>
+              <span class="text-indigo-600 font-bold">-<%= formattedOrder.summary.formatted.couponDiscount %></span>
             </div>
             <% } %>
             <div class="flex justify-between text-sm">
               <span class="text-gray-400 font-semibold">Tax</span>
-              <span class="text-gray-800 font-bold">₹<%= (isNaN(order.tax) ? 0 : (order.tax || 0)).toLocaleString() %></span>
+              <span class="text-gray-800 font-bold"><%= formattedOrder.summary.formatted.tax %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-400 font-semibold">Shipping</span>
-              <span class="text-gray-800 font-bold"><%= order.shippingFee === 0 ? 'Free' : `₹${isNaN(order.shippingFee) ? 0 : order.shippingFee}` %></span>
+              <span class="text-gray-800 font-bold"><%= formattedOrder.summary.formatted.shipping %></span>
             </div>
           </div>
           <div class="mt-5 pt-4 border-t border-dashed border-gray-200 flex justify-between items-end">
             <span class="text-sm font-black text-gray-900 uppercase tracking-wide">Total</span>
-            <span class="text-2xl font-black text-indigo-600">₹<%= (isNaN(order.totalAmount) ? 0 : (order.totalAmount || 0)).toLocaleString() %></span>
+            <span class="text-2xl font-black text-indigo-600"><%= formattedOrder.summary.formatted.total %></span>
           </div>
         </div>
 
