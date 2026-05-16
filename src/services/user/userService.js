@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { deleteLocalFile, deleteCloudinaryFile } from "../../utils/fileHelper.js";
 import * as otpService from "../common/otpService.js";
 import Address from "../../model/addressModel.js";
+import { addressSchema } from "../../validators/user/addressValidation.js";
 
 /**
  * Logic: Process Profile Updates, handle image replacement, and email change security.
@@ -80,27 +81,10 @@ export const removeImage = async (userId) => {
  * Logic: Manage Addresses (Push, Set, Pull)
  */
 export const addAddress = async (userId, addressData) => {
-  const { fullName, phone, pincode, state, city, locality, house, area, isDefault } = addressData;
+  const { error, value } = addressSchema.validate(addressData, { abortEarly: false, stripUnknown: true });
+  if (error) throw new Error(error.details[0].message);
 
-  // Field-level validation (service concern)
-  if (!fullName || fullName.trim().length < 3)
-    throw new Error("Full name must be at least 3 characters.");
-  if (!phone || !/^[6-9]\d{9}$/.test(phone))
-    throw new Error("Enter a valid 10-digit Indian mobile number.");
-  if (!pincode || !/^\d{6}$/.test(pincode))
-    throw new Error("Pincode must be exactly 6 digits.");
-  if (!state || state.trim().length < 2)
-    throw new Error("Please enter a valid state.");
-  if (!city || city.trim().length < 2)
-    throw new Error("Please enter a valid city.");
-  if (!locality || locality.trim().length < 2)
-    throw new Error("Please enter a valid locality.");
-  if (!house || house.trim().length < 3)
-    throw new Error("House / Building field must be at least 3 characters.");
-  if (!area || area.trim().length < 3)
-    throw new Error("Area / Street must be at least 3 characters.");
-
-  let defaultStatus = isDefault === true || isDefault === 'true';
+  let defaultStatus = value.isDefault === true;
 
   const existingAddresses = await Address.countDocuments({ userId });
   if (existingAddresses === 0) {
@@ -109,41 +93,24 @@ export const addAddress = async (userId, addressData) => {
     await Address.updateMany({ userId }, { $set: { isDefault: false } });
   }
 
-  return await Address.create({ userId, ...addressData, isDefault: defaultStatus });
+  return await Address.create({ userId, ...value, isDefault: defaultStatus });
 };
 
 export const updateAddress = async (userId, addressId, addressData) => {
-  const { fullName, phone, pincode, state, city, locality, house, area, isDefault } = addressData;
+  const { error, value } = addressSchema.validate(addressData, { abortEarly: false, stripUnknown: true });
+  if (error) throw new Error(error.details[0].message);
 
-  // Field-level validation (service concern)
-  if (!fullName || fullName.trim().length < 3)
-    throw new Error("Full name must be at least 3 characters.");
-  if (!phone || !/^[6-9]\d{9}$/.test(phone))
-    throw new Error("Enter a valid 10-digit Indian mobile number.");
-  if (!pincode || !/^\d{6}$/.test(pincode))
-    throw new Error("Pincode must be exactly 6 digits.");
-  if (!state || state.trim().length < 2)
-    throw new Error("Please enter a valid state.");
-  if (!city || city.trim().length < 2)
-    throw new Error("Please enter a valid city.");
-  if (!locality || locality.trim().length < 2)
-    throw new Error("Please enter a valid locality.");
-  if (!house || house.trim().length < 3)
-    throw new Error("House / Building field must be at least 3 characters.");
-  if (!area || area.trim().length < 3)
-    throw new Error("Area / Street must be at least 3 characters.");
-
-  const defaultStatus = isDefault === true || isDefault === 'true';
+  const defaultStatus = value.isDefault === true;
 
   if (defaultStatus) {
     await Address.updateMany({ userId, _id: { $ne: addressId } }, { $set: { isDefault: false } });
   }
 
+  const { isDefault: _ignored, ...fields } = value;
   return await Address.findOneAndUpdate(
     { _id: addressId, userId },
-    {
-      $set: { fullName, phone, pincode, state, city, locality, house, area, isDefault: defaultStatus },
-    }
+    { $set: { ...fields, isDefault: defaultStatus } },
+    { new: true }
   );
 };
 
