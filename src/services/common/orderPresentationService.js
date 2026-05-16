@@ -136,7 +136,12 @@ export const formatOrderForDisplay = (order) => {
             hasOffer: offerDiscount > 0,
             hasCoupon: couponAllocated > 0,
             hasTax: taxAmount > 0,
-            hasDiscount: totalOriginalAmount > finalPaidAmount
+            hasDiscount: totalOriginalAmount > finalPaidAmount,
+            
+            // Phase 9 Safety Flags
+            isCapped: !!item.isCapped,
+            isFloorHit: !!item.isFloorHit,
+            pricingAdjusted: !!item.pricingAdjusted
         };
     });
 
@@ -166,7 +171,11 @@ export const formatOrderForDisplay = (order) => {
         },
         
         hasOfferDiscount: rawOfferDiscount > 0,
-        hasCouponDiscount: rawCoupon > 0
+        hasCouponDiscount: rawCoupon > 0,
+        
+        // Phase 9 Summary Safety Flags
+        pricingAdjusted: !!order.pricingAdjusted,
+        couponCapped: !!order.couponCapped
     };
 
     // 3. Final Output

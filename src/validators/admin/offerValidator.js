@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import mongoose from 'mongoose';
+import { PRICING_RULES } from '../../config/pricingRules.js';
 
 /**
  * Offer Joi Validator
@@ -51,10 +52,10 @@ const offerBaseFields = {
 
     discountValue: Joi.when('discountType', {
         is: 'percentage',
-        then: Joi.number().min(1).max(90).required().messages({
+        then: Joi.number().min(1).max(PRICING_RULES.MAX_PERCENTAGE_DISCOUNT).required().messages({
             'number.base': 'Discount value must be a number.',
             'number.min': 'Discount value must be at least 1.',
-            'number.max': 'Percentage discount cannot exceed 90%.',
+            'number.max': `Percentage discount cannot exceed ${PRICING_RULES.MAX_PERCENTAGE_DISCOUNT}%.`,
             'any.required': 'Discount value is required.'
         }),
         otherwise: Joi.number().min(1).required().messages({
@@ -62,6 +63,16 @@ const offerBaseFields = {
             'number.min': 'Discount value must be at least 1.',
             'any.required': 'Discount value is required.'
         })
+    }),
+
+    maximumDiscountAmount: Joi.when('discountType', {
+        is: 'percentage',
+        then: Joi.number().min(1).required().messages({
+            'number.base': 'Maximum discount must be a number.',
+            'number.min': 'Maximum discount must be at least ₹1.',
+            'any.required': 'Maximum discount is required for percentage offers.'
+        }),
+        otherwise: Joi.any().optional().strip()
     }),
 
     startDate: Joi.date().min(new Date().setHours(0, 0, 0, 0)).required().messages({

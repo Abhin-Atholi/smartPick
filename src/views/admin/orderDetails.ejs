@@ -112,6 +112,17 @@
                     <%= item.badge.text %>
                   </span>
                   
+                  <% if (item.isCapped) { %>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-orange-100 text-orange-700 border border-orange-200" title="Discount capped by max offer limit">
+                      Capped
+                    </span>
+                  <% } %>
+                  <% if (item.isFloorHit) { %>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-100 text-red-700 border border-red-200" title="Price protected by minimum price floor">
+                      Floor Protection
+                    </span>
+                  <% } %>
+                  
                   <!-- Refund Visibility -->
                   <% if (item.refundProcessed) { %>
                     <div class="flex flex-col items-center mt-1" title="Transaction ID: <%= item.refundStatus.transactionId %>">
@@ -190,6 +201,12 @@
           <span class="font-black text-slate-800 text-base">Total</span>
           <span class="font-black text-indigo-600 text-xl"><%= formattedOrder.summary.formatted.total %></span>
         </div>
+        <% if (formattedOrder.summary.pricingAdjusted || formattedOrder.summary.couponCapped) { %>
+          <div class="p-2 bg-orange-50 border border-orange-100 rounded-lg flex items-start gap-2 mt-2">
+            <svg class="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="text-[10px] font-black text-orange-700 uppercase leading-tight">Maximum discount cap applied to protect item price floor.</span>
+          </div>
+        <% } %>
       </div>
       <div class="mt-5 pt-4 border-t border-gray-100 space-y-2 text-sm">
         <div class="flex justify-between">

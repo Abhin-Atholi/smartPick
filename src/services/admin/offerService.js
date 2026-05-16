@@ -1,6 +1,7 @@
 import Offer from '../../model/offerModel.js';
 import Product from '../../model/productModel.js';
 import Category from '../../model/categoryModel.js';
+import { PRICING_RULES } from '../../config/pricingRules.js';
 
 // ── Shared helper ─────────────────────────────────────────────────────────────
 /**
@@ -107,6 +108,32 @@ export const createOffer = async (data) => {
         if (!category.isActive) throw new Error('Cannot create an offer for an inactive category.');
     }
 
+    // Business rule: mathematical safety check
+    let productsToCheck = [];
+    if (offerType === 'product') {
+        const p = await Product.findById(applicableTo).lean();
+        if (p) productsToCheck.push(p);
+    } else {
+        productsToCheck = await Product.find({ category: applicableTo, isDeleted: false }).lean();
+    }
+
+    for (const p of productsToCheck) {
+        if (!p.price) continue;
+        let discount = 0;
+        if (discountType === 'flat') {
+            discount = Number(discountValue);
+        } else if (discountType === 'percentage') {
+            const safeDiscountValue = Math.min(Number(discountValue), PRICING_RULES.MAX_PERCENTAGE_DISCOUNT);
+            discount = (p.price * safeDiscountValue) / 100;
+            if (data.maximumDiscountAmount && discount > data.maximumDiscountAmount) {
+                discount = data.maximumDiscountAmount;
+            }
+        }
+        if (p.price - discount < PRICING_RULES.MINIMUM_ITEM_PRICE) {
+            throw new Error(`Mathematical Safety: This offer would cause product "${p.name}" (₹${p.price}) to drop below the minimum allowed price of ₹${PRICING_RULES.MINIMUM_ITEM_PRICE}.`);
+        }
+    }
+
     // Business rule: detect date-range overlap with existing active offer on same target
     const overlapping = await detectOverlap(offerType, applicableTo, startDate, expiryDate);
     if (overlapping) {
@@ -122,6 +149,7 @@ export const createOffer = async (data) => {
         offerType,
         discountType,
         discountValue: Number(discountValue),
+        maximumDiscountAmount: data.maximumDiscountAmount || null,
         applicableTo,
         startDate: startDate ? new Date(startDate) : new Date(),
         expiryDate: new Date(expiryDate),
@@ -153,6 +181,32 @@ export const updateOffer = async (id, data) => {
         if (!category) throw new Error('The selected category does not exist.');
     }
 
+    // Business rule: mathematical safety check
+    let productsToCheck = [];
+    if (offerType === 'product') {
+        const p = await Product.findById(applicableTo).lean();
+        if (p) productsToCheck.push(p);
+    } else {
+        productsToCheck = await Product.find({ category: applicableTo, isDeleted: false }).lean();
+    }
+
+    for (const p of productsToCheck) {
+        if (!p.price) continue;
+        let discount = 0;
+        if (discountType === 'flat') {
+            discount = Number(discountValue);
+        } else if (discountType === 'percentage') {
+            const safeDiscountValue = Math.min(Number(discountValue), PRICING_RULES.MAX_PERCENTAGE_DISCOUNT);
+            discount = (p.price * safeDiscountValue) / 100;
+            if (data.maximumDiscountAmount && discount > data.maximumDiscountAmount) {
+                discount = data.maximumDiscountAmount;
+            }
+        }
+        if (p.price - discount < PRICING_RULES.MINIMUM_ITEM_PRICE) {
+            throw new Error(`Mathematical Safety: This offer would cause product "${p.name}" (₹${p.price}) to drop below the minimum allowed price of ₹${PRICING_RULES.MINIMUM_ITEM_PRICE}.`);
+        }
+    }
+
     // Business rule: overlap detection (excluding current offer)
     const overlapping = await detectOverlap(offerType, applicableTo, startDate, expiryDate, id);
     if (overlapping) {
@@ -166,6 +220,7 @@ export const updateOffer = async (id, data) => {
     offer.offerType = offerType;
     offer.discountType = discountType;
     offer.discountValue = Number(discountValue);
+    offer.maximumDiscountAmount = data.maximumDiscountAmount || null;
     offer.applicableTo = applicableTo;
     offer.startDate = startDate ? new Date(startDate) : offer.startDate;
     offer.expiryDate = new Date(expiryDate);

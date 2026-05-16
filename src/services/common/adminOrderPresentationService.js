@@ -68,7 +68,12 @@ export const formatAdminOrderForDisplay = (order) => {
             
             // Phase 7 Return Inspection & Inventory Reconciliation
             inventoryReconciled: !!item.inventoryReconciled,
-            returnInspection: item.returnInspection || null
+            returnInspection: item.returnInspection || null,
+
+            // Phase 9 Safety Flags
+            isCapped: !!item.isCapped,
+            isFloorHit: !!item.isFloorHit,
+            pricingAdjusted: !!item.pricingAdjusted
         };
     });
 
@@ -98,7 +103,11 @@ export const formatAdminOrderForDisplay = (order) => {
         },
         
         hasOfferDiscount: rawOfferDiscount > 0,
-        hasCouponDiscount: rawCoupon > 0
+        hasCouponDiscount: rawCoupon > 0,
+
+        // Phase 9 Summary Safety Flags
+        pricingAdjusted: !!order.pricingAdjusted,
+        couponCapped: !!order.couponCapped
     };
 
     // 3. Admin Specifics & Final Output

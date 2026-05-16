@@ -23,6 +23,11 @@ const orderItemSchema = new mongoose.Schema({
     taxAmount: { type: Number, default: 0 },
     finalPriceAfterCoupon: { type: Number, default: 0 },
     
+    // Phase 9: Pricing Safety Flags
+    isCapped: { type: Boolean, default: false },
+    isFloorHit: { type: Boolean, default: false },
+    pricingAdjusted: { type: Boolean, default: false },
+    
     // Phase 3: Idempotency & Refund Tracking
     refundProcessed: { type: Boolean, default: false },
     refundProcessedAt: { type: Date },
@@ -74,6 +79,10 @@ const orderSchema = new mongoose.Schema({
         discountAmount: { type: Number },
         discountType: { type: String }
     },
+    // Phase 9: Pricing Safety Flags
+    pricingAdjusted: { type: Boolean, default: false },
+    couponCapped: { type: Boolean, default: false },
+    
     paymentDetails: {
         razorpayOrderId: { type: String },
         razorpayPaymentId: { type: String },

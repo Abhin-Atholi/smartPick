@@ -6,6 +6,7 @@ const offerSchema = new mongoose.Schema({
     offerType: { type: String, enum: ['product', 'category'], required: true },
     discountType: { type: String, enum: ['flat', 'percentage'], required: true },
     discountValue: { type: Number, required: true, min: 1 },
+    maximumDiscountAmount: { type: Number, min: 1, default: null },
     // Polymorphic ref — stores Product._id or Category._id depending on offerType
     applicableTo: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'offerTypeModel' },
     startDate: { type: Date, default: Date.now },

@@ -183,12 +183,24 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             paymentMethod,
             paymentStatus: finalPaymentStatus,
             orderStatus: finalOrderStatus,
+            // Phase 9: Map Pricing Safety Flags
+            pricingAdjusted: breakdown.pricingAdjusted,
+            couponCapped: breakdown.couponCapped,
+
             couponApplied: couponData ? {
                 code: couponData.code,
                 discountAmount: breakdown.couponDiscount, 
                 discountType: couponData.discountType
             } : undefined
         });
+
+        // Ensure item-level flags are mapped correctly (already in finalOrderItems from pricingResult.items)
+        order.items = finalOrderItems.map(i => ({
+            ...i,
+            isCapped: !!i.isCapped,
+            isFloorHit: !!i.isFloorHit,
+            pricingAdjusted: !!i.pricingAdjusted
+        }));
 
         if (paymentMethod === 'Razorpay') {
             order.retryExpiresAt = new Date(Date.now() + 5 * 60 * 1000);

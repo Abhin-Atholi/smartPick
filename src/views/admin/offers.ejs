@@ -235,7 +235,15 @@
                     <input type="number" id="discountValue" min="1" step="1" placeholder="e.g. 500"
                         class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all">
                     <p id="discountValueError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                    <p id="discountWarning" class="text-[10px] text-orange-500 font-bold mt-1 hidden">⚠️ High discount! Verify profit margins.</p>
                 </div>
+            </div>
+
+            <div id="maxDiscountWrap" class="hidden mb-4">
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-1.5">Maximum Discount Amount (₹) <span class="text-red-500">*</span></label>
+                <input type="number" id="maximumDiscountAmount" min="1" step="1" placeholder="Required for % discounts"
+                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all">
+                <p id="maximumDiscountAmountError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
             </div>
 
             <!-- Start + Expiry Date -->
@@ -322,6 +330,7 @@
             const fieldMap = {
                 name:          ['offerName',     'offerNameError'],
                 discountValue: ['discountValue', 'discountValueError'],
+                maximumDiscountAmount: ['maximumDiscountAmount', 'maximumDiscountAmountError'],
                 applicableTo:  ['productSearch', 'applicableToError'],
                 expiryDate:    ['expiryDate',    'expiryDateError'],
                 startDate:     ['startDate',     'startDateError'],
@@ -349,11 +358,31 @@
         discountValue() {
             const dType = document.getElementById('discountType').value;
             const v = parseFloat(document.getElementById('discountValue').value);
+            const warningEl = document.getElementById('discountWarning');
+            warningEl.classList.add('hidden');
+            
             if (!document.getElementById('discountValue').value || isNaN(v))
                 return this._show('discountValue','discountValueError','Discount value is required.'), false;
             if (v < 1) return this._show('discountValue','discountValueError','Must be at least 1.'), false;
-            if (dType === 'percentage' && v > 90) return this._show('discountValue','discountValueError','Percentage cannot exceed 90%.'), false;
+            
+            if (dType === 'percentage') {
+                if (v > 90) return this._show('discountValue','discountValueError','Percentage cannot exceed 90%.'), false;
+                if (v >= 50) warningEl.classList.remove('hidden');
+            }
+            
             this._clear('discountValue','discountValueError'); return true;
+        },
+        maximumDiscountAmount() {
+            const dType = document.getElementById('discountType').value;
+            if (dType !== 'percentage') {
+                this._clear('maximumDiscountAmount','maximumDiscountAmountError');
+                return true;
+            }
+            const v = parseFloat(document.getElementById('maximumDiscountAmount').value);
+            if (!document.getElementById('maximumDiscountAmount').value || isNaN(v))
+                return this._show('maximumDiscountAmount','maximumDiscountAmountError','Maximum discount amount is required for percentage offers.'), false;
+            if (v < 1) return this._show('maximumDiscountAmount','maximumDiscountAmountError','Must be at least ₹1.'), false;
+            this._clear('maximumDiscountAmount','maximumDiscountAmountError'); return true;
         },
         dates() {
             const start  = document.getElementById('startDate').value;
@@ -382,7 +411,7 @@
             return ok;
         },
         all() {
-            return [this.name(), this.applicableTo(), this.discountValue(), this.dates()].every(Boolean);
+            return [this.name(), this.applicableTo(), this.discountValue(), this.maximumDiscountAmount(), this.dates()].every(Boolean);
         }
     };
 
@@ -391,7 +420,22 @@
     document.getElementById('discountValue').addEventListener('input', () => OfferV.discountValue());
     document.getElementById('expiryDate').addEventListener('change',  () => OfferV.dates());
     document.getElementById('startDate').addEventListener('change',   () => OfferV.dates());
-    document.getElementById('discountType').addEventListener('change', () => OfferV.discountValue());
+    document.getElementById('discountType').addEventListener('change', function() {
+        const dType = this.value;
+        const maxWrap = document.getElementById('maxDiscountWrap');
+        const maxInput = document.getElementById('maximumDiscountAmount');
+        if (dType === 'percentage') {
+            maxWrap.classList.remove('hidden');
+            document.getElementById('discountValue').placeholder = 'e.g. 15 (Max 90%)';
+        } else {
+            maxWrap.classList.add('hidden');
+            maxInput.value = '';
+            document.getElementById('discountValue').placeholder = 'e.g. 500';
+            OfferV._clear('maximumDiscountAmount', 'maximumDiscountAmountError');
+        }
+        OfferV.discountValue();
+    });
+    document.getElementById('maximumDiscountAmount').addEventListener('input', () => OfferV.maximumDiscountAmount());
 
     // ── Modal controls ────────────────────────────────────────────────────────
     const pad = n => n < 10 ? '0'+n : n;
@@ -424,10 +468,12 @@
         document.getElementById('offerType').value      = offer.offerType;
         document.getElementById('discountType').value   = offer.discountType;
         document.getElementById('discountValue').value  = offer.discountValue;
+        document.getElementById('maximumDiscountAmount').value = offer.maximumDiscountAmount || '';
         document.getElementById('offerIsActive').checked = offer.isActive !== false;
         document.getElementById('expiryDate').value = toDateStr(offer.expiryDate);
         if (offer.startDate) document.getElementById('startDate').value = toDateStr(offer.startDate);
         handleTypeChange();
+        document.getElementById('discountType').dispatchEvent(new Event('change'));
         if (offer.offerType === 'product') {
             document.getElementById('productSelector').value = offer.applicableTo;
             document.getElementById('productSearch').value   = offer.targetName || '';
@@ -463,6 +509,7 @@
             offerType:    type,
             discountType: document.getElementById('discountType').value,
             discountValue: parseFloat(document.getElementById('discountValue').value),
+            maximumDiscountAmount: document.getElementById('discountType').value === 'percentage' ? parseFloat(document.getElementById('maximumDiscountAmount').value) : null,
             applicableTo: document.getElementById(`${type}Selector`).value,
             startDate:    document.getElementById('startDate').value || null,
             expiryDate:   document.getElementById('expiryDate').value,
