@@ -40,6 +40,7 @@
                             <% } else { %>
                                 <% 
                     cart.items.forEach(item => { 
+                        const normalize = str => String(str || '').trim().toLowerCase();
                         const product = item.product;
                         let isUnavailable = !product || !product.isCurrentlyAvailable;
                         let cartVariant = null;
@@ -52,14 +53,14 @@
                         // 2. Secondary Lookup: Fallback to size/color
                         if (!cartVariant && product && item.size && item.color) {
                             cartVariant = product.variants.find(v => 
-                                v.size === item.size && 
-                                (v.color === item.color || (v.color && v.color.name === item.color))
+                                normalize(v.size) === normalize(item.size) && 
+                                normalize(v.color) === normalize(item.color)
                             );
                         }
 
                         const itemSize = cartVariant ? cartVariant.size : (item.size || 'N/A');
                         const itemColorName = cartVariant ? cartVariant.color : (item.color || 'N/A');
-                        const colorOption = product && product.colorOptions ? product.colorOptions.find(c => c.name === itemColorName) : null;
+                        const colorOption = product && product.colorOptions ? product.colorOptions.find(c => normalize(c.name) === normalize(itemColorName)) : null;
                         const itemColorCode = colorOption ? colorOption.code : '#ccc';
                         
                         const availableStock = cartVariant ? cartVariant.stock : 0;

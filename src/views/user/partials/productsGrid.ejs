@@ -44,7 +44,6 @@
             <!-- Variants Preview: Sizes & Colors -->
             <div class="flex flex-col gap-3 mb-4 mt-auto">
               <% 
-                const uniqueSizes = [...new Set(p.variants.map(v => v.size))].sort((a,b) => ["S","M","L","XL"].indexOf(a) - ["S","M","L","XL"].indexOf(b));
                 const uniqueColors = p.colorOptions || [];
               %>
               <div class="flex gap-1.5 flex-wrap">
@@ -55,8 +54,17 @@
                   <span class="text-[9px] font-black text-gray-400">+<%= uniqueColors.length - 5 %></span>
                 <% } %>
               </div>
-              <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase">
-                <%= uniqueSizes.join(', ') %>
+              <div class="flex flex-wrap gap-1.5 mt-1">
+                <% PRODUCT_SIZES.forEach(size => { 
+                     const isAvailable = p.variants.some(v => String(v.size || '').trim().toLowerCase() === String(size).trim().toLowerCase() && v.stock > 0);
+                %>
+                  <span class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border <%= isAvailable ? 'text-slate-600 border-slate-200' : 'text-slate-300 border-slate-100 opacity-40 cursor-not-allowed relative overflow-hidden' %>">
+                    <%= size %>
+                    <% if(!isAvailable) { %>
+                      <div class="absolute inset-0 w-full h-full border-t border-slate-300" style="transform: translateY(50%) rotate(-45deg);"></div>
+                    <% } %>
+                  </span>
+                <% }) %>
               </div>
             </div>
 

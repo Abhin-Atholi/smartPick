@@ -177,10 +177,11 @@ class PaymentRecoveryService {
      * @private
      */
     _mergeCartItem(cart, item) {
+        const normalize = str => String(str || '').trim().toLowerCase();
         const existingIdx = cart.items.findIndex(ci =>
             ci.product.toString() === item.product.toString() &&
-            ci.color === item.color &&
-            ci.size  === item.size
+            normalize(ci.color) === normalize(item.color) &&
+            normalize(ci.size) === normalize(item.size)
         );
 
         if (existingIdx > -1) {
@@ -203,46 +204,45 @@ class PaymentRecoveryService {
     }
 
     /**
-     * Finds the current live stock for an order item within a product's colorOptions.
-     * Supports both colorOptions (new schema) and legacy variants array.
+     * Finds the current live stock for an order item within a product's variants.
+     * Uses variants array as the single source of truth for stock.
      *
      * @private
      * @returns {{ found: boolean, stock: number }}
      */
     _getLiveStock(product, orderItem) {
-        // ── New schema: colorOptions[].sizes[] ──────────────────────────────
-        if (product.colorOptions && product.colorOptions.length > 0) {
-            const colorOpt = product.colorOptions.find(c => c.name === orderItem.color);
-            if (!colorOpt) return { found: false, stock: 0 };
-
-            const sizeOpt = colorOpt.sizes?.find(s => s.size === orderItem.size);
-            if (!sizeOpt) return { found: false, stock: 0 };
-
-            return { found: true, stock: sizeOpt.stock ?? 0 };
+        if (!product.variants?.length) {
+            return { found: false, stock: 0 };
         }
 
-        // ── Legacy schema: variants[] ────────────────────────────────────────
-        if (product.variants && product.variants.length > 0) {
-            let variant;
+        let variant = null;
 
-            if (orderItem.variantId) {
-                variant = product.variants.find(v => v._id.toString() === orderItem.variantId.toString());
-            }
-
-            if (!variant) {
-                // Fallback: match by color + size
-                variant = product.variants.find(v => {
-                    const colorMatch = v.color === orderItem.color ||
-                                       (v.color && v.color.name === orderItem.color);
-                    return colorMatch && v.size === orderItem.size;
-                });
-            }
-
-            if (!variant) return { found: false, stock: 0 };
-            return { found: true, stock: variant.stock ?? 0 };
+        // Primary lookup → variantId
+        if (orderItem.variantId) {
+            variant = product.variants.find(
+                v => v._id.toString() === orderItem.variantId.toString()
+            );
         }
 
-        return { found: false, stock: 0 };
+        // Fallback lookup → color + size
+        if (!variant) {
+            const normalize = str =>
+                String(str || '').trim().toLowerCase();
+
+            variant = product.variants.find(v =>
+                normalize(v.color) === normalize(orderItem.color) &&
+                normalize(v.size) === normalize(orderItem.size)
+            );
+        }
+
+        if (!variant) {
+            return { found: false, stock: 0 };
+        }
+
+        return {
+            found: true,
+            stock: variant.stock ?? 0
+        };
     }
 }
 

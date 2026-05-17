@@ -101,7 +101,8 @@ export const formatOrderForDisplay = (order) => {
         const totalOriginalAmount = originalPrice * item.quantity;
 
         // Visual properties
-        const colorOpt = item.product?.colorOptions?.find(c => c.name === item.color);
+        const normalize = str => String(str || '').trim().toLowerCase();
+        const colorOpt = item.product?.colorOptions?.find(c => normalize(c.name) === normalize(item.color));
         const image = item.image || colorOpt?.images?.[0] || item.product?.defaultImage || '/images/placeholder.jpg';
 
         return {

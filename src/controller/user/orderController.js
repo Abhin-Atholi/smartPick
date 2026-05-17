@@ -40,7 +40,8 @@ export const loadCheckout = async (req, res, next) => {
                 if (item.variantId) {
                     variant = item.product.variants.find(v => v._id.toString() === item.variantId.toString());
                 } else {
-                    variant = item.product.variants.find(v => v.size === item.size && (v.color && (v.color.name === item.color || v.color === item.color)));
+                    const normalize = str => String(str || '').trim().toLowerCase();
+                    variant = item.product.variants.find(v => normalize(v.size) === normalize(item.size) && normalize(v.color) === normalize(item.color));
                 }
                 const availableStock = variant ? variant.stock : 0;
                 const isLowStock = availableStock > 0 && availableStock < item.quantity;

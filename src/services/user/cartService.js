@@ -33,9 +33,10 @@ const _calculateBreakdown = async (fullCartItems) => {
             
             // 2. Secondary Lookup: Fallback to size/color if ID lookup fails (Self-Healing)
             if (!variant && item.size && item.color) {
+                const normalize = str => String(str || '').trim().toLowerCase();
                 variant = product.variants.find(v => 
-                    v.size === item.size && 
-                    (v.color === item.color || (v.color && v.color.name === item.color))
+                    normalize(v.size) === normalize(item.size) && 
+                    normalize(v.color) === normalize(item.color)
                 );
                 
                 // Self-Heal: If we found a match by attributes, update the variantId in the cart document
@@ -155,11 +156,12 @@ export const addToCart = async (userId, productId, quantity, variantId) => {
     const totalPrice = price * quantity;
 
     // Check if item with same ID and variantId already exists, using fallback for robustness
+    const normalize = str => String(str || '').trim().toLowerCase();
     const existingItemIndex = cart.items.findIndex(item =>
         item.product.toString() === productId &&
         (
             (item.variantId && item.variantId.toString() === variantId.toString()) ||
-            (variant && item.size && item.color && item.size === variant.size && item.color === variant.color)
+            (variant && item.size && item.color && normalize(item.size) === normalize(variant.size) && normalize(item.color) === normalize(variant.color))
         )
     );
 
@@ -210,11 +212,12 @@ export const updateQuantity = async (userId, productId, variantId, quantity) => 
     // Find the cart item. 
     // Fallback: If the frontend sent a new self-healed variantId but the DB still has the old one,
     // we match using the resolved variant's size and color.
+    const normalize = str => String(str || '').trim().toLowerCase();
     const itemIndex = cart.items.findIndex(item =>
         item.product.toString() === productId &&
         (
             (item.variantId && item.variantId.toString() === variantId.toString()) ||
-            (variant && item.size && item.color && item.size === variant.size && item.color === variant.color)
+            (variant && item.size && item.color && normalize(item.size) === normalize(variant.size) && normalize(item.color) === normalize(variant.color))
         )
     );
 
@@ -230,8 +233,8 @@ export const updateQuantity = async (userId, productId, variantId, quantity) => 
     // This happens if the admin edits the product and the variant ID is regenerated.
     if (!variant && cartItem.size && cartItem.color) {
         variant = product.variants.find(v => 
-            v.size === cartItem.size && 
-            (v.color === cartItem.color || (v.color && v.color.name === cartItem.color))
+            normalize(v.size) === normalize(cartItem.size) && 
+            normalize(v.color) === normalize(cartItem.color)
         );
         
         // Self-Heal: update the variantId in the cart document
@@ -272,9 +275,10 @@ export const removeItem = async (userId, productId, variantId) => {
     let variant = product ? product.variants.find(v => v._id.toString() === variantId.toString()) : null;
 
     cart.items = cart.items.filter(item => {
+        const normalize = str => String(str || '').trim().toLowerCase();
         const isSameProduct = item.product.toString() === productId;
         const isSameVariantId = item.variantId && item.variantId.toString() === variantId.toString();
-        const isSameAttributes = variant && item.size && item.color && item.size === variant.size && item.color === variant.color;
+        const isSameAttributes = variant && item.size && item.color && normalize(item.size) === normalize(variant.size) && normalize(item.color) === normalize(variant.color);
         
         // Keep the item if it does NOT match our target
         return !(isSameProduct && (isSameVariantId || isSameAttributes));

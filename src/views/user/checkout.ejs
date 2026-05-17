@@ -126,7 +126,8 @@
                             <% cartItems.forEach(item=> { %>
                                 <div class="flex gap-4 <%= item.stockIssue ? 'opacity-70' : '' %>">
                                     <div class="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 relative">
-                                        <% const colorOption = item.product.colorOptions ? item.product.colorOptions.find(c => c.name === item.color) : null;
+                                        <% const normalize = str => String(str || '').trim().toLowerCase();
+                                           const colorOption = item.product.colorOptions ? item.product.colorOptions.find(c => normalize(c.name) === normalize(item.color)) : null;
                                            let imgUrl = colorOption && colorOption.images && colorOption.images.length > 0 ? colorOption.images[0] : (item.product.defaultImage || '/images/placeholder.jpg');
                                         %>
                                             <img src="<%= imgUrl %>" class="w-full h-full object-cover">

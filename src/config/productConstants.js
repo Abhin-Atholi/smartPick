@@ -4,6 +4,5 @@ export const PRODUCT_SIZES = [
     'M',
     'L',
     'XL',
-    'XXL',
-    'Free Size'
+    'XXL'
 ];

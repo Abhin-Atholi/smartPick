@@ -98,9 +98,10 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             // This handles cases where admin edited the product and Regenerated variant IDs, 
             // but the cart DB still has the old ID.
             if (!variant && item.size && item.color) {
+                const normalize = str => String(str || '').trim().toLowerCase();
                 variant = product.variants.find(v => 
-                    v.size === item.size && 
-                    (v.color === item.color || (v.color && v.color.name === item.color))
+                    normalize(v.size) === normalize(item.size) && 
+                    normalize(v.color) === normalize(item.color)
                 );
                 // Temporarily update the in-memory item so order generation and stock reduction use the NEW ID
                 if (variant) {

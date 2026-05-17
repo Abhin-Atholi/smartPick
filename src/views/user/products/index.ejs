@@ -14,7 +14,7 @@
     !=='undefined' ? maxPrice : '' ; const activeSizes=typeof selectedSizes !=='undefined' ? selectedSizes : []; const
     activeSubIds=typeof selectedSubIds !=='undefined' ? selectedSubIds : []; const subCats=typeof subcategories
     !=='undefined' ? subcategories : []; const activeSearch=typeof searchQuery !=='undefined' ? searchQuery : '' ; const
-    ALL_SIZES=['S', 'M' , 'L' , 'XL' ]; /* Helper: build a query-string preserving all active filters */ function
+    ALL_SIZES = typeof PRODUCT_SIZES !== 'undefined' ? PRODUCT_SIZES : ['XS','S','M','L','XL','XXL','Free Size']; /* Helper: build a query-string preserving all active filters */ function
     buildPageUrl(pageNum) { const params=new URLSearchParams(); if (catName) params.set('category', catName);
     activeSubIds.forEach(id=> params.append('sub', id));
     if (activeSearch) params.set('search', activeSearch);
@@ -293,7 +293,7 @@
                             </svg>
                           </button>
                           <div id="sizeSection" class="grid grid-cols-3 gap-2">
-                            <% ALL_SIZES.forEach(size=> {
+                            <% PRODUCT_SIZES.forEach(size=> {
                               const isActive = activeSizes.includes(size);
                               %>
                               <label class="cursor-pointer">
@@ -414,7 +414,7 @@
                 <div class="mb-6">
                   <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Filter by Size</p>
                   <div class="flex flex-wrap gap-2">
-                    <% ALL_SIZES.forEach(size=> {
+                    <% PRODUCT_SIZES.forEach(size=> {
                       const isActive = activeSizes.includes(size);
                     %>
                       <label class="cursor-pointer">

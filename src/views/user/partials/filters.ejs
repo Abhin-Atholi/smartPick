@@ -33,7 +33,7 @@
       <b class="text-sm">Size</b><span class="text-gray-400">⌄</span>
     </div>
     <div class="grid grid-cols-3 gap-2">
-      <% ["XS","S","M","L","XL","XXL"].forEach(s=>{ %>
+      <% PRODUCT_SIZES.forEach(s=>{ %>
         <button class="border border-gray-200 rounded-xl py-2 text-sm font-black text-gray-500 hover:bg-gray-50 <%= s==="S" ? "bg-indigo-50 border-indigo-600 text-indigo-600" : "" %>">
           <%= s %>
         </button>

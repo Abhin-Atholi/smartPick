@@ -225,10 +225,13 @@
 
 <script>
   const productData = <%- JSON.stringify(product) %>;
+  const PRODUCT_SIZES = <%- JSON.stringify(PRODUCT_SIZES) %>;
   const initialBestOffer = <%- locals.bestOffer ? JSON.stringify(locals.bestOffer) : 'null' %>;
   let selectedColor = null;
   let selectedSize = null;
   let currentVariantId = null;
+
+  const normalize = (str = '') => String(str).trim().toLowerCase();
 
   // 1. Image Switcher
   function changeMainImage(src, btn) {
@@ -288,19 +291,21 @@
     btn.classList.add('ring-4', 'ring-indigo-100', 'border-indigo-600');
 
     // Update sizes
-    const sizes = productData.variants.filter(v => v.color === name);
     const sizeGrid = document.getElementById('sizeGrid');
     sizeGrid.innerHTML = '';
 
-    const order = ["XS", "S", "M", "L", "XL", "XXL", "Free Size"];
-    sizes.sort((a,b) => order.indexOf(a.size) - order.indexOf(b.size));
+    let firstAvailableBtn = null;
 
-    sizes.forEach(v => {
-      const b = document.createElement('button');
-      b.className = `py-4 text-[11px] font-black rounded-2xl border-2 transition-all active:scale-95 hover:-translate-y-0.5 ${v.stock > 0 ? 'border-gray-100 bg-white text-slate-800' : 'bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed opacity-50'}`;
-      b.innerText = v.size;
+    PRODUCT_SIZES.forEach(size => {
+      const v = productData.variants.find(v => normalize(v.color) === normalize(name) && normalize(v.size) === normalize(size));
+      const isAvailable = v && v.stock > 0;
       
-      if (v.stock > 0) {
+      const b = document.createElement('button');
+      b.className = `relative py-4 text-[11px] font-black rounded-2xl border-2 transition-all overflow-hidden ${isAvailable ? 'border-gray-100 bg-white text-slate-800 hover:-translate-y-0.5 active:scale-95 cursor-pointer' : 'bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed opacity-40'}`;
+      b.innerText = size;
+      
+      if (isAvailable) {
+        if (!firstAvailableBtn) firstAvailableBtn = b;
         b.onclick = () => {
           selectedSize = v.size;
           currentSKU = v.sku;
@@ -334,21 +339,29 @@
           updateShippingStatus(finalPrice);
           updateCTA();
         };
+      } else {
+        const strike = document.createElement('div');
+        strike.className = 'absolute inset-0 w-full h-full border-t border-slate-400';
+        strike.style.transform = 'translateY(50%) rotate(-45deg)';
+        b.appendChild(strike);
       }
+      
       sizeGrid.appendChild(b);
     });
 
     // Auto select first available size
-    const firstVal = sizes.find(v => v.stock > 0);
-    if (firstVal) {
-      const btn = sizeGrid.querySelector(`button:not(.cursor-not-allowed)`);
-      if (btn) btn.click();
+    if (firstAvailableBtn) {
+      firstAvailableBtn.click();
     } else {
       updateStockStatus(null);
+      selectedSize = null;
+      currentVariantId = null;
+      document.getElementById('sizeNameLabel').innerText = 'Select';
+      updateCTA();
     }
     
     // Update Images based on the color option
-    const colorOption = productData.colorOptions.find(c => c.name === name);
+    const colorOption = productData.colorOptions.find(c => normalize(c.name) === normalize(name));
     if (colorOption && colorOption.images && colorOption.images.length > 0) {
        updateImageGallery(colorOption.images);
     }

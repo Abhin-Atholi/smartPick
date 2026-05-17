@@ -63,8 +63,10 @@ app.use(async (req, res, next) => {
 });
 
 import { SHIPPING_RULES } from "./src/config/storeConfig.js";
+import { PRODUCT_SIZES } from "./src/config/productConstants.js";
 app.use((req, res, next) => {
   res.locals.SHIPPING_RULES = SHIPPING_RULES;
+  res.locals.PRODUCT_SIZES = PRODUCT_SIZES;
   next();
 });
 

@@ -13,7 +13,8 @@ export const formatAdminOrderForDisplay = (order) => {
         const finalPaidAmount = item.finalPriceAfterCoupon || item.totalPrice || (finalPrice * item.quantity);
         const totalOriginalAmount = originalPrice * item.quantity;
 
-        const colorOpt = item.product?.colorOptions?.find(c => c.name === item.color);
+        const normalize = str => String(str || '').trim().toLowerCase();
+        const colorOpt = item.product?.colorOptions?.find(c => normalize(c.name) === normalize(item.color));
         const image = item.image || colorOpt?.images?.[0] || item.product?.defaultImage || '/images/placeholder.jpg';
 
         // Refund Specific Fields
@@ -170,7 +171,8 @@ export const formatAdminReturnItemForDisplay = (row) => {
     const finalPrice = item.price || 0;
     const finalPaidAmount = item.finalPriceAfterCoupon || item.totalPrice || (finalPrice * item.quantity);
     
-    const colorOpt = row.productObj?.colorOptions?.find(c => c.name === item.color);
+    const normalize = str => String(str || '').trim().toLowerCase();
+    const colorOpt = row.productObj?.colorOptions?.find(c => normalize(c.name) === normalize(item.color));
     const image = item.image || colorOpt?.images?.[0] || row.productObj?.defaultImage || '/images/placeholder.jpg';
 
     return {

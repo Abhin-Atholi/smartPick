@@ -139,9 +139,8 @@
 <%- include("../partials/image-cropper") %>
 
 <!-- Load Shared JS Modules -->
-<script type="module">
-    import { PRODUCT_SIZES } from '/js/admin/product/productConstants.js';
-    window.PRODUCT_SIZES = PRODUCT_SIZES;
+<script>
+    window.PRODUCT_SIZES = <%- JSON.stringify(PRODUCT_SIZES) %>;
 </script>
 <script src="/js/admin/product/colorManager.js"></script>
 <script src="/js/admin/product/variantManager.js"></script>
