@@ -97,9 +97,9 @@
 
                                             <!-- Info -->
                                             <div class="flex-grow flex flex-col justify-between py-1 sm:py-2 min-w-0">
-                                                <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
+                                                <div class="flex flex-col sm:flex-row justify-between items-start gap-2 w-full min-w-0">
                                                     <div class="min-w-0">
-                                        <h3 class="text-sm sm:text-lg font-black text-gray-900 mb-1 leading-snug truncate sm:whitespace-normal"><%= product ? product.name : 'Product No Longer Available' %></h3>
+                                        <h3 class="text-sm sm:text-lg font-black text-gray-900 mb-1 leading-snug break-words whitespace-normal"><%= product ? product.name : 'Product No Longer Available' %></h3>
                                         <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">
                                             <%= (product && product.category) ? product.category.name : 'Unknown' %>
                                         </p>
@@ -123,44 +123,35 @@
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <!-- Stock Warning Badge -->
-                                                        <% if (isOutOfStock) { %>
-                                                            <p
-                                                                class="mt-2 text-xs font-black text-red-600 flex items-center gap-1">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12"
-                                                                    height="12" viewBox="0 0 24 24" fill="none"
-                                                                    stroke="currentColor" stroke-width="3"
-                                                                    stroke-linecap="round" stroke-linejoin="round">
-                                                                    <circle cx="12" cy="12" r="10" />
-                                                                    <line x1="12" y1="8" x2="12" y2="12" />
-                                                                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                                                                </svg>
-                                                                Out of Stock — remove to proceed
-                                                            </p>
-                                                            <% } else if (isLowStock) { %>
-                                                                <p
-                                                                    class="mt-2 text-xs font-black text-red-500 flex items-center gap-1">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12"
-                                                                        height="12" viewBox="0 0 24 24" fill="none"
-                                                                        stroke="currentColor" stroke-width="3"
-                                                                        stroke-linecap="round" stroke-linejoin="round">
-                                                                        <circle cx="12" cy="12" r="10" />
-                                                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                                                    </svg>
-                                                                    Only <%= availableStock %> left — reduce quantity to
-                                                                        proceed
-                                                                </p>
-                                                                <% } else if (isLimitExceeded) { %>
-                                                                    <p class="mt-2 text-xs font-black text-red-500 flex items-center gap-1">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                                                            <circle cx="12" cy="12" r="10" />
-                                                                            <line x1="12" y1="8" x2="12" y2="12" />
-                                                                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                                                                        </svg>
-                                                                        Limit exceeded — reduce to 5 or less to proceed
-                                                                    </p>
-                                                                <% } %>
+                                                         <!-- Stock Warning Badge -->
+                                                         <% if (isOutOfStock) { %>
+                                                             <p class="mt-2 text-xs font-black text-red-600 flex items-start gap-1.5 leading-snug">
+                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
+                                                                     <circle cx="12" cy="12" r="10" />
+                                                                     <line x1="12" y1="8" x2="12" y2="12" />
+                                                                     <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                                 </svg>
+                                                                 <span class="break-words">Out of Stock — remove to proceed</span>
+                                                             </p>
+                                                             <% } else if (isLowStock) { %>
+                                                                 <p class="mt-2 text-xs font-black text-red-500 flex items-start gap-1.5 leading-snug">
+                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
+                                                                         <circle cx="12" cy="12" r="10" />
+                                                                         <line x1="12" y1="8" x2="12" y2="12" />
+                                                                         <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                                     </svg>
+                                                                     <span class="break-words">Only <%= availableStock %> left — reduce quantity to proceed</span>
+                                                                 </p>
+                                                                 <% } else if (isLimitExceeded) { %>
+                                                                     <p class="mt-2 text-xs font-black text-red-500 flex items-start gap-1.5 leading-snug">
+                                                                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
+                                                                             <circle cx="12" cy="12" r="10" />
+                                                                             <line x1="12" y1="8" x2="12" y2="12" />
+                                                                             <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                                         </svg>
+                                                                         <span class="break-words">Limit exceeded — reduce to 5 or less to proceed</span>
+                                                                     </p>
+                                                                 <% } %>      
                                                     </div>
                                                     <div class="text-left sm:text-right shrink-0 mt-1 sm:mt-0">
                                                         <% if (item.offerApplied) { %>
