@@ -46,7 +46,8 @@ export const loadCheckout = async (req, res, next) => {
                 const availableStock = variant ? variant.stock : 0;
                 const isLowStock = availableStock > 0 && availableStock < item.quantity;
                 const isOutOfStock = availableStock === 0;
-                const stockIssue = isLowStock || isOutOfStock;
+                const isLimitExceeded = item.quantity > 5;
+                const stockIssue = isLowStock || isOutOfStock || isLimitExceeded;
                 if (stockIssue) hasStockIssue = true;
 
                 if (!stockIssue) {

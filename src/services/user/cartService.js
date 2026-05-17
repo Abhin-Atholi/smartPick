@@ -57,7 +57,9 @@ const _calculateBreakdown = async (fullCartItems) => {
             isUnavailable = true;
         }
 
-        if (!isUnavailable && !isOutOfStock && !isLowStock) {
+        const isLimitExceeded = item.quantity > 5;
+
+        if (!isUnavailable && !isOutOfStock && !isLowStock && !isLimitExceeded) {
             validItemsForPricing.push(item);
             activeTotal += item.effectiveTotalPrice;
         } else {

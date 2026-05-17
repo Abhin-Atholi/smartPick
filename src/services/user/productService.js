@@ -80,7 +80,7 @@ export const getStorefrontProducts = async (queryParams) => {
   const trimmedSearch = search.trim();
   if (trimmedSearch) {
     const regex = new RegExp(trimmedSearch, "i");
-    filter.$and = [{ $or: [{ name: regex }, { brand: regex }, { description: regex }] }];
+    filter.$and = [{ $or: [{ name: regex }, { brand: regex }] }];
   }
 
   /* ── 5. Sort ── */
