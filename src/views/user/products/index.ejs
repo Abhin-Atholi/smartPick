@@ -34,16 +34,20 @@
         <div class="max-w-6xl mx-auto px-4 py-6">
 
           <!-- Breadcrumb -->
-          <nav class="flex items-center gap-1.5 text-xs text-gray-400 font-semibold mb-3">
-            <a href="/" class="hover:text-indigo-600 transition-colors">Home</a>
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-            <span class="text-gray-800">
-              <%= catName || 'All Products' %>
-            </span>
-          </nav>
+          <% 
+            const indexCrumbs = [
+              { name: 'Home', url: '/' }
+            ];
+            if (catName) {
+              indexCrumbs.push({ name: 'All Products', url: '/products' });
+              indexCrumbs.push({ name: catName, url: null });
+            } else {
+              indexCrumbs.push({ name: 'All Products', url: null });
+            }
+          %>
+          <div class="-mt-4">
+            <%- include("../partials/breadcrumbs", { breadcrumbs: indexCrumbs }) %>
+          </div>
 
           <!-- Title -->
           <div class="mb-4">
@@ -169,6 +173,17 @@
                   <% } %>
                     <input type="hidden" name="sort" value="<%= sortVal %>">
 
+                    <!-- ── CLEAR ALL FILTERS ── -->
+                    <% if (activeSubIds.length> 0 || activeMin || activeMax || activeSizes.length > 0 || activeSearch) { %>
+                      <a href="/products<%= catName ? '?category=' + catSlug : '' %>" class="mb-4 flex items-center justify-center gap-1.5 w-full rounded-xl bg-red-50 border border-red-100 text-red-600 font-black text-xs py-2 hover:bg-red-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        Clear All Filters
+                      </a>
+                    <% } %>
+
                     <!-- ── SUBCATEGORIES ── -->
                     <% if (subCats.length> 0) { %>
                       <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm">
@@ -293,20 +308,7 @@
                           </div>
                         </div>
 
-                        <!-- ── CLEAR ALL FILTERS ── -->
-                        <% if (activeSubIds.length> 0 || activeMin || activeMax || activeSizes.length > 0 ||
-                          activeSearch) { %>
-                          <a href="/products<%= catName ? '?category=' + catSlug : '' %>" class="mt-4 flex items-center justify-center gap-1.5 w-full rounded-full border border-red-200
-                    text-red-500 font-black text-xs py-2 hover:bg-red-50 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                              stroke-linejoin="round">
-                              <line x1="18" y1="6" x2="6" y2="18" />
-                              <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                            Clear All Filters
-                          </a>
-                          <% } %>
+
 
           </form>
         </aside>
@@ -325,9 +327,9 @@
               </span> products
             </p>
 
-            <button onclick="document.getElementById('mobileFilters').classList.toggle('hidden')" class="lg:hidden flex items-center gap-1.5 text-sm font-bold text-indigo-600
-                 border border-indigo-200 rounded-full px-3 py-1.5 hover:bg-indigo-50 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            <button onclick="openMobileFilters()" class="lg:hidden flex items-center gap-1.5 text-sm font-bold text-indigo-600
+                 border border-indigo-200 rounded-full px-4 py-2 hover:bg-indigo-50 transition-colors shadow-sm fixed bottom-6 right-6 z-50 bg-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="4" y1="6" x2="20" y2="6" />
                 <line x1="8" y1="12" x2="16" y2="12" />
@@ -338,30 +340,126 @@
           </div>
 
           <!-- Mobile filter panel -->
+          <div id="mobileFiltersOverlay" onclick="closeMobileFilters()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] hidden lg:hidden opacity-0 transition-opacity"></div>
           <div id="mobileFilters"
-            class="hidden lg:hidden mb-4 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-            <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Filter by Size</p>
-            <form method="GET" action="/products" class="flex flex-wrap gap-2">
-              <% if (catName) { %><input type="hidden" name="category" value="<%= catName %>">
-                <% } %>
-                  <% if (activeSearch) { %><input type="hidden" name="search" value="<%= activeSearch %>">
-                    <% } %>
-                      <input type="hidden" name="sort" value="<%= sortVal %>">
-                      <% ALL_SIZES.forEach(size=> {
-                        const isActive = activeSizes.includes(size);
-                        %>
-                        <label class="cursor-pointer">
-                          <input type="checkbox" name="size" value="<%= size %>" class="sr-only" <%=isActive ? 'checked'
-                            : '' %>
-                          onchange="this.form.submit()">
-                          <span class="block px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-colors
-                <%= isActive ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 text-gray-600' %>">
-                            <%= size %>
-                          </span>
+            class="fixed top-0 right-0 h-full w-4/5 max-w-sm bg-gray-50 shadow-2xl z-[101] transform translate-x-full transition-transform duration-300 overflow-y-auto hidden lg:hidden flex flex-col">
+            <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0 z-10">
+              <h2 class="text-lg font-black text-gray-900">Filters</h2>
+              <button onclick="closeMobileFilters()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div class="p-6 flex-1">
+              <form method="GET" action="/products" id="mobileFilterForm" onchange="handleFilterChange(event)" onsubmit="handleFilterChange(event)">
+                <% if (catName) { %><input type="hidden" name="category" value="<%= catName %>"><% } %>
+                <% if (activeSearch) { %><input type="hidden" name="search" value="<%= activeSearch %>"><% } %>
+                <input type="hidden" name="sort" value="<%= sortVal %>">
+
+                <!-- Subcategories -->
+                <% if (subCats.length > 0) { %>
+                  <div class="mb-6">
+                    <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Sub-Categories</p>
+                    <div class="space-y-2.5 max-h-48 overflow-y-auto pr-2 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                      <label class="flex items-center gap-2.5 cursor-pointer">
+                        <input type="checkbox" id="mobileCheckAll" name="sub" value=""
+                          class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          <%=activeSubIds.length===0 ? 'checked' : '' %>
+                        onchange="handleMobileAllCheck(this)">
+                        <span class="text-sm font-bold text-gray-800">All</span>
+                      </label>
+                      <% subCats.forEach(sc=> { %>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                          <input type="checkbox" name="sub" value="<%= sc._id %>"
+                            class="mobile-sub-check w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            <%=activeSubIds.includes(sc._id.toString()) ? 'checked' : '' %>
+                            onchange="handleMobileSubCheck(this)">
+                          <span class="text-sm text-gray-600"><%= sc.name %></span>
                         </label>
-                        <% }) %>
-            </form>
+                      <% }) %>
+                    </div>
+                  </div>
+                <% } %>
+
+                <!-- Price Range -->
+                <div class="mb-6">
+                  <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Price Range</p>
+                  <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                      <div class="flex-1">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Min Price</span>
+                        <div class="relative">
+                          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">₹</span>
+                          <input id="mobileMinDisplay" type="number" name="minPrice" placeholder="0" value="<%= activeMin %>"
+                            class="w-full border border-gray-200 rounded-xl pl-5 pr-2 py-2 text-xs font-black text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                            onchange="handleFilterChange(event)">
+                        </div>
+                      </div>
+                      <div class="flex-1">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Max Price</span>
+                        <div class="relative">
+                          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">₹</span>
+                          <input id="mobileMaxDisplay" type="number" name="maxPrice" placeholder="10000" value="<%= activeMax %>"
+                            class="w-full border border-gray-200 rounded-xl pl-5 pr-2 py-2 text-xs font-black text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                            onchange="handleFilterChange(event)">
+                        </div>
+                      </div>
+                    </div>
+                    <button type="submit" class="w-full rounded-xl bg-slate-900 text-white font-black text-[10px] py-2.5 uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-md">
+                      Apply Price
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Size -->
+                <div class="mb-6">
+                  <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Filter by Size</p>
+                  <div class="flex flex-wrap gap-2">
+                    <% ALL_SIZES.forEach(size=> {
+                      const isActive = activeSizes.includes(size);
+                    %>
+                      <label class="cursor-pointer">
+                        <input type="checkbox" name="size" value="<%= size %>" class="sr-only" <%=isActive ? 'checked' : '' %> onchange="handleFilterChange(event)">
+                        <span class="block px-4 py-2 text-sm font-bold rounded-xl border-2 transition-colors <%= isActive ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-gray-200 text-gray-600 bg-white hover:border-indigo-300' %>">
+                          <%= size %>
+                        </span>
+                      </label>
+                    <% }) %>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <% if (activeSizes.length > 0 || activeSearch || catName) { %>
+              <div class="p-6 border-t border-gray-200 bg-white">
+                <a href="/products" class="flex items-center justify-center gap-2 w-full rounded-xl bg-red-50 border border-red-100 text-red-600 font-black text-sm py-3 hover:bg-red-100 transition-colors">
+                  Clear All Filters
+                </a>
+              </div>
+            <% } %>
           </div>
+          <script>
+            function openMobileFilters() {
+              const overlay = document.getElementById('mobileFiltersOverlay');
+              const panel = document.getElementById('mobileFilters');
+              overlay.classList.remove('hidden');
+              panel.classList.remove('hidden');
+              setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+                panel.classList.remove('translate-x-full');
+              }, 10);
+            }
+            function closeMobileFilters() {
+              const overlay = document.getElementById('mobileFiltersOverlay');
+              const panel = document.getElementById('mobileFilters');
+              overlay.classList.remove('opacity-100');
+              overlay.classList.add('opacity-0');
+              panel.classList.add('translate-x-full');
+              setTimeout(() => {
+                overlay.classList.add('hidden');
+                panel.classList.add('hidden');
+              }, 300);
+            }
+          </script>
           <!-- ── PRODUCT GRID + PAGINATION CONTAINER ── -->
           <div id="productContent" class="transition-opacity duration-300">
             <div class="mb-10">
@@ -419,6 +517,21 @@
             handleFilterChange();
           }
 
+          function handleMobileAllCheck(el) {
+            if (el.checked) {
+              document.querySelectorAll('.mobile-sub-check').forEach(c => c.checked = false);
+            }
+            handleFilterChange();
+          }
+
+          function handleMobileSubCheck(el) {
+            if (el.checked) {
+              const checkAll = document.getElementById('mobileCheckAll');
+              if (checkAll) checkAll.checked = false;
+            }
+            handleFilterChange();
+          }
+
           /* ── Dual price-range slider ── */
           function updateRange(type) {
             const minSlider = document.getElementById('rangeMin');
@@ -465,7 +578,8 @@
           async function handleFilterChange(event, pageNum = 1) {
             if (event) event.preventDefault();
 
-            const filterForm = document.getElementById('filterForm');
+            const isMobile = window.innerWidth < 1024;
+            const filterForm = isMobile ? document.getElementById('mobileFilterForm') : document.getElementById('filterForm');
             const searchForm = document.getElementById('searchForm');
             const content = document.getElementById('productContent');
             const countText = document.getElementById('resultsCount');

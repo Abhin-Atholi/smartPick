@@ -1,0 +1,15 @@
+<nav class="flex py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap">
+  <% if (typeof breadcrumbs !== 'undefined' && breadcrumbs.length > 0) { %>
+    <% breadcrumbs.forEach((crumb, index) => { %>
+      <% if (crumb.url) { %>
+        <a href="<%= crumb.url %>" class="hover:text-black hover:underline transition"><%= crumb.name %></a>
+      <% } else { %>
+        <span class="text-slate-900 truncate"><%= crumb.name %></span>
+      <% } %>
+      
+      <% if (index < breadcrumbs.length - 1) { %>
+        <span class="mx-3 text-gray-200 font-bold">/</span>
+      <% } %>
+    <% }) %>
+  <% } %>
+</nav>

@@ -4,17 +4,18 @@
   <div class="max-w-5xl mx-auto px-4 lg:px-8">
     
     <!-- ── BREADCRUMB ──────────────────────────────────── -->
-    <nav class="flex py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap">
-      <a href="/" class="hover:text-black transition">Home</a>
-      <span class="mx-3 text-gray-200">/</span>
-      <a href="/products?category=<%= product.category.name %>" class="hover:text-black transition"><%= product.category.name %></a>
-      <% if (product.subcategory) { %>
-        <span class="mx-3 text-gray-200">/</span>
-        <a href="/products?subcategory=<%= product.subcategory._id %>" class="hover:text-black transition"><%= product.subcategory.name %></a>
-      <% } %>
-      <span class="mx-3 text-gray-200">/</span>
-      <span class="text-black truncate"><%= product.name %></span>
-    </nav>
+    <% 
+      const bCrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'All Products', url: '/products' },
+        { name: product.category.name, url: `/products?category=${encodeURIComponent(product.category.name)}` }
+      ];
+      if (product.subcategory) {
+        bCrumbs.push({ name: product.subcategory.name, url: `/products?category=${encodeURIComponent(product.category.name)}&subcategory=${product.subcategory._id}` });
+      }
+      bCrumbs.push({ name: product.name, url: null });
+    %>
+    <%- include("../partials/breadcrumbs", { breadcrumbs: bCrumbs }) %>
 
     <div class="grid lg:grid-cols-12 gap-10 lg:gap-14">
       
@@ -104,7 +105,7 @@
           <div>
             <div class="flex items-center justify-between mb-3">
               <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Size: <span id="sizeNameLabel" class="text-slate-900 ml-1">Select</span></p>
-              <button class="text-[9px] font-black text-indigo-600 uppercase tracking-widest text-underline">Size Guide</button>
+              <button onclick="openSizeGuide()" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest text-underline">Size Guide</button>
             </div>
             <div id="sizeGrid" class="grid grid-cols-4 sm:grid-cols-6 gap-2">
                <!-- Populated by JS -->
@@ -220,6 +221,7 @@
 
 <%- include("../partials/footer") %>
 <%- include("../partials/drawer") %>
+<%- include("../partials/sizeGuideModal") %>
 
 <script>
   const productData = <%- JSON.stringify(product) %>;
@@ -414,13 +416,17 @@
     const subtext = document.getElementById('deliveryStatusSubtext');
     const icon = document.getElementById('deliveryStatusIcon');
 
-    if (price > 499) {
+    // Use global SHIPPING_RULES injected via locals
+    const freeShippingThreshold = typeof SHIPPING_RULES !== 'undefined' ? SHIPPING_RULES.FREE_SHIPPING_THRESHOLD : 499;
+    const standardShippingFee = typeof SHIPPING_RULES !== 'undefined' ? SHIPPING_RULES.STANDARD_SHIPPING_FEE : 50;
+
+    if (price >= freeShippingThreshold) {
       text.innerText = 'Free Delivery';
       text.className = 'text-[10px] font-black text-slate-900 uppercase tracking-widest';
       subtext.innerText = 'Premium shipping included';
       icon.className = 'w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs';
     } else {
-      text.innerText = 'Delivery: ₹50';
+      text.innerText = `Delivery: ₹${standardShippingFee}`;
       text.className = 'text-[10px] font-black text-indigo-600 uppercase tracking-widest';
       subtext.innerText = 'Add more to get free shipping';
       icon.className = 'w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs';

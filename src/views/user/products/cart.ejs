@@ -2,14 +2,7 @@
 
     <main class="bg-gray-50 min-h-screen py-12">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="flex items-center gap-2 text-xs text-gray-400 mb-8">
-                <a href="/" class="hover:text-indigo-600">Home</a>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-                <span class="text-gray-900 font-bold">Shopping Cart</span>
-            </div>
+            <%- include("../partials/breadcrumbs", { breadcrumbs: [{ name: 'Home', url: '/' }, { name: 'Shopping Cart', url: null }] }) %>
 
             <div class="flex justify-between items-end mb-8">
                 <div>
@@ -87,8 +80,10 @@
                                     if(!imgUrl && product && product.defaultImage) imgUrl = product.defaultImage;
                                     if(!imgUrl) imgUrl = '/images/placeholder.jpg';
                                 %>
-                                                    <img src="<%= imgUrl %>" alt="<%= product ? product.name : 'Unknown' %>"
-                                                        class="w-full h-full object-cover">
+                                                    <a href="/products/details/<%= product ? product._id : '' %>" class="block w-full h-full">
+                                                        <img src="<%= imgUrl %>" alt="<%= product ? product.name : 'Unknown' %>"
+                                                            class="w-full h-full object-cover">
+                                                    </a>
                                                     <% if (isUnavailable) { %>
                                                         <div
                                                             class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-2 text-center">
@@ -303,10 +298,24 @@
                                     <circle cx="18.5" cy="18.5" r="2.5"></circle>
                                 </svg>
                             </div>
-                            <div>
-                                <p class="text-sm font-black text-gray-900">Free Delivery</p>
-                                <p class="text-xs text-gray-500 leading-relaxed mt-1">Orders over ₹499 qualify for free
-                                    express delivery.</p>
+                            <div id="shippingTrustBadge">
+                                <% const threshold = typeof SHIPPING_RULES !== 'undefined' ? SHIPPING_RULES.FREE_SHIPPING_THRESHOLD : 499; %>
+                                <% const currentSubtotal = cart.originalSubtotal || 0; %>
+                                <% if (currentSubtotal >= threshold) { %>
+                                    <p class="text-sm font-black text-emerald-600 flex items-center gap-1">
+                                        Free Delivery Unlocked! 🎉
+                                    </p>
+                                    <p class="text-xs text-gray-500 leading-relaxed mt-1">
+                                        Your order qualifies for free express delivery.
+                                    </p>
+                                <% } else { %>
+                                    <p class="text-sm font-black text-gray-900">
+                                        ₹<%= typeof SHIPPING_RULES !== 'undefined' ? SHIPPING_RULES.STANDARD_SHIPPING_FEE : 50 %> Shipping Fee
+                                    </p>
+                                    <p class="text-xs text-gray-500 leading-relaxed mt-1">
+                                        Add ₹<%= threshold - currentSubtotal %> more to qualify for free express delivery!
+                                    </p>
+                                <% } %>
                             </div>
                         </div>
                         <div class="flex gap-4">
@@ -472,10 +481,31 @@
                 `;
             }
 
-            // Optional: Update individual item styles if they are in data.allItemsWithOffers
-            // For now, let's at least reload if it gets too complex, or just let the global warning handle it.
-            // A simple way is to reload the page if stock issue status changed from true to false or vice versa
-            // but the above innerHTML update handles the most critical part (the button).
+            const shippingTrustBadge = document.getElementById('shippingTrustBadge');
+            if (shippingTrustBadge) {
+                const threshold = <%= typeof SHIPPING_RULES !== 'undefined' ? SHIPPING_RULES.FREE_SHIPPING_THRESHOLD : 499 %>;
+                const standardFee = <%= typeof SHIPPING_RULES !== 'undefined' ? SHIPPING_RULES.STANDARD_SHIPPING_FEE : 50 %>;
+                const currentSubtotal = breakdown.originalSubtotal || 0;
+                if (currentSubtotal >= threshold) {
+                    shippingTrustBadge.innerHTML = `
+                        <p class="text-sm font-black text-emerald-600 flex items-center gap-1">
+                            Free Delivery Unlocked! 🎉
+                        </p>
+                        <p class="text-xs text-gray-500 leading-relaxed mt-1">
+                            Your order qualifies for free express delivery.
+                        </p>
+                    `;
+                } else {
+                    shippingTrustBadge.innerHTML = `
+                        <p class="text-sm font-black text-gray-900">
+                            ₹${standardFee} Shipping Fee
+                        </p>
+                        <p class="text-xs text-gray-500 leading-relaxed mt-1">
+                            Add ₹${threshold - currentSubtotal} more to qualify for free express delivery!
+                        </p>
+                    `;
+                }
+            }
         }
 
         // Pagination Bridge for the partial

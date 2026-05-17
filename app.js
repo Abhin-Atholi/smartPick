@@ -62,6 +62,12 @@ app.use(async (req, res, next) => {
   next();
 });
 
+import { SHIPPING_RULES } from "./src/config/storeConfig.js";
+app.use((req, res, next) => {
+  res.locals.SHIPPING_RULES = SHIPPING_RULES;
+  next();
+});
+
 import * as orderService from "./src/services/user/orderService.js";
 orderService.startStockCleanupTask();
 

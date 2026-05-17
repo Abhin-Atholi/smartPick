@@ -1,5 +1,6 @@
 import * as taxHelper from '../../utils/taxHelper.js';
 import { PRICING_RULES } from '../../config/pricingRules.js';
+import { SHIPPING_RULES } from '../../config/storeConfig.js';
 
 /**
  * Ensures financial values are strictly rounded to 2 decimal places.
@@ -221,10 +222,8 @@ export const calculateOrderTotals = (items, couponData = null) => {
     });
 
     // 4. Handle Shipping
-    const SHIPPING_THRESHOLD = 499;
-    const STANDARD_SHIPPING = 50;
     const amountForShippingCheck = subtotal - allocatedCouponTotal;
-    const shippingFee = (amountForShippingCheck >= SHIPPING_THRESHOLD || amountForShippingCheck === 0) ? 0 : STANDARD_SHIPPING;
+    const shippingFee = (amountForShippingCheck >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD || amountForShippingCheck === 0) ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
 
     // 5. Final Grand Total
     const totalAmount = roundCurrency(totalTaxableAmount + totalTaxAmount + shippingFee);

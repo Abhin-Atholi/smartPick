@@ -26,69 +26,53 @@
                     <div class="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-black text-gray-900">1. Shipping Address</h2>
-                            <button onclick="openAddModal()"
-                                class="text-sm font-bold text-indigo-600 hover:text-indigo-700 hover:underline">
-                                + Add New Address
-                            </button>
+                            <% if (addresses.length > 0) { %>
+                                <button type="button" onclick="openAddressSelector()" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition">
+                                    Change Address
+                                </button>
+                            <% } %>
                         </div>
 
                         <div class="space-y-4">
-                            <% if (addresses.length===0) { %>
-                                <div class="p-6 border-2 border-dashed border-gray-200 rounded-2xl text-center">
-                                    <p class="text-gray-500 mb-2">You don't have any saved addresses.</p>
-                                    <button onclick="openAddModal()"
-                                        class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition">
-                                        Add Address Now
+                            <% if (addresses.length === 0) { %>
+                                <div class="p-6 border-2 border-dashed border-gray-200 rounded-2xl text-center bg-gray-50/50">
+                                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-gray-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-600" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                    </div>
+                                    <p class="text-gray-900 font-bold mb-1">No Delivery Address</p>
+                                    <p class="text-xs text-gray-500 mb-4">Please add a shipping address to continue.</p>
+                                    <button type="button" onclick="openAddModal()" class="px-5 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95">
+                                        Add New Address
                                     </button>
                                 </div>
-                                <% } else { %>
-                                    <% addresses.forEach((address, index)=> { %>
-                                        <label
-                                            class="flex items-start gap-4 p-4 border rounded-2xl cursor-pointer transition-colors <%= address.isDefault ? 'border-indigo-500 bg-indigo-50/30' : 'border-gray-200 hover:border-indigo-300' %>">
-                                            <div class="pt-1">
-                                                <input type="radio" name="selectedAddress" value="<%= address._id %>"
-                                                    <%=address.isDefault ? 'checked' : (index===0 && !addresses.some(a=>
-                                                a.isDefault) ? 'checked' : '') %> class="w-5 h-5 text-indigo-600
-                                                focus:ring-indigo-500 border-gray-300">
+                            <% } else { 
+                                let selectedAddress = addresses.find(a => a.isDefault) || addresses[0];
+                            %>
+                                <div class="relative group p-6 border border-gray-200 rounded-2xl bg-white hover:border-indigo-300 transition-colors shadow-sm">
+                                    <input type="hidden" name="selectedAddress" id="activeAddressId" value="<%= selectedAddress._id %>">
+                                    
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 flex-shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                             </div>
-                                            <div class="flex-grow">
-                                                <div class="flex justify-between items-start">
-                                                    <div>
-                                                        <span class="font-black text-gray-900 text-lg">
-                                                            <%= address.fullName %>
-                                                        </span>
-                                                        <% if (address.isDefault) { %>
-                                                            <span
-                                                                class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-widest">Default</span>
-                                                            <% } %>
-                                                    </div>
-                                                    <button type="button" onclick="openEditModal(this)"
-                                                        data-id="<%= address._id %>"
-                                                        data-fullname="<%= address.fullName %>"
-                                                        data-phone="<%= address.phone %>"
-                                                        data-pincode="<%= address.pincode %>"
-                                                        data-state="<%= address.state %>"
-                                                        data-city="<%= address.city %>"
-                                                        data-locality="<%= address.locality %>"
-                                                        data-house="<%= address.house %>"
-                                                        data-area="<%= address.area %>"
-                                                        data-isdefault="<%= address.isDefault ? 'true' : 'false' %>"
-                                                        class="text-xs font-bold text-gray-400 hover:text-indigo-600 transition">
-                                                        Edit
-                                                    </button>
-                                                </div>
-                                                <p class="text-sm font-bold text-gray-700 mt-1">
-                                                    <%= address.phone %>
-                                                </p>
-                                                <p class="text-sm text-gray-500 mt-2 leading-relaxed">
-                                                    <%= address.house %>, <%= address.area %><br>
-                                                            <%= address.locality %>, <%= address.city %><br>
-                                                                    <%= address.state %> - <%= address.pincode %>
-                                                </p>
+                                            <div>
+                                                <h3 class="font-black text-gray-900 text-base" id="activeFullName"><%= selectedAddress.fullName %></h3>
+                                                <p class="text-xs font-bold text-gray-500 mt-0.5" id="activePhone"><%= selectedAddress.phone %></p>
                                             </div>
-                                        </label>
-                                        <% }) %>
-                                            <% } %>
+                                        </div>
+                                        <span id="activeDefaultBadge" class="<%= selectedAddress.isDefault ? '' : 'hidden' %> px-2.5 py-1 rounded-md text-[9px] font-black bg-indigo-50 text-indigo-600 uppercase tracking-widest border border-indigo-100">Default</span>
+                                    </div>
+
+                                    <div class="ml-13 pl-13 sm:ml-13 sm:pl-13 md:ml-13 md:pl-13 lg:ml-13 lg:pl-13 pt-1">
+                                        <p class="text-sm text-gray-600 leading-relaxed" id="activeAddressText">
+                                            <%= selectedAddress.house %>, <%= selectedAddress.area %><br>
+                                            <%= selectedAddress.locality %>, <%= selectedAddress.city %><br>
+                                            <%= selectedAddress.state %> - <span class="font-bold text-gray-800"><%= selectedAddress.pincode %></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            <% } %>
                         </div>
                     </div>
 
@@ -97,29 +81,28 @@
                         <h2 class="text-xl font-black text-gray-900 mb-6">2. Payment Method</h2>
                         <div class="space-y-4">
                             <label
-                                class="flex items-center gap-4 p-4 border border-indigo-500 bg-indigo-50/30 rounded-2xl cursor-pointer">
+                                class="payment-option flex items-center gap-4 p-4 border border-indigo-500 bg-indigo-50/30 rounded-2xl cursor-pointer transition-colors">
                                 <input type="radio" name="paymentMethod" value="COD" checked
                                     class="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-gray-300">
                                 <span class="font-bold text-gray-900">Cash on Delivery (COD)</span>
                             </label>
 
                             <label
-                                class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-colors">
+                                class="payment-option flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-colors">
                                 <input type="radio" name="paymentMethod" value="Razorpay"
                                     class="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-gray-300">
                                 <span class="font-bold text-gray-900">Razorpay (Cards/UPI/NetBanking)</span>
                             </label>
 
                             <label id="walletPaymentLabel"
-                                class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-colors"
-                                onclick="selectPaymentMethod(this, 'Wallet')">
+                                class="payment-option flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-colors">
                                 <input type="radio" name="paymentMethod" value="Wallet" id="walletRadio"
                                     class="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-gray-300">
                                 <div class="flex-1">
                                     <span class="font-bold text-gray-900">SmartPick Wallet</span>
                                     <% if (typeof walletBalance !=='undefined' && walletBalance> 0) { %>
                                         <span
-                                            class="ml-2 text-xs font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-lg">Balance:
+                                            class="ml-2 text-xs font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100">Balance:
                                             ₹<%= walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
                                         </span>
                                         <% } else { %>
@@ -299,8 +282,77 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     </main>
+
+    <!-- Address Selector Drawer -->
+    <div id="addressSelectorOverlay" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 hidden transition-opacity duration-300 opacity-0" onclick="closeAddressSelector()"></div>
+    <div id="addressSelectorDrawer" class="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col md:rounded-l-3xl rounded-t-[2rem] md:rounded-t-none top-auto bottom-0 md:top-0 h-[80vh] md:h-full">
+        <!-- Drag Handle for Mobile -->
+        <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-4 mb-2 md:hidden"></div>
+        <div class="px-6 py-4 md:py-6 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
+            <div>
+                <h3 class="text-xl font-black text-gray-900">Select Address</h3>
+                <p class="text-xs text-gray-500 font-bold mt-1">Choose where to deliver your order</p>
+            </div>
+            <button type="button" onclick="closeAddressSelector()" class="text-gray-400 hover:text-black transition p-2 hover:bg-gray-100 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50">
+            <% addresses.forEach((address) => { %>
+                <div class="address-card relative group p-5 border-2 rounded-2xl cursor-pointer transition-all duration-200 <%= address.isDefault ? 'border-indigo-500 bg-indigo-50/30 shadow-md shadow-indigo-100/50' : 'border-gray-200 bg-white hover:border-indigo-300 hover:shadow-md' %>" onclick="selectAddress('<%= address._id %>', this)">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="font-black text-gray-900 text-lg"><%= address.fullName %></span>
+                            <% if (address.isDefault) { %>
+                                <span class="ml-2 px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-700 uppercase tracking-widest border border-indigo-200">Default</span>
+                            <% } %>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="event.stopPropagation(); openEditModal(this)"
+                                data-id="<%= address._id %>"
+                                data-fullname="<%= address.fullName %>"
+                                data-phone="<%= address.phone %>"
+                                data-pincode="<%= address.pincode %>"
+                                data-state="<%= address.state %>"
+                                data-city="<%= address.city %>"
+                                data-locality="<%= address.locality %>"
+                                data-house="<%= address.house %>"
+                                data-area="<%= address.area %>"
+                                data-isdefault="<%= address.isDefault ? 'true' : 'false' %>"
+                                class="text-gray-400 hover:text-indigo-600 transition p-1.5 hover:bg-indigo-50 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        <%= address.phone %>
+                    </p>
+                    <p class="text-sm text-gray-600 leading-relaxed address-text hidden-data" data-house="<%= address.house %>" data-area="<%= address.area %>" data-locality="<%= address.locality %>" data-city="<%= address.city %>" data-state="<%= address.state %>" data-pincode="<%= address.pincode %>">
+                        <%= address.house %>, <%= address.area %><br>
+                        <%= address.locality %>, <%= address.city %><br>
+                        <%= address.state %> - <%= address.pincode %>
+                    </p>
+                    <!-- Visual indicator for selection -->
+                    <div class="absolute right-5 bottom-5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors <%= address.isDefault ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300' %>">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="<%= address.isDefault ? 'opacity-100' : 'opacity-0' %> transition-opacity"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+        <div class="p-6 bg-white border-t border-gray-100">
+            <button type="button" onclick="closeAddressSelector(); openAddModal()" class="w-full py-4 bg-indigo-50 text-indigo-700 text-sm font-black rounded-xl hover:bg-indigo-100 transition-all border border-indigo-200 shadow-sm flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Add New Address
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
     <%- include("partials/footer") %>
         <%- include("partials/drawer") %>
@@ -340,6 +392,10 @@
                 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                
+                <!-- Payment UI Manager -->
+                <script src="/js/payment/paymentUIManager.js"></script>
+
                 <script>
                     // ── Coupon Input: auto-uppercase, no spaces ──────────────────────────────
                     const couponInput = document.getElementById('couponCodeInput');
@@ -484,28 +540,112 @@
                         await handleApplyCoupon();
                     }
 
+                    // ── Address Selector Drawer ────────────────────────────────────────────────
+                    function openAddressSelector() {
+                        const overlay = document.getElementById('addressSelectorOverlay');
+                        const drawer = document.getElementById('addressSelectorDrawer');
+                        overlay.classList.remove('hidden');
+                        setTimeout(() => {
+                            overlay.classList.remove('opacity-0');
+                            drawer.classList.remove('translate-x-full', 'translate-y-full'); // for mobile bottom sheet if added class, but here we just do standard translation
+                        }, 10);
+                        document.body.style.overflow = 'hidden';
+                    }
+
+                    function closeAddressSelector() {
+                        const overlay = document.getElementById('addressSelectorOverlay');
+                        const drawer = document.getElementById('addressSelectorDrawer');
+                        overlay.classList.add('opacity-0');
+                        drawer.classList.add('translate-x-full');
+                        setTimeout(() => {
+                            overlay.classList.add('hidden');
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+
+                    function selectAddress(id, el) {
+                        // Get data from element
+                        const name = el.querySelector('.font-black').innerText;
+                        const defaultBadge = el.querySelector('.bg-indigo-100');
+                        const phone = el.querySelector('.text-gray-700').innerText.trim();
+                        
+                        const hiddenData = el.querySelector('.hidden-data');
+                        const house = hiddenData.dataset.house;
+                        const area = hiddenData.dataset.area;
+                        const locality = hiddenData.dataset.locality;
+                        const city = hiddenData.dataset.city;
+                        const state = hiddenData.dataset.state;
+                        const pincode = hiddenData.dataset.pincode;
+
+                        // Update Active Card
+                        document.getElementById('activeAddressId').value = id;
+                        document.getElementById('activeFullName').innerText = name;
+                        document.getElementById('activePhone').innerText = phone;
+                        document.getElementById('activeAddressText').innerHTML = `${house}, ${area}<br>${locality}, ${city}<br>${state} - <span class="font-bold text-gray-800">${pincode}</span>`;
+                        
+                        if (defaultBadge) {
+                            document.getElementById('activeDefaultBadge').classList.remove('hidden');
+                        } else {
+                            document.getElementById('activeDefaultBadge').classList.add('hidden');
+                        }
+
+                        // Update Visuals in Drawer
+                        document.querySelectorAll('.address-card').forEach(card => {
+                            card.classList.remove('border-indigo-500', 'bg-indigo-50/30', 'shadow-md', 'shadow-indigo-100/50');
+                            card.classList.add('border-gray-200', 'bg-white');
+                            const indicator = card.querySelector('.rounded-full');
+                            indicator.classList.remove('border-indigo-600', 'bg-indigo-600');
+                            indicator.classList.add('border-gray-300');
+                            indicator.querySelector('svg').classList.remove('opacity-100');
+                            indicator.querySelector('svg').classList.add('opacity-0');
+                        });
+
+                        el.classList.add('border-indigo-500', 'bg-indigo-50/30', 'shadow-md', 'shadow-indigo-100/50');
+                        el.classList.remove('border-gray-200', 'bg-white');
+                        const indicator = el.querySelector('.rounded-full');
+                        indicator.classList.add('border-indigo-600', 'bg-indigo-600');
+                        indicator.classList.remove('border-gray-300');
+                        indicator.querySelector('svg').classList.add('opacity-100');
+                        indicator.querySelector('svg').classList.remove('opacity-0');
+
+                        closeAddressSelector();
+                    }
+
+                    // Payment Method UI
+                    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+                        radio.addEventListener('change', function () {
+                            document.querySelectorAll('.payment-option').forEach(r => {
+                                r.classList.remove('border-indigo-500', 'bg-indigo-50/30');
+                                r.classList.add('border-gray-200');
+                            });
+                            const label = this.closest('.payment-option');
+                            label.classList.add('border-indigo-500', 'bg-indigo-50/30');
+                            label.classList.remove('border-gray-200');
+                        });
+                    });
+
+                    // ── Order Placement Logic ────────────────────────────────────────────────
                     async function placeOrder() {
                         const btn = document.getElementById('placeOrderBtn');
                         if (btn.disabled) return;
 
-                        // Get selected address
-                        const selectedAddressObj = document.querySelector('input[name="selectedAddress"]:checked');
-                        if (!selectedAddressObj) {
+                        const addressInput = document.getElementById('activeAddressId');
+                        if (!addressInput || !addressInput.value) {
                             return Swal.fire({ icon: 'warning', title: 'Address Required', text: 'Please select a shipping address.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                         }
 
-                        // Get selected payment
                         const selectedPaymentObj = document.querySelector('input[name="paymentMethod"]:checked');
                         if (!selectedPaymentObj) {
                             return Swal.fire({ icon: 'warning', title: 'Payment Required', text: 'Please select a payment method.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                         }
 
-                        const addressId = selectedAddressObj.value;
+                        const addressId = addressInput.value;
                         const paymentMethod = selectedPaymentObj.value;
 
-                        btn.disabled = true;
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = 'Processing...';
+                        // Use UI Manager to lock button
+                        if (window.paymentUI) {
+                            window.paymentUI.lockButton(btn, 'Processing...');
+                        }
 
                         try {
                             if (paymentMethod === 'Razorpay') {
@@ -519,6 +659,9 @@
                                         description: "Purchase transaction",
                                         order_id: initRes.data.razorpayOrderId,
                                         handler: async function (response) {
+                                            // Razorpay Success - Show Verification Overlay
+                                            if (window.paymentUI) await window.paymentUI.showOverlay('razorpay');
+
                                             try {
                                                 const verifyRes = await axios.post('/payment/verify', {
                                                     orderId: initRes.data.orderId,
@@ -527,16 +670,22 @@
                                                     razorpay_signature: response.razorpay_signature
                                                 });
                                                 if (verifyRes.data.success) {
-                                                    window.location.href = verifyRes.data.redirectUrl;
+                                                    if (window.paymentUI) {
+                                                        await window.paymentUI.showSuccess(verifyRes.data.redirectUrl);
+                                                    } else {
+                                                        window.location.href = verifyRes.data.redirectUrl;
+                                                    }
                                                 }
                                             } catch (error) {
                                                 console.error(error);
-                                                Swal.fire({ icon: 'error', title: 'Verification Failed', text: 'Payment verification failed.' });
+                                                if (window.paymentUI) await window.paymentUI.hideOverlay();
+                                                window.location.href = `/payment/failure/${initRes.data.orderId}`;
                                             }
                                         },
                                         modal: {
                                             ondismiss: async function () {
                                                 await axios.post('/payment/failure', { orderId: initRes.data.orderId });
+                                                if (window.paymentUI) await window.paymentUI.hideOverlay();
                                                 window.location.href = `/payment/failure/${initRes.data.orderId}`;
                                             }
                                         }
@@ -544,55 +693,95 @@
                                     const rzp1 = new Razorpay(options);
                                     rzp1.on('payment.failed', async function (response) {
                                         await axios.post('/payment/failure', { orderId: initRes.data.orderId });
+                                        if (window.paymentUI) await window.paymentUI.hideOverlay();
                                         window.location.href = `/payment/failure/${initRes.data.orderId}`;
                                     });
                                     rzp1.open();
+                                    
+                                    // Unlock button immediately since Razorpay modal handles UI state now
+                                    if (window.paymentUI) window.paymentUI.unlockButton(btn);
+                                }
+                            } else if (paymentMethod === 'Wallet') {
+                                if (window.paymentUI) await window.paymentUI.showOverlay('wallet');
+                                
+                                try {
+                                    const response = await axios.post('/order/place', { addressId, paymentMethod });
+                                    if (response.data.success) {
+                                        if (window.paymentUI) {
+                                            await window.paymentUI.showSuccess(`/order/success?orderId=${response.data.orderId}`);
+                                        } else {
+                                            window.location.href = `/order/success?orderId=${response.data.orderId}`;
+                                        }
+                                    }
+                                } catch (err) {
+                                    // Hide wallet processing overlay first (with force so it doesn't wait min time)
+                                    if (window.paymentUI) await window.paymentUI.hideOverlay(true);
+                                    
+                                    const errData = err.response?.data;
+                                    const msg = errData?.message || '';
+                                    
+                                    // Parse wallet insufficient balance
+                                    if (msg.toLowerCase().includes('insufficient wallet balance')) {
+                                        const availMatch = msg.match(/Available: ₹([\d,.]+)/);
+                                        const reqMatch   = msg.match(/Required: ₹([\d,.]+)/);
+                                        const balance    = availMatch ? parseFloat(availMatch[1].replace(/,/g,'')) : 0;
+                                        const required   = reqMatch  ? parseFloat(reqMatch[1].replace(/,/g,''))  : 0;
+                                        const shortfall  = Math.max(0, required - balance);
+                                        if (window.paymentUI) {
+                                            await window.paymentUI.showOverlay('wallet_insufficient', { balance, required, shortfall });
+                                        }
+                                        window.paymentUI.unlockButton(btn);
+                                        return;
+                                    }
+                                    
+                                    handleOrderError(err);
                                 }
                             } else {
-                                const response = await axios.post('/order/place', { addressId, paymentMethod });
-                                if (response.data.success) {
-                                    window.location.href = `/order/success?orderId=${response.data.orderId}`;
+                                // COD
+                                if (window.paymentUI) await window.paymentUI.showOverlay('cod');
+                                
+                                try {
+                                    const response = await axios.post('/order/place', { addressId, paymentMethod });
+                                    if (response.data.success) {
+                                        if (window.paymentUI) {
+                                            await window.paymentUI.showSuccess(`/order/success?orderId=${response.data.orderId}`);
+                                        } else {
+                                            window.location.href = `/order/success?orderId=${response.data.orderId}`;
+                                        }
+                                    }
+                                } catch (err) {
+                                    if (window.paymentUI) await window.paymentUI.hideOverlay();
+                                    handleOrderError(err);
                                 }
                             }
                         } catch (err) {
-                            console.error(err);
-                            const errData = err.response?.data;
-                            // Task 3: If stock changed while on checkout page, redirect to cart
-                            if (errData?.affectedItems) {
-                                await Swal.fire({
-                                    icon: 'warning',
-                                    title: 'Stock Changed',
-                                    text: errData.message || 'Some items are no longer available. Redirecting to cart...',
-                                    timer: 3000,
-                                    showConfirmButton: false
-                                });
-                                window.location.href = '/cart';
-                                return;
-                            }
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Order Failed',
-                                text: errData?.message || 'Something went wrong while placing your order.',
-                            });
-                        } finally {
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
+                            if (window.paymentUI) await window.paymentUI.hideOverlay();
+                            handleOrderError(err);
                         }
                     }
 
-                    // Add logic to fix the UI for dynamically selected addresses
-                    document.querySelectorAll('input[name="selectedAddress"]').forEach(radio => {
-                        radio.addEventListener('change', function () {
-                            // Remove active classes from all
-                            document.querySelectorAll('input[name="selectedAddress"]').forEach(r => {
-                                const label = r.closest('label');
-                                label.classList.remove('border-indigo-500', 'bg-indigo-50/30');
-                                label.classList.add('border-gray-200');
-                            });
-                            // Add to selected
-                            const label = this.closest('label');
-                            label.classList.add('border-indigo-500', 'bg-indigo-50/30');
-                            label.classList.remove('border-gray-200');
-                        });
-                    });
+                    async function handleOrderError(err) {
+                        const btn = document.getElementById('placeOrderBtn');
+                        
+                        console.error(err);
+                        const errData = err.response?.data;
+                        const msg = errData?.message || '';
+                        
+                        // Stock issue — redirect to cart
+                        if (errData?.affectedItems?.length > 0) {
+                            if (window.paymentUI) {
+                                await window.paymentUI.showOverlay('error', { message: 'Some items in your cart are no longer available. Redirecting to cart…' });
+                                await new Promise(r => setTimeout(r, 2000));
+                                await window.paymentUI.hideOverlay(true);
+                            }
+                            window.location.href = '/cart';
+                            return;
+                        }
+                        
+                        // Generic failure
+                        if (window.paymentUI) {
+                            await window.paymentUI.showOverlay('error', { message: msg || 'Something went wrong while placing your order.' });
+                            window.paymentUI.unlockButton(btn);
+                        }
+                    }
                 </script>

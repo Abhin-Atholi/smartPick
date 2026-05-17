@@ -102,6 +102,14 @@ const orderSchema = new mongoose.Schema({
     },
     retryExpiresAt: { type: Date },
     stockRestored: { type: Boolean, default: false },
+    cartRestored: { type: Boolean, default: false },
+    cartRestoredAt: { type: Date },
+    cartRestorationSummary: {
+        restoredItems:   { type: Number, default: 0 },
+        partialRestores: { type: Number, default: 0 },
+        skippedItems:    { type: Number, default: 0 },
+        wasPartial:      { type: Boolean, default: false }
+    },
     cancelReason: { type: String },
     returnReason: { type: String },
     

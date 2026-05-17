@@ -11,6 +11,7 @@ import * as taxHelper from '../../utils/taxHelper.js';
 import cron from 'node-cron';
 import * as refundService from '../common/refundService.js';
 import * as orderLifecycleService from '../common/orderLifecycleService.js';
+import paymentRecoveryService from '../common/paymentRecoveryService.js';
 import { updateLedger } from '../common/financialLedgerService.js';
 import { withTransaction, sessionOpts } from '../../utils/transactionHelper.js';
 export const getOrderById = async (userId, orderId) => {
@@ -20,27 +21,42 @@ export const getOrderById = async (userId, orderId) => {
 
     if (!order) return null;
 
-    // Robust Expiry Check: If order is still pending/failed but retry window closed
-    const isRzpPending = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
-    const hasExpiry = order.retryExpiresAt;
+    const isRzpPending   = ['Payment Pending', 'Payment Failed'].includes(order.orderStatus);
+    const hasExpiry      = order.retryExpiresAt;
+    const isNowExpired   = hasExpiry && new Date() > order.retryExpiresAt;
 
-    if (isRzpPending && hasExpiry && new Date() > order.retryExpiresAt && !order.stockRestored) {
+    if (isRzpPending && isNowExpired && !order.stockRestored) {
+        // ── JIT: expire, restore stock, restore cart ────────────────────────
         const prevStatus = order.orderStatus;
         order.stockRestored = true;
-        order.orderStatus = 'Expired';
+        order.orderStatus   = 'Expired';
         order.paymentStatus = 'Expired';
+
         for (const item of order.items) {
             item.itemStatus = 'Expired';
-            const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
+            const arrayFilter = item.variantId
+                ? { 'v._id': item.variantId }
+                : { 'v.size': item.size, 'v.color': item.color };
             await Product.updateOne(
                 { _id: item.product },
                 { $inc: { 'variants.$[v].stock': item.quantity } },
                 { arrayFilters: [arrayFilter] }
             );
         }
-        orderLifecycleService.appendSystemEvent(order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired', 'Payment session expired during JIT lookup');
+
+        orderLifecycleService.appendSystemEvent(
+            order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired',
+            'Payment session expired during JIT lookup'
+        );
         updateLedger(order);
         await order.save();
+        // Restore cart — idempotent, safe to call even if cron already ran
+        await paymentRecoveryService.restoreExpiredOrderToCart(order);
+
+    } else if (order.orderStatus === 'Expired' && !order.cartRestored) {
+        // ── Edge case: cron expired the order but cart wasn't restored yet ──
+        // (e.g. cron ran before this service was deployed, or crashed mid-way)
+        await paymentRecoveryService.restoreExpiredOrderToCart(order);
     }
 
     return order;
@@ -324,6 +340,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
             orderLifecycleService.appendSystemEvent(order, 'SYSTEM_EXPIRED_ORDER', prevStatus, 'Expired', 'Payment session expired during batch list lookup');
             updateLedger(order);
             await order.save();
+            await paymentRecoveryService.restoreExpiredOrderToCart(order);
         }
     }
 
@@ -414,11 +431,15 @@ export const checkPaymentStatus = async (userId, orderId) => {
     const order = await getOrderById(userId, orderId);
     if (!order) return { success: false, message: 'Order not found' };
 
+    const isExpired = order.orderStatus === 'Expired' || order.paymentStatus === 'Expired';
+
     return {
-        success: true,
-        orderStatus: order.orderStatus,
+        success:    true,
+        orderStatus:  order.orderStatus,
         paymentStatus: order.paymentStatus,
-        isExpired: order.orderStatus === 'Expired' || order.paymentStatus === 'Expired'
+        isExpired,
+        cartRestored:  order.cartRestored || false,
+        cartRestorationSummary: order.cartRestorationSummary || null
     };
 };
 
@@ -469,6 +490,10 @@ export const startStockCleanupTask = () => {
 
                 updateLedger(order);
                 await order.save().catch(err => console.error(`Cron: Failed to save expired order ${order._id}:`, err));
+
+                // Restore cart — idempotent, safe even if JIT already ran
+                await paymentRecoveryService.restoreExpiredOrderToCart(order)
+                    .catch(err => console.error(`Cron: Failed to restore cart for order ${order._id}:`, err));
             }
         } catch (err) {
             console.error('Cron: Order cleanup task failed:', err);

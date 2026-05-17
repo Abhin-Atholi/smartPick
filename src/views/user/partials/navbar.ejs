@@ -123,16 +123,23 @@
         </a>
 
         <!-- Logout -->
-        <a href="/logout" onclick="confirmLogout(event, this.href)"
-           class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-red-200 text-red-500 font-black text-sm hover:bg-red-50 transition-colors ml-1">
-          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Log Out
-        </a>
+        <div class="relative group hidden sm:block ml-1">
+          <button onclick="this.nextElementSibling.classList.toggle('hidden');" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-rose-100 text-rose-500 font-black text-sm hover:bg-rose-50 hover:border-rose-200 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Log Out
+          </button>
+          <div class="hidden absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 p-3 z-[100]">
+            <p class="text-[11px] text-gray-500 font-bold mb-3 text-center uppercase tracking-widest">Are you sure?</p>
+            <div class="flex gap-2">
+              <button onclick="this.parentElement.parentElement.classList.add('hidden');" class="flex-1 py-1.5 text-xs font-black text-gray-600 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
+              <a href="/logout" class="flex-1 py-1.5 text-center text-xs font-black text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-sm shadow-rose-200">Log Out</a>
+            </div>
+          </div>
+        </div>
 
       <% } else { %>
         <a href="/login"

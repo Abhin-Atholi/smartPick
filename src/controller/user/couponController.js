@@ -2,6 +2,7 @@ import * as couponHelper from '../../utils/couponHelper.js';
 import * as cartService from '../../services/user/cartService.js';
 import Coupon from '../../model/couponModel.js';
 import * as taxHelper from '../../utils/taxHelper.js';
+import { SHIPPING_RULES } from '../../config/storeConfig.js';
 
 export const applyCoupon = async (req, res) => {
     try {
@@ -50,7 +51,7 @@ export const applyCoupon = async (req, res) => {
             discountAmount: result.discountAmount
         };
 
-        const shippingFee = effectiveSubtotal > 499 ? 0 : 50;
+        const shippingFee = effectiveSubtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
         const taxableAmount = taxHelper.calculateTaxableAmount(effectiveSubtotal, result.discountAmount);
         const tax = taxHelper.calculateTax(taxableAmount);
         const finalTotal = effectiveSubtotal - result.discountAmount + shippingFee + tax;
@@ -103,7 +104,7 @@ export const removeCoupon = async (req, res) => {
             });
         }
 
-        const shippingFee = effectiveSubtotal > 499 ? 0 : 50;
+        const shippingFee = effectiveSubtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
         const taxableAmount = taxHelper.calculateTaxableAmount(effectiveSubtotal, 0);
         const tax = taxHelper.calculateTax(taxableAmount);
         const finalTotal = effectiveSubtotal + shippingFee + tax;

@@ -223,13 +223,16 @@
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/payment/paymentUIManager.js"></script>
 <script>
     // ── Modal Controls ────────────────────────────────────────────────────────
     function openAddMoneyModal() {
         document.getElementById('topupAmount').value = '';
         clearQuickSelect();
-        document.getElementById('addMoneyModal').classList.remove('hidden');
+        const modal = document.getElementById('addMoneyModal');
+        modal.classList.remove('hidden');
+        void modal.offsetWidth;
+        modal.classList.add('opacity-100');
     }
     function closeAddMoneyModal() {
         document.getElementById('addMoneyModal').classList.add('hidden');
@@ -258,14 +261,20 @@
     // ── Add Money Flow ────────────────────────────────────────────────────────
     async function handleAddMoney() {
         const amount = parseFloat(document.getElementById('topupAmount').value);
+
         if (!amount || amount < 1 || amount > 50000) {
-            Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter an amount between ₹1 and ₹50,000.' });
+            // Inline validation — no Swal
+            const input = document.getElementById('topupAmount');
+            input.classList.add('ring-2', 'ring-red-400', 'border-red-400');
+            setTimeout(() => input.classList.remove('ring-2', 'ring-red-400', 'border-red-400'), 2000);
             return;
         }
 
         const btn = document.getElementById('payNowBtn');
-        btn.disabled = true;
-        btn.textContent = 'Opening Payment...';
+        closeAddMoneyModal();
+
+        // Lock button (it's hidden by modal close, but just in case)
+        if (window.paymentUI) window.paymentUI.lockButton(btn, 'Opening Payment...');
 
         try {
             const { data } = await axios.post('/wallet/topup/initiate', { amount });
@@ -281,53 +290,90 @@
                 theme: { color: '#4f46e5' },
                 prefill: {},
                 handler: async function(response) {
+                    // Show verification overlay
+                    if (window.paymentUI) await window.paymentUI.showOverlay('razorpay');
+
                     try {
                         const verifyRes = await axios.post('/wallet/topup/verify', {
-                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_order_id:   response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature,
+                            razorpay_signature:  response.razorpay_signature,
                             amount
                         });
+
                         if (verifyRes.data.success) {
-                            await Swal.fire({
-                                icon: 'success',
-                                title: 'Money Added!',
-                                text: verifyRes.data.message,
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                            location.reload();
+                            // Morph to success state
+                            if (window.paymentUI) {
+                                // Reuse success overlay then reload
+                                if (window.paymentUI.overlayStartTime > 0) {
+                                    const elapsed = Date.now() - window.paymentUI.overlayStartTime;
+                                    if (elapsed < 1200) await new Promise(r => setTimeout(r, 1200 - elapsed));
+                                }
+                                // Show wallet-specific success
+                                window.paymentUI.iconContainer.innerHTML = `
+                                    <div class="absolute inset-0 bg-green-100 rounded-full"></div>
+                                    <svg class="relative z-10" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"
+                                        style="stroke-dasharray:100;stroke-dashoffset:100;animation:drawCheck 0.5s ease-out 0.1s forwards">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <style>@keyframes drawCheck{to{stroke-dashoffset:0}}</style>`;
+                                window.paymentUI.title.textContent = 'Wallet Updated!';
+                                window.paymentUI.subtitle.textContent = `₹${amount.toLocaleString('en-IN')} added to your SmartPick Wallet.`;
+
+                                await new Promise(r => setTimeout(r, 1600));
+                                await window.paymentUI.hideOverlay(true);
+                                location.reload();
+                            } else {
+                                location.reload();
+                            }
                         } else {
                             throw new Error(verifyRes.data.message);
                         }
                     } catch (err) {
-                        Swal.fire({ icon: 'error', title: 'Verification Failed', text: err.response?.data?.message || err.message });
+                        if (window.paymentUI) {
+                            await window.paymentUI.hideOverlay(true);
+                            await window.paymentUI.showOverlay('error', { message: err.response?.data?.message || err.message || 'Wallet top-up verification failed.' });
+                        }
                     }
                 },
                 modal: {
                     ondismiss: function() {
-                        btn.disabled = false;
-                        btn.textContent = 'Pay & Add to Wallet';
+                        if (window.paymentUI) window.paymentUI.unlockButton(btn);
                     }
                 }
             };
 
             const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function() {
+                if (window.paymentUI) {
+                    window.paymentUI.showOverlay('error', { message: 'Wallet top-up was not completed.' });
+                }
+            });
             rzp.open();
-            closeAddMoneyModal();
+            if (window.paymentUI) window.paymentUI.unlockButton(btn);
 
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || err.message });
+            if (window.paymentUI) {
+                await window.paymentUI.hideOverlay(true);
+                await window.paymentUI.showOverlay('error', { message: err.response?.data?.message || err.message || 'Could not initiate wallet top-up.' });
+            }
         } finally {
-            btn.disabled = false;
-            btn.textContent = 'Pay & Add to Wallet';
+            if (window.paymentUI) window.paymentUI.unlockButton(btn);
         }
     }
 
     // ── Copy Referral Code ────────────────────────────────────────────────────
-    function copyReferralCode(code) {
-        navigator.clipboard.writeText(code).then(() => {
-            Swal.fire({ icon: 'success', title: 'Copied!', text: `Referral code ${code} copied to clipboard.`, timer: 1500, showConfirmButton: false });
-        });
+    async function copyReferralCode(code) {
+        try {
+            await navigator.clipboard.writeText(code);
+            const btn = event.target;
+            const orig = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('bg-green-600');
+            setTimeout(() => { btn.textContent = orig; btn.classList.remove('bg-green-600'); }, 2000);
+        } catch (e) { /* fallback */ }
     }
 </script>
+
+
+

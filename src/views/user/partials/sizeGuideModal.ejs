@@ -1,0 +1,102 @@
+<!-- ── SIZE GUIDE MODAL ─────────────────────────────────── -->
+<div id="sizeGuideModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="sizeGuideModalContent">
+    <div class="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 uppercase tracking-widest">Size Guide</h3>
+        <p class="text-[10px] text-gray-400 font-bold mt-0.5">SMARTPICK UNIVERSAL MEASUREMENTS (INCHES)</p>
+      </div>
+      <button onclick="closeSizeGuide()" class="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:border-rose-100 transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <div class="p-8 max-h-[60vh] overflow-y-auto no-scrollbar">
+      <div class="overflow-hidden rounded-xl border border-gray-100 shadow-sm">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="bg-gray-50 text-gray-400 font-black uppercase text-[10px] tracking-widest">
+              <th class="px-4 py-3">Size</th>
+              <th class="px-4 py-3">Chest</th>
+              <th class="px-4 py-3">Waist</th>
+              <th class="px-4 py-3">Shoulder</th>
+              <th class="px-4 py-3">Length</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50 text-gray-600 font-bold">
+            <tr class="hover:bg-gray-50/50 transition">
+              <td class="px-4 py-3 text-slate-900 font-black">XS</td>
+              <td class="px-4 py-3">34</td>
+              <td class="px-4 py-3">28</td>
+              <td class="px-4 py-3">16</td>
+              <td class="px-4 py-3">26</td>
+            </tr>
+            <tr class="hover:bg-gray-50/50 transition">
+              <td class="px-4 py-3 text-slate-900 font-black">S</td>
+              <td class="px-4 py-3">36</td>
+              <td class="px-4 py-3">30</td>
+              <td class="px-4 py-3">16.5</td>
+              <td class="px-4 py-3">27</td>
+            </tr>
+            <tr class="hover:bg-gray-50/50 transition">
+              <td class="px-4 py-3 text-slate-900 font-black">M</td>
+              <td class="px-4 py-3">38</td>
+              <td class="px-4 py-3">32</td>
+              <td class="px-4 py-3">17</td>
+              <td class="px-4 py-3">28</td>
+            </tr>
+            <tr class="hover:bg-gray-50/50 transition">
+              <td class="px-4 py-3 text-slate-900 font-black">L</td>
+              <td class="px-4 py-3">40</td>
+              <td class="px-4 py-3">34</td>
+              <td class="px-4 py-3">17.5</td>
+              <td class="px-4 py-3">29</td>
+            </tr>
+            <tr class="hover:bg-gray-50/50 transition">
+              <td class="px-4 py-3 text-slate-900 font-black">XL</td>
+              <td class="px-4 py-3">42</td>
+              <td class="px-4 py-3">36</td>
+              <td class="px-4 py-3">18</td>
+              <td class="px-4 py-3">30</td>
+            </tr>
+            <tr class="hover:bg-gray-50/50 transition">
+              <td class="px-4 py-3 text-slate-900 font-black">XXL</td>
+              <td class="px-4 py-3">44</td>
+              <td class="px-4 py-3">38</td>
+              <td class="px-4 py-3">18.5</td>
+              <td class="px-4 py-3">31</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-[10px] text-gray-400 mt-4 text-center">Measurements may vary slightly by style.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openSizeGuide() {
+    const modal = document.getElementById('sizeGuideModal');
+    const content = document.getElementById('sizeGuideModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function closeSizeGuide() {
+    const modal = document.getElementById('sizeGuideModal');
+    const content = document.getElementById('sizeGuideModalContent');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300);
+  }
+
+  // Add click to backdrop listener if not already handled
+  document.addEventListener('click', function(event) {
+    if (event.target.id === 'sizeGuideModal') closeSizeGuide();
+  });
+</script>

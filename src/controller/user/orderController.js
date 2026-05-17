@@ -6,6 +6,7 @@ import * as couponHelper from '../../utils/couponHelper.js';
 import * as walletService from '../../services/user/walletService.js';
 import * as taxHelper from '../../utils/taxHelper.js';
 import * as orderPresentationService from '../../services/common/orderPresentationService.js';
+import { SHIPPING_RULES } from '../../config/storeConfig.js';
 
 export const loadCheckout = async (req, res, next) => {
     try {
@@ -56,7 +57,7 @@ export const loadCheckout = async (req, res, next) => {
                 return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };
             });
 
-        const shippingFee = subtotal > 499 ? 0 : 50;
+        const shippingFee = subtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
 
         let couponDiscount = 0;
         let appliedCoupon = null;
@@ -146,11 +147,17 @@ export const loadOrderSuccess = async (req, res, next) => {
         if (!userId) return res.redirect('/login');
 
         const orderId = req.query.orderId || null;
+        let order = null;
+        
+        if (orderId) {
+            order = await orderService.getOrderById(userId, orderId);
+        }
 
         res.render('user/orders/success', {
             title: "Order Successful — SmartPick",
             activePath: "/checkout",
-            orderId
+            orderId,
+            order
         });
     } catch (err) {
         console.error("loadOrderSuccess error:", err);

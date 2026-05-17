@@ -9,31 +9,20 @@
   </title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, h4, h5, h6, .font-black { font-family: 'Satoshi', sans-serif; }
+  </style>
 </head>
 
-<body class="min-h-screen bg-gray-50 text-gray-900">
+<body class="min-h-screen bg-gray-50 text-slate-800 font-medium">
   <%- body %>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-      function confirmLogout(event, url) {
-        event.preventDefault();
-        Swal.fire({
-          title: "Log Out?",
-          text: "Are you sure you want to log out of your account?",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#EF4444",
-          cancelButtonColor: "#6B7280",
-          confirmButtonText: "Yes, log out",
-          cancelButtonText: "Cancel",
-          reverseButtons: true
-        }).then((result) => {
-          if (result.isConfirmed) {
-            window.location.href = url;
-          }
-        });
-      }
-
       const urlParams = new URLSearchParams(window.location.search);
       const msg = urlParams.get('msg');
       if (msg) {
