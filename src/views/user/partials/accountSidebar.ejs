@@ -1,31 +1,33 @@
-<aside class="bg-white border border-gray-100 rounded-2xl shadow-sm p-3 h-fit">
+<aside class="acct-sidebar bg-white border border-gray-100 rounded-2xl shadow-sm p-2 lg:p-3 h-fit flex flex-row lg:flex-col gap-1 overflow-x-auto shrink-0" style="-ms-overflow-style:none;scrollbar-width:none;">
+  <style>.acct-sidebar::-webkit-scrollbar{display:none}</style>
+
   <a href="/account"
-     class="flex items-center gap-3 px-4 py-3 rounded-xl <%= active === 'profile' ? 'bg-indigo-50 font-black text-indigo-700' : 'hover:bg-gray-50 text-gray-600 font-bold' %>">
-    <span class="w-7 h-7 rounded-full <%= active === 'profile' ? 'bg-indigo-100' : 'bg-gray-200' %> grid place-items-center">👤</span>
-    Profile Information
+     class="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl flex-shrink-0 transition-colors <%= active === 'profile' ? 'bg-indigo-50 text-indigo-700 font-black' : 'hover:bg-gray-50 text-gray-500 lg:text-gray-600 font-bold' %>">
+    <span class="w-8 h-8 lg:w-7 lg:h-7 rounded-xl lg:rounded-full <%= active === 'profile' ? 'bg-indigo-100' : 'bg-gray-100 lg:bg-gray-200' %> grid place-items-center flex-shrink-0 text-base">👤</span>
+    <span class="text-[10px] lg:text-sm text-center lg:text-left leading-tight">Profile<span class="hidden lg:inline"> Information</span></span>
   </a>
 
   <a href="/account/addresses"
-     class="flex items-center gap-3 px-4 py-3 rounded-xl <%= active === 'addresses' ? 'bg-indigo-50 font-black text-indigo-700' : 'hover:bg-gray-50 text-gray-600 font-bold' %>">
-    <span class="w-7 h-7 rounded-full <%= active === 'addresses' ? 'bg-indigo-100' : 'bg-gray-200' %> grid place-items-center">📍</span>
-    Saved Addresses
+     class="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl flex-shrink-0 transition-colors <%= active === 'addresses' ? 'bg-indigo-50 text-indigo-700 font-black' : 'hover:bg-gray-50 text-gray-500 lg:text-gray-600 font-bold' %>">
+    <span class="w-8 h-8 lg:w-7 lg:h-7 rounded-xl lg:rounded-full <%= active === 'addresses' ? 'bg-indigo-100' : 'bg-gray-100 lg:bg-gray-200' %> grid place-items-center flex-shrink-0 text-base">📍</span>
+    <span class="text-[10px] lg:text-sm text-center lg:text-left leading-tight"><span class="lg:hidden">Address</span><span class="hidden lg:inline">Saved Addresses</span></span>
   </a>
 
   <a href="/account/security"
-     class="flex items-center gap-3 px-4 py-3 rounded-xl <%= active === 'security' ? 'bg-indigo-50 font-black text-indigo-700' : 'hover:bg-gray-50 text-gray-600 font-bold' %>">
-    <span class="w-7 h-7 rounded-full <%= active === 'security' ? 'bg-indigo-100' : 'bg-gray-200' %> grid place-items-center">🛡️</span>
-    Security Settings
+     class="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl flex-shrink-0 transition-colors <%= active === 'security' ? 'bg-indigo-50 text-indigo-700 font-black' : 'hover:bg-gray-50 text-gray-500 lg:text-gray-600 font-bold' %>">
+    <span class="w-8 h-8 lg:w-7 lg:h-7 rounded-xl lg:rounded-full <%= active === 'security' ? 'bg-indigo-100' : 'bg-gray-100 lg:bg-gray-200' %> grid place-items-center flex-shrink-0 text-base">🛡️</span>
+    <span class="text-[10px] lg:text-sm text-center lg:text-left leading-tight">Security<span class="hidden lg:inline"> Settings</span></span>
   </a>
 
   <a href="/wallet"
-     class="flex items-center gap-3 px-4 py-3 rounded-xl <%= active === 'wallet' ? 'bg-indigo-50 font-black text-indigo-700' : 'hover:bg-gray-50 text-gray-600 font-bold' %>">
-    <span class="w-7 h-7 rounded-full <%= active === 'wallet' ? 'bg-indigo-100' : 'bg-gray-200' %> grid place-items-center">👛</span>
-    My Wallet
+     class="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl flex-shrink-0 transition-colors <%= active === 'wallet' ? 'bg-indigo-50 text-indigo-700 font-black' : 'hover:bg-gray-50 text-gray-500 lg:text-gray-600 font-bold' %>">
+    <span class="w-8 h-8 lg:w-7 lg:h-7 rounded-xl lg:rounded-full <%= active === 'wallet' ? 'bg-indigo-100' : 'bg-gray-100 lg:bg-gray-200' %> grid place-items-center flex-shrink-0 text-base">👛</span>
+    <span class="text-[10px] lg:text-sm text-center lg:text-left leading-tight"><span class="lg:hidden">Wallet</span><span class="hidden lg:inline">My Wallet</span></span>
   </a>
 
   <a href="/account/referrals"
-     class="flex items-center gap-3 px-4 py-3 rounded-xl <%= active === 'referrals' ? 'bg-indigo-50 font-black text-indigo-700' : 'hover:bg-gray-50 text-gray-600 font-bold' %>">
-    <span class="w-7 h-7 rounded-full <%= active === 'referrals' ? 'bg-indigo-100' : 'bg-gray-200' %> grid place-items-center">🎁</span>
-    My Referrals
+     class="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl flex-shrink-0 transition-colors <%= active === 'referrals' ? 'bg-indigo-50 text-indigo-700 font-black' : 'hover:bg-gray-50 text-gray-500 lg:text-gray-600 font-bold' %>">
+    <span class="w-8 h-8 lg:w-7 lg:h-7 rounded-xl lg:rounded-full <%= active === 'referrals' ? 'bg-indigo-100' : 'bg-gray-100 lg:bg-gray-200' %> grid place-items-center flex-shrink-0 text-base">🎁</span>
+    <span class="text-[10px] lg:text-sm text-center lg:text-left leading-tight"><span class="lg:hidden">Referrals</span><span class="hidden lg:inline">My Referrals</span></span>
   </a>
 </aside>

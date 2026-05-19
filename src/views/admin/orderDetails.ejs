@@ -94,7 +94,6 @@
               <td class="px-6 py-4 text-center"><span class="text-sm font-bold text-slate-700"><%= item.quantity %></span></td>
               <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-slate-700"><%= item.formatted.unitPrice %></span></td>
               <td class="px-6 py-4 text-right">
-                <span class="text-sm font-black text-indigo-600"><%= item.formatted.finalPaidAmount %></span>
                 <% if (item.hasDiscount || item.hasOffer || item.hasCoupon || item.hasTax) { %>
                   <div class="flex flex-col items-end mt-1 space-y-0.5">
                     <% if (item.hasDiscount) { %><span class="text-[10px] text-gray-400 line-through"><%= item.formatted.totalOriginalAmount %></span><% } %>
@@ -103,6 +102,7 @@
                     <% if (item.hasTax) { %><span class="text-[10px] text-gray-500">Tax: +<%= item.formatted.taxAmount %></span><% } %>
                   </div>
                 <% } %>
+                <span class="text-sm font-black text-indigo-600 block mt-1"><%= item.formatted.finalPaidAmount %></span>
               </td>
               <td class="px-6 py-4 text-center">
                 <div class="flex flex-col items-center gap-1.5">

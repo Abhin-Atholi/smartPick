@@ -7,6 +7,7 @@ import Product from '../../model/productModel.js';
 import Address from '../../model/addressModel.js';
 import * as couponHelper from '../../utils/couponHelper.js';
 import * as offerHelper from '../../utils/offerHelper.js';
+import Coupon from '../../model/couponModel.js';
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'test_key',
@@ -114,10 +115,14 @@ export const verifyPayment = async (req, res) => {
 
         // Finalize Coupon Usage
         if (order.couponApplied?.code) {
-            await Coupon.updateOne(
-                { code: order.couponApplied.code },
-                { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
-            ).catch(err => console.error('Coupon final usage update failed:', err));
+            try {
+                await Coupon.updateOne(
+                    { code: order.couponApplied.code },
+                    { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
+                );
+            } catch (err) {
+                console.error('Coupon final usage update failed:', err);
+            }
         }
 
         return res.status(200).json({ success: true, redirectUrl: `/order/success?orderId=${order._id}` });
@@ -171,7 +176,7 @@ export const retryPayment = async (req, res) => {
 
         // Generate New Gateway ID
         const rzpOrder = await razorpay.orders.create({
-            amount: order.totalAmount * 100,
+            amount: Math.round(order.totalAmount * 100),
             currency: 'INR',
             receipt: `retry_${Date.now()}`
         });

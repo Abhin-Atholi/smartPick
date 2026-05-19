@@ -106,7 +106,7 @@
 
           <!-- Active search chip -->
           <% if (activeSearch) { %>
-            <div class="mt-2 flex items-center gap-2">
+            <div id="searchChipContainer" class="mt-2 flex items-center gap-2">
               <span class="text-xs text-gray-500">Results for:</span>
               <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold
                          px-3 py-1 rounded-full border border-indigo-200">
@@ -470,10 +470,20 @@
             const input = document.getElementById('searchInput');
             if (input) {
               input.value = '';
-              const clearBtn = document.getElementById('clearBtn');
-              if (clearBtn) clearBtn.classList.add('hidden');
-              handleFilterChange();
             }
+            
+            // Clear any hidden search inputs in forms so they don't override the clear action
+            document.querySelectorAll('input[name="search"]').forEach(el => {
+              el.value = '';
+            });
+
+            const clearBtn = document.getElementById('clearBtn');
+            if (clearBtn) clearBtn.classList.add('hidden');
+            
+            const searchChip = document.getElementById('searchChipContainer');
+            if (searchChip) searchChip.style.display = 'none';
+
+            handleFilterChange();
           }
 
           /* ── Sidebar section collapse ── */

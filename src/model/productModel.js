@@ -109,6 +109,11 @@ const productSchema = new mongoose.Schema({
     default: true,
   },
 
+  minPrice: {
+    type: Number,
+    default: 0
+  },
+
   isFeatured: {
     type: Boolean,
     default: false,
@@ -134,7 +139,7 @@ const productSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Pre-save middleware to enforce exactly one default color
+// Pre-save middleware to enforce exactly one default color and calculate minPrice
 productSchema.pre('save', async function() {
     if (this.colorOptions && this.colorOptions.length > 0) {
         let defaultCount = this.colorOptions.filter(c => c.isDefault).length;
@@ -145,6 +150,12 @@ productSchema.pre('save', async function() {
                 c.isDefault = index === 0;
             });
         }
+    }
+    
+    if (this.variants && this.variants.length > 0) {
+        this.minPrice = Math.min(...this.variants.map(v => v.price));
+    } else {
+        this.minPrice = 0;
     }
 });
 
@@ -159,6 +170,7 @@ productSchema.index({ category: 1 });
 productSchema.index({ subcategory: 1 });
 productSchema.index({ isDeleted: 1, isActive: 1 });
 productSchema.index({ "variants.sku": 1 });
+productSchema.index({ minPrice: 1 });
 productSchema.index({ createdAt: -1 });
 
 /**

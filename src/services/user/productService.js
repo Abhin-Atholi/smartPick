@@ -1,6 +1,7 @@
 import Product from "../../model/productModel.js";
 import Category from "../../model/categoryModel.js";
 import Subcategory from "../../model/subcategoryModel.js";
+import * as offerHelper from "../../utils/offerHelper.js";
 
 /**
  * Fetch products for the main shop with filtering, sorting, and pagination
@@ -67,14 +68,14 @@ export const getStorefrontProducts = async (queryParams) => {
   const sizeArr = (Array.isArray(size) ? size : [size]).filter(s => s && s.trim() !== "");
   if (sizeArr.length > 0) filter["variants.size"] = { $in: sizeArr };
 
+  let filterMinPrice = null;
+  let filterMaxPrice = null;
   if (minPrice || maxPrice) {
-    const priceFilter = {};
     const getVal = (v) => Array.isArray(v) ? v[0] : v;
     const min = getVal(minPrice);
     const max = getVal(maxPrice);
-    if (min && !isNaN(min)) priceFilter.$gte = Number(min);
-    if (max && !isNaN(max)) priceFilter.$lte = Number(max);
-    if (Object.keys(priceFilter).length > 0) filter["variants.price"] = priceFilter;
+    if (min && !isNaN(min)) filterMinPrice = Number(min);
+    if (max && !isNaN(max)) filterMaxPrice = Number(max);
   }
 
   const trimmedSearch = search.trim();
@@ -83,29 +84,52 @@ export const getStorefrontProducts = async (queryParams) => {
     filter.$and = [{ $or: [{ name: regex }, { brand: regex }] }];
   }
 
-  /* ── 5. Sort ── */
-  let sortQuery = { createdAt: -1 };
-  switch (sort) {
-    case "price_asc": sortQuery = { "variants.price": 1 }; break;
-    case "price_desc": sortQuery = { "variants.price": -1 }; break;
-    case "name_asc": sortQuery = { name: 1 }; break;
-    case "name_desc": sortQuery = { name: -1 }; break;
-  }
-
-  /* ── 6. Pagination & Fetch ── */
-  const currentPage = Math.max(1, parseInt(page) || 1);
-  const totalProducts = await Product.countDocuments(filter);
-  const totalPages = Math.ceil(totalProducts / PER_PAGE) || 1;
-  const safePage = Math.min(currentPage, totalPages);
-
+  /* ── 5. Fetch All Matching & Apply Offers ── */
   const docs = await Product.find(filter)
-    .sort(sortQuery)
-    .skip((safePage - 1) * PER_PAGE)
-    .limit(PER_PAGE)
     .populate("category", "name")
     .populate("subcategory", "name");
 
-  const products = docs.map(d => d.toObject());
+  let products = docs.map(d => d.toObject());
+  products = await offerHelper.applyOffersToProducts(products);
+
+  /* ── 6. Memory Filter by Final Price ── */
+  if (filterMinPrice !== null || filterMaxPrice !== null) {
+      products = products.filter(p => {
+          const price = p.bestOffer ? p.bestOffer.finalPrice : p.minPrice;
+          if (filterMinPrice !== null && price < filterMinPrice) return false;
+          if (filterMaxPrice !== null && price > filterMaxPrice) return false;
+          return true;
+      });
+  }
+
+  /* ── 7. Memory Sort ── */
+  products.sort((a, b) => {
+      if (sort === "price_asc" || sort === "price_desc") {
+          const priceA = a.bestOffer ? a.bestOffer.finalPrice : a.minPrice;
+          const priceB = b.bestOffer ? b.bestOffer.finalPrice : b.minPrice;
+          return sort === "price_asc" ? priceA - priceB : priceB - priceA;
+      } else if (sort === "name_asc" || sort === "name_desc") {
+          const nameA = a.name.toLowerCase();
+          const nameB = b.name.toLowerCase();
+          if (nameA < nameB) return sort === "name_asc" ? -1 : 1;
+          if (nameA > nameB) return sort === "name_asc" ? 1 : -1;
+          return 0;
+      } else {
+          // newest
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+      }
+  });
+
+  /* ── 8. Pagination ── */
+  const currentPage = Math.max(1, parseInt(page) || 1);
+  const totalProducts = products.length;
+  const totalPages = Math.ceil(totalProducts / PER_PAGE) || 1;
+  const safePage = Math.min(currentPage, totalPages);
+  
+  const startIdx = (safePage - 1) * PER_PAGE;
+  products = products.slice(startIdx, startIdx + PER_PAGE);
 
   return {
     products,

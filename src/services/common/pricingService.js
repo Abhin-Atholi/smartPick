@@ -119,10 +119,16 @@ export const calculateOrderTotals = (items, couponData = null) => {
     let couponDiscount = 0;
     if (couponData) {
         if (couponData.discountType === 'flat') {
-            couponDiscount = Number(couponData.discountAmount || couponData.discountValue || 0);
+            couponDiscount = Number(couponData.discountValue || couponData.discountAmount || 0);
         } else if (couponData.discountType === 'percentage') {
-            const percentage = Number(couponData.discountAmount || couponData.discountValue || 0);
-            couponDiscount = (subtotal * percentage) / 100;
+            // ALWAYS use discountValue (the percentage) first.
+            const percentage = Number(couponData.discountValue);
+            if (isNaN(percentage) || percentage <= 0) {
+                // Robust Fallback: If discountValue is missing (e.g. legacy session), treat the pre-calculated discountAmount as a flat discount
+                couponDiscount = Number(couponData.discountAmount || 0);
+            } else {
+                couponDiscount = (subtotal * percentage) / 100;
+            }
         }
         
         if (couponData.maximumDiscount && couponDiscount > couponData.maximumDiscount) {
@@ -222,7 +228,7 @@ export const calculateOrderTotals = (items, couponData = null) => {
     });
 
     // 4. Handle Shipping
-    const amountForShippingCheck = subtotal - allocatedCouponTotal;
+    const amountForShippingCheck = subtotal;
     const shippingFee = (amountForShippingCheck >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD || amountForShippingCheck === 0) ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
 
     // 5. Final Grand Total
@@ -257,4 +263,49 @@ export const calculateOrderTotals = (items, couponData = null) => {
  */
 export const processPricing = (items, couponData = null) => {
     return calculateOrderTotals(items, couponData);
+};
+
+/**
+ * Validates the financial integrity of an order.
+ * @param {Object} order - The order object to validate
+ * @returns {boolean} True if financials are mathematically consistent
+ */
+export const validateOrderFinancials = (order) => {
+    try {
+        let itemsSum = 0;
+        let couponSum = 0;
+        
+        for (const item of order.items) {
+            itemsSum += Number(item.finalPriceAfterCoupon) || Number(item.totalPrice) || 0;
+            couponSum += Number(item.couponAllocated) || 0;
+        }
+        
+        itemsSum = roundCurrency(itemsSum);
+        couponSum = roundCurrency(couponSum);
+        
+        const shipping = Number(order.shippingFee) || 0;
+        const totalAmount = Number(order.totalAmount) || 0;
+        const tax = Number(order.tax) || 0;
+        
+        // Final Payable should be exactly sum of all item final prices + shipping
+        // (Note: finalPriceAfterCoupon already includes tax in Phase 2)
+        const expectedTotal = roundCurrency(itemsSum + shipping);
+        
+        if (Math.abs(expectedTotal - totalAmount) > 0.05) {
+            console.warn(`[PRICING INTEGRITY WARNING] Grand total mismatch on order ${order._id}. Expected: ${expectedTotal}, Actual: ${totalAmount}`);
+            return false;
+        }
+        
+        // Also check if coupon allocation matches order level discount
+        const orderCoupon = Number(order.discount) || 0;
+        if (Math.abs(couponSum - orderCoupon) > 0.05) {
+            console.warn(`[PRICING INTEGRITY WARNING] Coupon mismatch on order ${order._id}. Item sum: ${couponSum}, Order: ${orderCoupon}`);
+            return false;
+        }
+        
+        return true;
+    } catch (err) {
+        console.error('Error in validateOrderFinancials:', err);
+        return false;
+    }
 };

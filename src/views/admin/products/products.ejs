@@ -59,11 +59,6 @@
             <span class="absolute left-4 top-3 text-gray-400">🔍</span>
             <input name="search" value="<%= currentSearch %>" type="text" placeholder="Search by product name..."
                 class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm">
-            <% if (currentSearch && currentSearch.length> 0) { %>
-                <a href="/admin/products?status=<%= currentStatus %>&category=<%= currentCategory %>&subcategory=<%= currentSubcategory %>&sort=<%= currentSort %>&order=<%= currentOrder %>"
-                    class="absolute right-4 top-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold"
-                    title="Clear search">✕</a>
-                <% } %>
         </div>
         <div class="flex gap-2 flex-wrap sm:flex-nowrap">
             <select name="sort" onchange="document.getElementById('productOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
@@ -102,6 +97,16 @@
                 class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition text-sm">SEARCH</button>
         </div>
     </form>
+
+    <% if (currentSearch && currentSearch.length > 0) { %>
+        <div class="mt-4 flex items-center gap-2">
+            <span class="text-xs text-gray-500">Results for:</span>
+            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                "<%= currentSearch %>"
+                <a href="/admin/products?status=<%= currentStatus %>&category=<%= currentCategory %>&subcategory=<%= currentSubcategory %>&sort=<%= currentSort %>&order=<%= currentOrder %>" class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</a>
+            </span>
+        </div>
+    <% } %>
 </div>
 
 <!-- Product Table -->

@@ -148,14 +148,17 @@
                                         </p>
                                         <% if (item.isOutOfStock) { %>
                                             <p class="text-xs font-black text-red-600 mt-1">Out of Stock</p>
-                                            <% } else if (item.isLowStock) { %>
-                                                <p class="text-xs font-black text-red-500 mt-1">Only <%=
-                                                        item.availableStock %> left</p>
-                                                <% } else { %>
-                                                    <p class="text-sm font-black text-indigo-600 mt-1">₹<%=
-                                                            (item.effectiveTotalPrice || item.totalPrice).toLocaleString() %>
-                                                    </p>
-                                                    <% } %>
+                                        <% } else if (item.isLowStock) { %>
+                                            <p class="text-xs font-black text-red-500 mt-1">Only <%= item.availableStock %> left</p>
+                                        <% } else { %>
+                                            <% if (item.couponAllocated && item.couponAllocated > 0) { %>
+                                                <p class="text-xs font-bold text-gray-500 line-through mt-1">₹<%= (item.finalPriceBeforeCoupon || item.effectiveTotalPrice || item.totalPrice).toLocaleString() %></p>
+                                                <p class="text-xs font-bold text-indigo-600 mt-0.5">Coupon Applied -₹<%= item.couponAllocated.toLocaleString() %></p>
+                                                <p class="text-sm font-black text-gray-900 mt-0.5">Final Item Total ₹<%= (item.finalPriceAfterCoupon || 1).toLocaleString() %></p>
+                                            <% } else { %>
+                                                <p class="text-sm font-black text-indigo-600 mt-1">₹<%= (item.finalPriceAfterCoupon || item.effectiveTotalPrice || item.totalPrice).toLocaleString() %></p>
+                                            <% } %>
+                                        <% } %>
                                     </div>
                                 </div>
                                 <% }) %>

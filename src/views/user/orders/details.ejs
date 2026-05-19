@@ -170,9 +170,6 @@
 
                 <!-- Price & Qty (Phase 2 Immutable Snapshots + Phase 4 Formatter) -->
                 <div class="text-right flex-shrink-0">
-                  <!-- Final Paid Amount for this Line Item -->
-                  <p class="text-base font-black text-indigo-600"><%= item.formatted.finalPaidAmount %></p>
-                  
                   <% if (item.hasDiscount) { %>
                     <p class="text-[11px] text-gray-400 line-through"><%= item.formatted.totalOriginalAmount %></p>
                   <% } %>
@@ -194,6 +191,9 @@
                   <% if (item.hasTax) { %>
                     <p class="text-[10px] text-gray-500">Tax (5%): +<%= item.formatted.taxAmount %></p>
                   <% } %>
+                  
+                  <!-- Final Paid Amount for this Line Item -->
+                  <p class="text-base font-black text-indigo-600 mt-1"><%= item.formatted.finalPaidAmount %></p>
                   
                   <p class="text-xs text-gray-400 mt-1">Qty: <%= item.quantity %> &times; <%= item.formatted.unitPrice %></p>
                 </div>

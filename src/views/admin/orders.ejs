@@ -133,12 +133,24 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Search
       </button>
+      <% if(sf !== 'All' || sd !== '' || ed !== '' || so !== 'newest') { %>
       <a href="/admin/orders" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-bold rounded-xl transition flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        Clear
+        Clear Filters
       </a>
+      <% } %>
     </div>
   </form>
+
+  <% if (sq && sq.length > 0) { %>
+    <div class="mt-4 flex items-center gap-2">
+        <span class="text-xs text-gray-500">Results for:</span>
+        <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+            "<%= sq %>"
+            <a href="/admin/orders?status=<%= encodeURIComponent(sf) %>&dateFrom=<%= sd %>&dateTo=<%= ed %>&sort=<%= so %>" class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</a>
+        </span>
+    </div>
+  <% } %>
 </div>
 
 <!-- Orders Table -->

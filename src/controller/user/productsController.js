@@ -22,9 +22,6 @@ export const loadProducts = async (req, res) => {
       currentCategory, sidebarSubcategories, filterData 
     } = data;
 
-    // Enrich products with best offer info
-    products = await offerHelper.applyOffersToProducts(products);
-
     const startItem = totalProducts === 0 ? 0 : (currentPage - 1) * 6 + 1;
     const endItem = Math.min(currentPage * 6, totalProducts);
 

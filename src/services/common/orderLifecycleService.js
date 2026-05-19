@@ -174,6 +174,9 @@ const deriveOrderStatus = (order) => {
     // ── 5. ALL ACTIVE ITEMS ARE DELIVERED ─────────────────────────────────────
     if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Delivered')) {
         order.orderStatus = 'Delivered';
+        if (order.paymentMethod === 'COD' && order.paymentStatus === 'Pending') {
+            order.paymentStatus = 'Paid';
+        }
         return;
     }
 
@@ -367,6 +370,10 @@ export const updateOrderStatus = async (order, adminId, newStatus, session = nul
         if (!['Cancelled', 'Returned', 'Return Requested'].includes(item.itemStatus)) {
             item.itemStatus = newStatus;
         }
+    }
+
+    if (newStatus === 'Delivered' && order.paymentMethod === 'COD' && order.paymentStatus === 'Pending') {
+        order.paymentStatus = 'Paid';
     }
 
     auditLog(order, 'ADMIN_UPDATED_STATUS', adminId, 'Admin', prevStatus, newStatus,

@@ -6,14 +6,6 @@
             <input name="search" id="searchInput" value="<%= currentSearch %>" type="text"
                 placeholder="Search users by name or email..."
                 class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all">
-
-            <% if (currentSearch && currentSearch.length> 0) { %>
-                <a href="/admin/customers?status=<%= currentStatus %>"
-                    class="absolute right-4 top-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold"
-                    title="Clear search">
-                    ✕
-                </a>
-                <% } %>
         </div>
 
         <div class="flex gap-2">
@@ -30,6 +22,16 @@
             </button>
         </div>
     </form>
+
+    <% if (currentSearch && currentSearch.length > 0) { %>
+        <div class="mt-4 flex items-center gap-2">
+            <span class="text-xs text-gray-500">Results for:</span>
+            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                "<%= currentSearch %>"
+                <a href="/admin/customers?status=<%= currentStatus %>" class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</a>
+            </span>
+        </div>
+    <% } %>
 </div>
 
 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">

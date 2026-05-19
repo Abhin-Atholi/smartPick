@@ -34,10 +34,20 @@
             <option value="inactive" <%= status === 'inactive' ? 'selected' : '' %>>Inactive</option>
             <option value="expired" <%= status === 'expired' ? 'selected' : '' %>>Expired</option>
         </select>
-        <% if(search || offerType || status) { %>
-            <a href="/admin/offers" class="px-4 py-2.5 text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition">Clear</a>
+        <% if(offerType || status) { %>
+            <a href="/admin/offers" class="px-4 py-2.5 text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition">Clear Filters</a>
         <% } %>
     </form>
+    
+    <% if(search && search.length > 0) { %>
+        <div class="mt-4 flex items-center gap-2">
+            <span class="text-xs text-gray-500">Results for:</span>
+            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                "<%= search %>"
+                <a href="/admin/offers?status=<%= status %>&offerType=<%= offerType %>" class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</a>
+            </span>
+        </div>
+    <% } %>
 </div>
 
 <!-- Offers Table -->

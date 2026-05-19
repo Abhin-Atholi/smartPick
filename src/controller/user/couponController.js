@@ -49,7 +49,9 @@ export const applyCoupon = async (req, res) => {
         req.session.appliedCoupon = {
             code: result.coupon.code,
             discountType: result.coupon.discountType,
-            discountAmount: result.discountAmount
+            discountValue: result.coupon.discountValue,
+            discountAmount: result.discountAmount,
+            maximumDiscount: result.coupon.maximumDiscount
         };
 
         const shippingFee = effectiveSubtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;

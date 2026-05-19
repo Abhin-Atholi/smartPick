@@ -6,7 +6,7 @@
     <div class="grid lg:grid-cols-[280px_1fr] gap-6">
         <%- include("partials/accountSidebar", { active: "referrals" }) %>
 
-        <main class="space-y-6">
+        <main class="space-y-6 min-w-0">
 
             <!-- Hero Banner -->
             <div class="bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-700 rounded-2xl p-8 shadow-xl shadow-indigo-200 relative overflow-hidden">
@@ -24,7 +24,7 @@
             </div>
 
             <!-- Referral Code + Link Cards -->
-            <div class="grid sm:grid-cols-2 gap-4">
+            <div class="grid md:grid-cols-2 gap-4">
 
                 <!-- Referral Code -->
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
@@ -32,15 +32,15 @@
                         <span class="w-8 h-8 bg-indigo-100 rounded-xl grid place-items-center text-base">🔑</span>
                         <h2 class="text-sm font-black text-gray-900 uppercase tracking-wide">Your Referral Code</h2>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span id="refCodeDisplay"
-                            class="flex-1 font-mono font-black text-indigo-700 text-xl tracking-widest bg-indigo-50 border border-indigo-200 px-4 py-3 rounded-xl text-center">
+                    <div class="flex flex-col sm:flex-row items-stretch border border-indigo-200 rounded-xl overflow-hidden bg-indigo-50 mt-1">
+                        <div id="refCodeDisplay"
+                            class="flex-1 font-mono font-black text-indigo-700 text-lg sm:text-xl tracking-widest px-4 py-3 sm:py-4 select-all text-center sm:text-left flex items-center justify-center sm:justify-start">
                             <%= user.referralCode || 'N/A' %>
-                        </span>
+                        </div>
                         <button id="copyCodeBtn" onclick="copyText('<%= user.referralCode %>', 'copyCodeBtn', 'Code copied!')"
-                            class="flex-shrink-0 px-4 py-3 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            Copy
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-xs px-6 py-3 sm:py-0 flex items-center justify-center gap-2 sm:gap-1.5 transition active:opacity-90 w-full sm:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            Copy Code
                         </button>
                     </div>
                 </div>
@@ -56,14 +56,14 @@
                         const host = typeof req !== 'undefined' && req.get ? req.get('host') : 'localhost:3000';
                         const referralLink = `${protocol}://${host}/register?ref=${user.referralCode}`;
                     %>
-                    <div class="flex items-center gap-3">
-                        <span class="flex-1 font-mono text-[11px] text-gray-500 bg-gray-50 border border-gray-200 px-3 py-3 rounded-xl truncate">
+                    <div class="flex flex-col sm:flex-row items-stretch border border-gray-200 rounded-xl overflow-hidden bg-gray-50 mt-1">
+                        <div class="flex-1 min-w-0 font-mono text-xs text-gray-600 px-4 py-3 sm:py-4 select-all break-all sm:truncate text-center sm:text-left flex items-center justify-center sm:justify-start">
                             <%= referralLink %>
-                        </span>
+                        </div>
                         <button id="copyLinkBtn" onclick="copyText('<%= referralLink %>', 'copyLinkBtn', 'Link copied!')"
-                            class="flex-shrink-0 px-4 py-3 bg-violet-600 text-white font-bold text-xs rounded-xl hover:bg-violet-700 transition-all active:scale-95 flex items-center gap-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            Copy
+                            class="bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm sm:text-xs px-6 py-3 sm:py-0 flex items-center justify-center gap-2 sm:gap-1.5 transition active:opacity-90 w-full sm:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            Copy Link
                         </button>
                     </div>
                     <!-- Share Buttons -->
