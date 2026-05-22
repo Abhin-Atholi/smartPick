@@ -1,0 +1,254 @@
+<%- include("../partials/navbar") %>
+
+<section class="max-w-6xl mx-auto px-4 py-8">
+    <%- include("../partials/accountHeader", { breadcrumb: 'My Referrals' }) %>
+
+    <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+        <%- include("../partials/accountSidebar", { active: "referrals" }) %>
+
+        <main class="space-y-6 min-w-0">
+
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-700 rounded-2xl p-8 shadow-xl shadow-indigo-200 relative overflow-hidden">
+                <div class="absolute -top-12 -right-12 w-56 h-56 bg-white/10 rounded-full pointer-events-none"></div>
+                <div class="absolute -bottom-8 -left-8 w-40 h-40 bg-white/10 rounded-full pointer-events-none"></div>
+                <div class="absolute top-1/2 right-24 -translate-y-1/2 text-8xl opacity-20 pointer-events-none select-none">🎁</div>
+                <div class="relative z-10">
+                    <p class="text-violet-200 text-xs font-bold uppercase tracking-widest mb-2">Referral Program</p>
+                    <h1 class="text-2xl sm:text-3xl font-black text-white mb-2">Invite Friends, Earn Rewards!</h1>
+                    <p class="text-indigo-200 text-sm font-semibold">
+                        You earn <span class="text-white font-black">₹100</span> for every friend who places their first order.
+                        Your friend gets <span class="text-white font-black">₹50</span> added to their wallet on signup.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Referral Code + Link Cards -->
+            <div class="grid md:grid-cols-2 gap-4">
+
+                <!-- Referral Code -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-8 h-8 bg-indigo-100 rounded-xl grid place-items-center text-base">🔑</span>
+                        <h2 class="text-sm font-black text-gray-900 uppercase tracking-wide">Your Referral Code</h2>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-stretch border border-indigo-200 rounded-xl overflow-hidden bg-indigo-50 mt-1">
+                        <div id="refCodeDisplay"
+                            class="flex-1 font-mono font-black text-indigo-700 text-lg sm:text-xl tracking-widest px-4 py-3 sm:py-4 select-all text-center sm:text-left flex items-center justify-center sm:justify-start">
+                            <%= user.referralCode || 'N/A' %>
+                        </div>
+                        <button id="copyCodeBtn" onclick="copyText('<%= user.referralCode %>', 'copyCodeBtn', 'Code copied!')"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-xs px-6 py-3 sm:py-0 flex items-center justify-center gap-2 sm:gap-1.5 transition active:opacity-90 w-full sm:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            Copy Code
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Referral Link -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-8 h-8 bg-violet-100 rounded-xl grid place-items-center text-base">🔗</span>
+                        <h2 class="text-sm font-black text-gray-900 uppercase tracking-wide">Share Your Link</h2>
+                    </div>
+                    <%
+                        const protocol = typeof req !== 'undefined' && req.protocol ? req.protocol : 'http';
+                        const host = typeof req !== 'undefined' && req.get ? req.get('host') : 'localhost:3000';
+                        const referralLink = `${protocol}://${host}/register?ref=${user.referralCode}`;
+                    %>
+                    <div class="flex flex-col sm:flex-row items-stretch border border-gray-200 rounded-xl overflow-hidden bg-gray-50 mt-1">
+                        <div class="flex-1 min-w-0 font-mono text-xs text-gray-600 px-4 py-3 sm:py-4 select-all break-all sm:truncate text-center sm:text-left flex items-center justify-center sm:justify-start">
+                            <%= referralLink %>
+                        </div>
+                        <button id="copyLinkBtn" onclick="copyText('<%= referralLink %>', 'copyLinkBtn', 'Link copied!')"
+                            class="bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm sm:text-xs px-6 py-3 sm:py-0 flex items-center justify-center gap-2 sm:gap-1.5 transition active:opacity-90 w-full sm:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            Copy Link
+                        </button>
+                    </div>
+                    <!-- Share Buttons -->
+                    <div class="flex items-center gap-2 mt-3">
+                        <a href="https://wa.me/?text=<%= encodeURIComponent('Hey! Shop on SmartPick and get ₹50 wallet bonus on signup! Use my referral link: ' + referralLink) %>"
+                            target="_blank" rel="noopener noreferrer"
+                            class="flex items-center gap-1.5 text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            WhatsApp
+                        </a>
+                        <a href="https://t.me/share/url?url=<%= encodeURIComponent(referralLink) %>&text=<%= encodeURIComponent('Shop on SmartPick and get ₹50 wallet bonus!') %>"
+                            target="_blank" rel="noopener noreferrer"
+                            class="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                            Telegram
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How It Works -->
+            <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                <h2 class="text-sm font-black text-gray-900 uppercase tracking-wide mb-5">How It Works</h2>
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <div class="flex flex-col items-center text-center p-4 bg-indigo-50 rounded-xl">
+                        <div class="w-10 h-10 bg-indigo-600 text-white rounded-full grid place-items-center font-black text-base mb-3">1</div>
+                        <p class="font-bold text-gray-900 text-sm mb-1">Share Your Code</p>
+                        <p class="text-xs text-gray-500 leading-relaxed">Share your unique referral code or link with friends.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-4 bg-violet-50 rounded-xl">
+                        <div class="w-10 h-10 bg-violet-600 text-white rounded-full grid place-items-center font-black text-base mb-3">2</div>
+                        <p class="font-bold text-gray-900 text-sm mb-1">Friend Signs Up</p>
+                        <p class="text-xs text-gray-500 leading-relaxed">Your friend registers using your referral code and gets <span class="font-black text-violet-700">₹50</span> instantly.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-4 bg-green-50 rounded-xl">
+                        <div class="w-10 h-10 bg-green-600 text-white rounded-full grid place-items-center font-black text-base mb-3">3</div>
+                        <p class="font-bold text-gray-900 text-sm mb-1">You Earn ₹100</p>
+                        <p class="text-xs text-gray-500 leading-relaxed">After your friend places their first order, <span class="font-black text-green-700">₹100</span> is credited to your wallet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+                    <p class="text-3xl font-black text-indigo-600"><%= stats.totalReferrals %></p>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-wide mt-1">Total Referrals</p>
+                </div>
+                <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+                    <p class="text-3xl font-black text-green-600"><%= stats.successfulReferrals %></p>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-wide mt-1">Successful</p>
+                </div>
+                <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+                    <p class="text-3xl font-black text-amber-500"><%= stats.pendingReferrals %></p>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-wide mt-1">Pending</p>
+                </div>
+                <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+                    <p class="text-3xl font-black text-violet-600">₹<%= stats.totalEarned.toLocaleString() %></p>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-wide mt-1">Total Earned</p>
+                </div>
+            </div>
+
+            <!-- Referral History Table -->
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-black text-gray-900">Referral History</h2>
+                        <p class="text-xs text-gray-400 font-semibold mt-0.5"><%= stats.totalReferrals %> friend<%= stats.totalReferrals !== 1 ? 's' : '' %> referred</p>
+                    </div>
+                    <a href="/wallet" class="text-xs font-bold text-indigo-600 hover:underline transition">View Wallet →</a>
+                </div>
+
+                <% if (referralHistory.length === 0) { %>
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="text-5xl mb-4">🎁</div>
+                    <p class="font-black text-gray-800 text-base mb-1">No referrals yet</p>
+                    <p class="text-xs text-gray-400 font-semibold max-w-xs">Share your referral code with friends and start earning rewards!</p>
+                </div>
+                <% } else { %>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-100">
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">User</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Joined</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                <th class="px-5 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Reward</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <% referralHistory.forEach(entry => { %>
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-indigo-100 grid place-items-center flex-shrink-0">
+                                            <span class="text-indigo-700 font-black text-xs"><%= entry.name.charAt(0).toUpperCase() %></span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-900 text-xs"><%= entry.name %></p>
+                                            <p class="text-[10px] text-gray-400 font-semibold"><%= entry.email %></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <p class="text-xs font-bold text-gray-700">
+                                        <%= new Date(entry.joinedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                    </p>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <% if (entry.status === 'Completed') { %>
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-black text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+                                            Completed
+                                        </span>
+                                    <% } else { %>
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
+                                            Pending
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td class="px-5 py-4 text-right">
+                                    <% if (entry.rewardAmount > 0) { %>
+                                        <span class="font-black text-green-600 text-sm">+₹<%= entry.rewardAmount %></span>
+                                    <% } else { %>
+                                        <span class="text-xs text-gray-400 font-semibold">—</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </div>
+
+        </main>
+    </div>
+</section>
+
+<!-- Toast Notification -->
+<div id="copyToast"
+    class="fixed bottom-6 right-6 z-50 hidden bg-gray-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2 transition-all">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span id="toastMsg">Copied!</span>
+</div>
+
+<%- include("../partials/footer") %>
+<%- include("../partials/drawer") %>
+
+<script>
+    function copyText(text, btnId, toastMessage) {
+        if (!text || text === 'N/A') return;
+        navigator.clipboard.writeText(text).then(() => {
+            // Toast
+            const toast = document.getElementById('copyToast');
+            document.getElementById('toastMsg').textContent = toastMessage || 'Copied!';
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('flex');
+            }, 2500);
+
+            // Button feedback
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                const orig = btn.innerHTML;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }).catch(() => {
+            // Fallback for older browsers
+            const el = document.createElement('textarea');
+            el.value = text;
+            el.style.position = 'fixed';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        });
+    }
+</script>

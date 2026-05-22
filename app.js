@@ -83,7 +83,7 @@ app.use((req, res, next) => {
   next();
 });
 
-import * as orderService from "./src/services/user/orderService.js";
+import * as orderService from "./src/services/user/order.service.js";
 orderService.startStockCleanupTask();
 
 import { globalErrorHandler } from "./src/middleware/errorHandler.js";

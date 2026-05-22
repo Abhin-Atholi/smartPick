@@ -1,5 +1,5 @@
 import User from '../model/userModel.js';
-import * as walletService from '../services/user/walletService.js';
+import * as walletService from '../services/user/wallet.service.js';
 
 const REFERRER_REWARD = 100;
 const REFERRED_REWARD = 50;
@@ -65,3 +65,4 @@ export const validateReferralCode = async (code, signingUpUserId = null) => {
     }
     return referrer;
 };
+

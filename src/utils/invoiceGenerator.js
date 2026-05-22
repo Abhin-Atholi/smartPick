@@ -9,7 +9,7 @@
  */
 
 import PDFDocument from 'pdfkit';
-import { buildInvoiceData } from '../services/common/invoicePresentationService.js';
+import { buildInvoiceData } from '../services/common/invoicePresentation.service.js';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const INDIGO   = '#4f46e5';
@@ -530,3 +530,4 @@ export const generateInvoice = (order, res, disposition = 'inline') => {
 
     doc.end();
 };
+

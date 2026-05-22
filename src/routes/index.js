@@ -1,5 +1,5 @@
-import adminRoutes   from "./admin/adminRoutes.js";
-import userRoutes    from "./user/userRoutes.js";
+import adminRoutes   from "./admin/admin.routes.js";
+import userRoutes    from "./user/user.routes.js";
 
 const mountRoutes = (app) => {
   app.use("/admin", (req, res, next) => {
@@ -14,3 +14,4 @@ const mountRoutes = (app) => {
 };
 
 export default mountRoutes;
+

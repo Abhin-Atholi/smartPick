@@ -16,16 +16,32 @@ export const globalErrorHandler = (err, req, res, next) => {
         return res.status(400).json({ success: false, message: 'Only valid image formats are allowed.' });
     }
 
-    // 3. Prevent crashing for unknown errors and send JSON if it's an API request
-    const isAjax = req.xhr || req.headers.accept?.includes('application/json');
+    // 3. Check if it's an AJAX or API request
+    const isAjax = req.xhr || req.headers.accept?.includes('application/json') || req.path.startsWith('/api');
 
     if (isAjax) {
-        return res.status(err.status || 500).json({
+        return res.status(err.statusCode || err.status || 500).json({
             success: false,
             message: err.message || "Internal Server Error"
         });
     }
 
-    // 4. Default fallback for normal page loads
-    res.status(err.status || 500).send("Something went wrong on the server.");
+    // 4. For form submissions, redirect back to the previous page with error message
+    // If it's a POST/PUT/DELETE request and we have a referrer
+    if (req.method !== 'GET') {
+        const referer = req.get('Referrer');
+        if (referer) {
+            try {
+                const url = new URL(referer);
+                url.searchParams.set('msg', err.message || "Something went wrong");
+                // Use relative path to avoid host issues
+                return res.redirect(url.pathname + url.search);
+            } catch (e) {
+                // Ignore URL parsing errors
+            }
+        }
+    }
+
+    // 5. Default fallback for normal page loads (GET)
+    res.status(err.statusCode || err.status || 500).send(err.message || "Something went wrong on the server.");
 };

@@ -1,5 +1,5 @@
 import Offer from '../model/offerModel.js';
-import * as pricingService from '../services/common/pricingService.js';
+import * as pricingService from '../services/common/pricing.service.js';
 
 /**
  * Fetch all active applicable offers for a product and category.
@@ -170,3 +170,4 @@ export const applyOffersToProductsBatched = (products, allActiveOffers) => {
         return { ...p, bestOffer: bestOfferData };
     });
 };
+
