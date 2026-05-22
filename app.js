@@ -1,6 +1,7 @@
 import express from "express";
 import session from "express-session";
 import path from "path";
+import helmet from "helmet";
 import { fileURLToPath } from "url";
 import "dotenv/config";
 import connectDB from "./src/config/db.js";
@@ -16,6 +17,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+app.set("trust proxy", process.env.NODE_ENV === "production" ? 1 : false);
+
+app.use(helmet({
+  contentSecurityPolicy: false, // Allowed to load external CDN assets and inline scripts in EJS
+}));
+
 connectDB();
 
 // View Engine
@@ -35,7 +43,12 @@ app.use(session({
     secret: process.env.SESSION_SECRET || "Smartpick-secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 }
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    }
 }));
 
 

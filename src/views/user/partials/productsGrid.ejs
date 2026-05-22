@@ -1,25 +1,33 @@
 <!-- PARTIAL: productsGrid -->
 
-<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
   <% if (typeof products !=='undefined' && products.length> 0) { %>
     <% products.forEach(p=> { %>
-      <% const minPrice=p.variants && p.variants.length> 0
-        ? Math.min(...p.variants.map(v => v.price))
-        : 0;
+      <% 
+        const minPrice = p.variants && p.variants.length > 0
+          ? Math.min(...p.variants.map(v => v.price))
+          : 0;
         const formattedPrice = `₹${minPrice.toLocaleString()}`;
         const firstImage = p.defaultImage || 'https://placehold.co/600x700?text=No+Image';
         const catName = p.category ? p.category.name : 'Uncategorized';
+        const isOutOfStock = !p.variants || p.variants.length === 0 || p.variants.every(v => (v.stock || 0) === 0);
         %>
-        <article class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full relative">
+        <article class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full relative <%= isOutOfStock ? 'opacity-80' : '' %>">
           <div class="relative bg-gray-50 aspect-[4/5] overflow-hidden">
             <% if(p.isFeatured){ %>
               <span class="absolute left-3 top-3 z-10 text-[10px] font-black bg-amber-500 text-white px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">Featured</span>
             <% } %>
-            <a href="/products/details/<%= p._id %>" class="block w-full h-full">
-              <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            <a href="/products/details/<%= p._id %>" class="block w-full h-full relative">
+              <img class="w-full h-full object-cover transition-transform duration-700 <%= isOutOfStock ? '' : 'group-hover:scale-110' %>"
                 src="<%= firstImage %>" alt="<%= p.name %>" loading="lazy">
+              <% if (isOutOfStock) { %>
+                <span class="absolute bottom-0 inset-x-0 bg-slate-900/75 text-white text-[10px] font-black uppercase tracking-widest text-center py-2 pointer-events-none">
+                  Out of Stock
+                </span>
+              <% } %>
             </a>
-            
+
+
             <!-- Wishlist Heart Button -->
             <button onclick="toggleWishlist(this, '<%= p._id %>')" 
                     class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-100 flex items-center justify-center transition-all hover:bg-white <%= (typeof wishlistProductIds !== 'undefined' && wishlistProductIds.includes(p._id.toString())) ? 'text-red-500 border-red-100 shadow-sm' : 'text-gray-400' %>">
@@ -31,14 +39,14 @@
             </button>
           </div>
 
-          <div class="p-5 flex flex-col flex-1">
+          <div class="p-3 md:p-5 flex flex-col flex-1">
             <div class="mb-3">
               <a href="/products/details/<%= p._id %>">
-                <h3 class="font-black text-slate-800 text-sm truncate hover:text-indigo-600 transition-colors">
+                <h3 class="font-black text-slate-800 text-xs md:text-sm truncate hover:text-indigo-600 transition-colors">
                   <%= p.name %>
                 </h3>
               </a>
-              <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5"><%= catName %></p>
+              <p class="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5"><%= catName %></p>
             </div>
 
             <!-- Variants Preview: Sizes & Colors -->
@@ -68,23 +76,23 @@
               </div>
             </div>
 
-            <div class="pt-4 border-t border-gray-50 flex items-center justify-between gap-2">
+            <div class="pt-3 md:pt-4 border-t border-gray-50 flex items-center justify-between gap-2">
               <div>
                 <% 
                   const bestOffer = p.bestOffer;
                   const hasOffer = !!bestOffer;
                   const finalPrice = hasOffer ? bestOffer.finalPrice : minPrice;
                 %>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Price</p>
-                <div class="flex items-center gap-2">
-                  <p class="font-black text-base text-slate-900">₹<%= finalPrice.toLocaleString() %></p>
+                <p class="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Price</p>
+                <div class="flex items-center gap-1.5 md:gap-2">
+                  <p class="font-black text-sm md:text-base text-slate-900">₹<%= finalPrice.toLocaleString() %></p>
                   <% if(hasOffer) { %>
-                    <p class="text-[11px] text-gray-400 line-through">₹<%= minPrice.toLocaleString() %></p>
+                    <p class="text-[10px] md:text-[11px] text-gray-400 line-through">₹<%= minPrice.toLocaleString() %></p>
                   <% } %>
                 </div>
               </div>
               <% if(hasOffer) { %>
-                <span class="px-2 py-0.5 bg-rose-50 text-rose-600 text-[9px] font-black uppercase tracking-widest rounded-md border border-rose-100">
+                <span class="px-1.5 md:px-2 py-0.5 bg-rose-50 text-rose-600 text-[8px] md:text-[9px] font-black uppercase tracking-widest rounded-md border border-rose-100">
                   <%= bestOffer.discountType === 'flat' ? '₹' + bestOffer.discountValue + ' OFF' : bestOffer.discountValue + '% OFF' %>
                 </span>
               <% } %>

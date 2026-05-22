@@ -170,8 +170,11 @@ productSchema.index({ category: 1 });
 productSchema.index({ subcategory: 1 });
 productSchema.index({ isDeleted: 1, isActive: 1 });
 productSchema.index({ "variants.sku": 1 });
+productSchema.index({ "variants.size": 1 });
 productSchema.index({ minPrice: 1 });
 productSchema.index({ createdAt: -1 });
+productSchema.index({ brand: 1 });
+productSchema.index({ name: "text", brand: "text", description: "text" });
 
 /**
  * VIRTUAL: Comprehensive Availability Check

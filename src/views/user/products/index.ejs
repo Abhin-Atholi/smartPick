@@ -93,7 +93,7 @@
                           placeholder="Search products..."
                           class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-indigo-500 transition-all">
                       </div>
-                      <select name="sort" onchange="handleFilterChange()"
+                      <select name="sort" onchange="handleFilterChange(event)"
                         class="border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-800 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer h-full">
                         <option value="newest" <%=sortVal==='newest' ? 'selected' : '' %>>Newest</option>
                         <option value="price_asc" <%=sortVal==='price_asc' ? 'selected' : '' %>>Price ↑</option>
@@ -104,18 +104,14 @@
                     </div>
           </form>
 
-          <!-- Active search chip -->
-          <% if (activeSearch) { %>
-            <div id="searchChipContainer" class="mt-2 flex items-center gap-2">
-              <span class="text-xs text-gray-500">Results for:</span>
-              <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold
-                         px-3 py-1 rounded-full border border-indigo-200">
-                "<%= activeSearch %>"
-                  <button type="button" onclick="clearSearch()" class="text-indigo-400 hover:text-indigo-600 ml-0.5"
-                    title="Clear">✕</button>
-              </span>
-            </div>
-            <% } %>
+          <!-- Active search chip (always present, shown/hidden by JS) -->
+          <div id="searchChipContainer" class="mt-2 flex items-center gap-2" style="<%= activeSearch ? '' : 'display:none;' %>">
+            <span class="text-xs text-gray-500">Results for:</span>
+            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+              <span class="search-chip-text">"<%= activeSearch %>"</span>
+              <button type="button" onclick="clearSearch()" class="text-indigo-400 hover:text-indigo-600 ml-0.5" title="Clear">✕</button>
+            </span>
+          </div>
 
               </form>
 
@@ -160,15 +156,15 @@
                     <input type="hidden" name="sort" value="<%= sortVal %>">
 
                     <!-- ── CLEAR ALL FILTERS ── -->
-                    <% if (activeSubIds.length> 0 || activeMin || activeMax || activeSizes.length > 0 || activeSearch) { %>
-                      <a href="/products<%= catName ? '?category=' + catSlug : '' %>" class="mb-4 flex items-center justify-center gap-1.5 w-full rounded-xl bg-red-50 border border-red-100 text-red-600 font-black text-xs py-2 hover:bg-red-100 transition-colors">
+                    <div id="desktopClearFilters" class="<%= (activeSubIds.length > 0 || activeMin || activeMax || activeSizes.length > 0 || activeSearch) ? '' : 'hidden' %>">
+                      <button type="button" onclick="clearAllFilters()" class="mb-4 flex items-center justify-center gap-1.5 w-full rounded-xl bg-red-50 border border-red-100 text-red-600 font-black text-xs py-2 hover:bg-red-100 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18" />
                           <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                         Clear All Filters
-                      </a>
-                    <% } %>
+                      </button>
+                    </div>
 
                     <!-- ── SUBCATEGORIES ── -->
                     <% if (subCats.length> 0) { %>
@@ -184,19 +180,17 @@
                           </svg>
                         </button>
                         <div id="catSection" class="space-y-2">
-                          <label class="flex items-center gap-2.5 cursor-pointer">
-                            <input type="checkbox" id="checkAll" name="sub" value=""
-                              class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                              <%=activeSubIds.length===0 ? 'checked' : '' %>
-                            onchange="handleAllCheck(this)">
-                            <span class="text-sm font-bold text-gray-800">All</span>
-                          </label>
+                          <div class="mb-2">
+                            <button type="button" onclick="clearSubcategories()" class="text-[11px] font-black text-red-500 hover:text-red-700 transition-colors">
+                              × Clear Sub-Categories
+                            </button>
+                          </div>
                           <% subCats.forEach(sc=> { %>
                             <label class="flex items-center gap-2.5 cursor-pointer">
                               <input type="checkbox" name="sub" value="<%= sc._id %>"
                                 class="sub-check w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                 <%=activeSubIds.includes(sc._id.toString()) ? 'checked' : '' %>
-                                onchange="handleSubCheck(this)">
+                                onchange="handleFilterChange(event)">
                               <span class="text-sm text-gray-600">
                                 <%= sc.name %>
                               </span>
@@ -283,7 +277,7 @@
                               const isActive = activeSizes.includes(size);
                               %>
                               <label class="cursor-pointer">
-                                <input type="checkbox" name="size" value="<%= size %>" class="peer sr-only" <%=isActive ? 'checked' : '' %> onchange="handleFilterChange()">
+                                <input type="checkbox" name="size" value="<%= size %>" class="peer sr-only" <%=isActive ? 'checked' : '' %> onchange="handleFilterChange(event)">
                                 <span class="block text-center text-xs font-bold py-1.5 rounded-xl border-2 transition-colors 
                                   border-gray-200 text-gray-600 hover:border-indigo-400 
                                   peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
@@ -346,19 +340,17 @@
                   <div class="mb-6">
                     <p class="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Sub-Categories</p>
                     <div class="space-y-2.5 max-h-48 overflow-y-auto pr-2 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
-                      <label class="flex items-center gap-2.5 cursor-pointer">
-                        <input type="checkbox" id="mobileCheckAll" name="sub" value=""
-                          class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          <%=activeSubIds.length===0 ? 'checked' : '' %>
-                        onchange="handleMobileAllCheck(this)">
-                        <span class="text-sm font-bold text-gray-800">All</span>
-                      </label>
+                      <div class="mb-2">
+                        <button type="button" onclick="clearSubcategories()" class="text-[11px] font-black text-red-500 hover:text-red-700 transition-colors">
+                          × Clear Sub-Categories
+                        </button>
+                      </div>
                       <% subCats.forEach(sc=> { %>
                         <label class="flex items-center gap-2.5 cursor-pointer">
                           <input type="checkbox" name="sub" value="<%= sc._id %>"
                             class="mobile-sub-check w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                             <%=activeSubIds.includes(sc._id.toString()) ? 'checked' : '' %>
-                            onchange="handleMobileSubCheck(this)">
+                            onchange="handleFilterChange(event)">
                           <span class="text-sm text-gray-600"><%= sc.name %></span>
                         </label>
                       <% }) %>
@@ -414,13 +406,11 @@
                 </div>
               </form>
             </div>
-            <% if (activeSizes.length > 0 || activeSearch || catName) { %>
-              <div class="p-6 border-t border-gray-200 bg-white">
-                <a href="/products" class="flex items-center justify-center gap-2 w-full rounded-xl bg-red-50 border border-red-100 text-red-600 font-black text-sm py-3 hover:bg-red-100 transition-colors">
-                  Clear All Filters
-                </a>
-              </div>
-            <% } %>
+            <div id="mobileClearFilters" class="p-6 border-t border-gray-200 bg-white <%= (activeSubIds.length > 0 || activeMin || activeMax || activeSizes.length > 0 || activeSearch) ? '' : 'hidden' %>">
+              <button type="button" onclick="clearAllFilters()" class="flex items-center justify-center gap-2 w-full rounded-xl bg-red-50 border border-red-100 text-red-600 font-black text-sm py-3 hover:bg-red-100 transition-colors">
+                Clear All Filters
+              </button>
+            </div>
           </div>
           <script>
             function openMobileFilters() {
@@ -446,6 +436,38 @@
               }, 300);
             }
           </script>
+          <!-- ── ACTIVE FILTER CHIPS ── -->
+          <style>
+            .chip-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              background: #eef2ff;
+              border: 1px solid #c7d2fe;
+              color: #4338ca;
+              font-size: 11px;
+              font-weight: 800;
+              padding: 4px 10px;
+              border-radius: 999px;
+              white-space: nowrap;
+            }
+            .chip-x {
+              background: none;
+              border: none;
+              color: #818cf8;
+              font-size: 11px;
+              cursor: pointer;
+              padding: 0;
+              line-height: 1;
+              transition: color .15s;
+            }
+            .chip-x:hover { color: #4f46e5; }
+          </style>
+          <div id="activeFilterChips"
+               class="flex flex-wrap gap-2 mb-4"
+               style="display:none;">
+          </div>
+
           <!-- ── PRODUCT GRID + PAGINATION CONTAINER ── -->
           <div id="productContent" class="transition-opacity duration-300">
             <div class="mb-10">
@@ -465,181 +487,450 @@
       <%- include("../partials/drawer") %>
 
         <script>
-          /* ── Clear Search ── */
-          function clearSearch() {
-            const input = document.getElementById('searchInput');
-            if (input) {
-              input.value = '';
-            }
-            
-            // Clear any hidden search inputs in forms so they don't override the clear action
-            document.querySelectorAll('input[name="search"]').forEach(el => {
-              el.value = '';
+          /* ════════════════════════════════════════════════════════════════
+           * SmartPick Product Listing — Filter Engine v2
+           * Architecture: URL ↔ filterState ↔ UI ↔ AJAX ↔ Backend
+           * Single source of truth: filterState object only.
+           * DOM is render-only — never read for state.
+           * ════════════════════════════════════════════════════════════════ */
+
+          /* ── 1. CENTRALIZED FILTER STATE (seeded from server render) ── */
+          const filterState = {
+            category: '<%- catName %>',
+            search:   '<%- activeSearch %>',
+            sort:     '<%- sortVal %>',
+            minPrice: '<%- activeMin %>',
+            maxPrice: '<%- activeMax %>',
+            sizes:    new Set(<%-  JSON.stringify(activeSizes) %>),
+            subcategories: new Set(<%-  JSON.stringify(activeSubIds) %>),
+            page: <%- activePage %>
+          };
+
+          /* ── 2. ABORT CONTROLLER — prevents stale race conditions ── */
+          let currentAbortController = null;
+
+          /* ── 3. DEBOUNCE HANDLE ── */
+          let searchDebounce = null;
+
+          /* ── 4. PAGE CHANGE FLAG — controls scroll behavior ── */
+          let _pageChanging = false;
+
+          /* ══════════════════════════════════════════════════════════════
+           * DOM SYNC HELPERS — DOM is write-only from JS perspective
+           * ══════════════════════════════════════════════════════════════ */
+
+          /** Mirror a checkbox change across desktop + mobile DOMs */
+          function syncCheckbox(name, value, checked) {
+            document.querySelectorAll(`input[name="${name}"][value="${value}"]`).forEach(el => {
+              if (el.checked !== checked) el.checked = checked;
             });
-
-            const clearBtn = document.getElementById('clearBtn');
-            if (clearBtn) clearBtn.classList.add('hidden');
-            
-            const searchChip = document.getElementById('searchChipContainer');
-            if (searchChip) searchChip.style.display = 'none';
-
-            handleFilterChange();
           }
 
-          /* ── Sidebar section collapse ── */
+          /** Repaint all checkboxes to match filterState */
+          function renderCheckboxes() {
+            document.querySelectorAll('input[name="size"]').forEach(el => {
+              el.checked = filterState.sizes.has(el.value);
+            });
+            document.querySelectorAll('input[name="sub"]').forEach(el => {
+              el.checked = filterState.subcategories.has(el.value);
+            });
+          }
+
+          /** Repaint sort dropdown */
+          function renderSort() {
+            document.querySelectorAll('select[name="sort"]').forEach(el => {
+              el.value = filterState.sort;
+            });
+          }
+
+          /** Repaint price range sliders and number inputs */
+          function renderPriceUI() {
+            const minVal = filterState.minPrice ? parseInt(filterState.minPrice) : 0;
+            const maxVal = filterState.maxPrice ? parseInt(filterState.maxPrice) : 10000;
+            const minSlider = document.getElementById('rangeMin');
+            const maxSlider = document.getElementById('rangeMax');
+            if (minSlider) minSlider.value = minVal;
+            if (maxSlider) maxSlider.value = maxVal;
+            updateRange();
+          }
+
+          /** Repaint search box */
+          function renderSearch() {
+            const input = document.getElementById('searchInput');
+            if (input && input.value !== filterState.search) input.value = filterState.search;
+
+            const chip = document.getElementById('searchChipContainer');
+            if (chip) {
+              if (filterState.search) {
+                chip.style.display = 'flex';
+                const chipText = chip.querySelector('.search-chip-text');
+                if (chipText) chipText.textContent = `"${filterState.search}"`;
+              } else {
+                chip.style.display = 'none';
+              }
+            }
+          }
+
+          /** Repaint the active filter chips bar */
+          function renderFilterChips() {
+            const bar = document.getElementById('activeFilterChips');
+            if (!bar) return;
+
+            const chips = [];
+
+            filterState.sizes.forEach(size => {
+              chips.push(`<span class="chip-badge">
+                Size: <strong>${size}</strong>
+                <button onclick="removeFilter('size','${size}')" class="chip-x" title="Remove">✕</button>
+              </span>`);
+            });
+
+            filterState.subcategories.forEach(id => {
+              const label = document.querySelector(`input[name="sub"][value="${id}"]`)
+                            ?.closest('label')?.querySelector('span')?.textContent?.trim() || id;
+              chips.push(`<span class="chip-badge">
+                ${label}
+                <button onclick="removeFilter('sub','${id}')" class="chip-x" title="Remove">✕</button>
+              </span>`);
+            });
+
+            if (filterState.minPrice || filterState.maxPrice) {
+              const min = filterState.minPrice || '0';
+              const max = filterState.maxPrice || '10000';
+              chips.push(`<span class="chip-badge">
+                ₹${min}–₹${max}
+                <button onclick="removeFilter('price','')" class="chip-x" title="Remove">✕</button>
+              </span>`);
+            }
+
+            if (filterState.search) {
+              chips.push(`<span class="chip-badge">
+                Search: <strong>${filterState.search}</strong>
+                <button onclick="removeFilter('search','')" class="chip-x" title="Remove">✕</button>
+              </span>`);
+            }
+
+            bar.innerHTML = chips.length
+              ? chips.join('')
+              : '';
+            bar.style.display = chips.length ? 'flex' : 'none';
+
+            // Show/hide legacy clear-all buttons
+            const hasFilters = chips.length > 0;
+            document.getElementById('desktopClearFilters')?.classList.toggle('hidden', !hasFilters);
+            document.getElementById('mobileClearFilters')?.classList.toggle('hidden', !hasFilters);
+          }
+
+          /** Full UI repaint from filterState (used by popstate and clearAll) */
+          function repaintUI() {
+            renderCheckboxes();
+            renderSort();
+            renderPriceUI();
+            renderSearch();
+            renderFilterChips();
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+           * PRICE RANGE SLIDER
+           * ══════════════════════════════════════════════════════════════ */
+          function updateRange(type) {
+            const minSlider = document.getElementById('rangeMin');
+            const maxSlider = document.getElementById('rangeMax');
+            const minDisp   = document.getElementById('minDisplay');
+            const maxDisp   = document.getElementById('maxDisplay');
+            const mobileMin = document.getElementById('mobileMinDisplay');
+            const mobileMax = document.getElementById('mobileMaxDisplay');
+            const track     = document.getElementById('priceTrack');
+
+            if (!minSlider || !maxSlider || !track) return;
+
+            const LIMIT = 10000;
+            let minVal = parseInt(minSlider.value) || 0;
+            let maxVal = parseInt(maxSlider.value) || LIMIT;
+
+            if (type === 'min' && minVal > maxVal) { minVal = maxVal; minSlider.value = minVal; }
+            else if (type === 'max' && maxVal < minVal) { maxVal = minVal; maxSlider.value = maxVal; }
+
+            const pct = v => (v / LIMIT) * 100;
+            track.style.left  = pct(minVal) + '%';
+            track.style.width = (pct(maxVal) - pct(minVal)) + '%';
+
+            if (minDisp) minDisp.value = minVal;
+            if (maxDisp) maxDisp.value = maxVal;
+            if (mobileMin) mobileMin.value = minVal;
+            if (mobileMax) mobileMax.value = maxVal;
+
+            // Write to filterState — not to DOM next time
+            filterState.minPrice = minVal > 0    ? String(minVal)  : '';
+            filterState.maxPrice = maxVal < LIMIT ? String(maxVal) : '';
+          }
+
+          // Init sliders on load
+          updateRange();
+
+          document.getElementById('minDisplay')?.addEventListener('change', function () {
+            const val = Math.max(0, Math.min(parseInt(this.value) || 0, 10000));
+            const slider = document.getElementById('rangeMin');
+            if (slider) { slider.value = val; updateRange('min'); }
+          });
+          document.getElementById('maxDisplay')?.addEventListener('change', function () {
+            const val = Math.max(0, Math.min(parseInt(this.value) || 10000, 10000));
+            const slider = document.getElementById('rangeMax');
+            if (slider) { slider.value = val; updateRange('max'); }
+          });
+
+          /* ══════════════════════════════════════════════════════════════
+           * SEARCH — 300ms debounce + Enter shortcut
+           * ══════════════════════════════════════════════════════════════ */
+          const searchInput = document.getElementById('searchInput');
+          if (searchInput) {
+            searchInput.addEventListener('input', e => {
+              filterState.search = e.target.value;
+              clearTimeout(searchDebounce);
+              searchDebounce = setTimeout(() => {
+                filterState.page = 1;
+                fetchFilteredProducts();
+              }, 300);
+            });
+            searchInput.addEventListener('keydown', e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchDebounce);
+                filterState.page = 1;
+                fetchFilteredProducts();
+              }
+            });
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+           * FILTER EVENT ROUTER
+           * All interactions go through here → update filterState → fetch
+           * ══════════════════════════════════════════════════════════════ */
+          function handleFilterChange(event, pageNum) {
+            if (event) event.preventDefault();
+
+            if (pageNum !== undefined) {
+              _pageChanging = true;
+              filterState.page = pageNum;
+            } else {
+              filterState.page = 1;
+            }
+
+            if (event && event.target) {
+              const t = event.target;
+
+              if (t.type === 'checkbox') {
+                const { name, value, checked } = t;
+                // Sync counterpart (desktop ↔ mobile)
+                syncCheckbox(name, value, checked);
+                if (name === 'size') {
+                  checked ? filterState.sizes.add(value) : filterState.sizes.delete(value);
+                } else if (name === 'sub') {
+                  checked ? filterState.subcategories.add(value) : filterState.subcategories.delete(value);
+                }
+              }
+
+              if (t.name === 'sort') {
+                filterState.sort = t.value;
+              }
+
+              if (t.id === 'mobileMinDisplay') {
+                const slider = document.getElementById('rangeMin');
+                if (slider) { slider.value = t.value || 0; updateRange('min'); }
+              }
+              if (t.id === 'mobileMaxDisplay') {
+                const slider = document.getElementById('rangeMax');
+                if (slider) { slider.value = t.value || 10000; updateRange('max'); }
+              }
+            }
+
+            renderFilterChips();
+            fetchFilteredProducts();
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+           * CHIP REMOVAL — individual filter chip ✕ handlers
+           * ══════════════════════════════════════════════════════════════ */
+          function removeFilter(type, value) {
+            filterState.page = 1;
+            if (type === 'size') {
+              filterState.sizes.delete(value);
+              syncCheckbox('size', value, false);
+            } else if (type === 'sub') {
+              filterState.subcategories.delete(value);
+              syncCheckbox('sub', value, false);
+            } else if (type === 'price') {
+              filterState.minPrice = '';
+              filterState.maxPrice = '';
+              const minSlider = document.getElementById('rangeMin');
+              const maxSlider = document.getElementById('rangeMax');
+              if (minSlider) minSlider.value = 0;
+              if (maxSlider) maxSlider.value = 10000;
+              updateRange();
+            } else if (type === 'search') {
+              filterState.search = '';
+              renderSearch();
+            }
+            renderFilterChips();
+            fetchFilteredProducts();
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+           * CLEAR FUNCTIONS
+           * ══════════════════════════════════════════════════════════════ */
+          function clearSearch() {
+            filterState.search = '';
+            filterState.page = 1;
+            renderSearch();
+            renderFilterChips();
+            fetchFilteredProducts();
+          }
+
+          function clearSubcategories() {
+            filterState.subcategories.clear();
+            filterState.page = 1;
+            renderCheckboxes();
+            renderFilterChips();
+            fetchFilteredProducts();
+          }
+
+          function clearAllFilters() {
+            filterState.sizes.clear();
+            filterState.subcategories.clear();
+            filterState.search   = '';
+            filterState.minPrice = '';
+            filterState.maxPrice = '';
+            filterState.sort     = 'newest';
+            filterState.page     = 1;
+            repaintUI();
+            fetchFilteredProducts();
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+           * SIDEBAR ACCORDION TOGGLE
+           * ══════════════════════════════════════════════════════════════ */
           function toggleSection(id) {
             const section = document.getElementById(id);
-            const chevronId = id.replace('Section', 'Chevron');
-            const chevron = document.getElementById(chevronId);
+            const chevron = document.getElementById(id.replace('Section', 'Chevron'));
             if (!section) return;
             const hidden = section.style.display === 'none';
             section.style.display = hidden ? '' : 'none';
             if (chevron) chevron.style.transform = hidden ? '' : 'rotate(180deg)';
           }
 
-          /* ── "All" sub-category checkbox ── */
-          function handleAllCheck(el) {
-            if (el.checked) {
-              document.querySelectorAll('.sub-check').forEach(c => c.checked = false);
-            }
-            handleFilterChange();
+          /* ══════════════════════════════════════════════════════════════
+           * BUILD QUERY PARAMS — 100% from filterState, never from DOM
+           * ══════════════════════════════════════════════════════════════ */
+          function buildParams(includeAjax = false) {
+            const params = new URLSearchParams();
+            if (filterState.category)  params.set('category', filterState.category);
+            if (filterState.search)    params.set('search',   filterState.search);
+            if (filterState.sort)      params.set('sort',     filterState.sort);
+            if (filterState.minPrice)  params.set('minPrice', filterState.minPrice);
+            if (filterState.maxPrice)  params.set('maxPrice', filterState.maxPrice);
+            filterState.sizes.forEach(s  => params.append('size', s));
+            filterState.subcategories.forEach(id => params.append('sub', id));
+            params.set('page', String(filterState.page));
+            if (includeAjax) params.set('ajax', 'true');
+            return params;
           }
 
-          function handleSubCheck(el) {
-            if (el.checked) {
-              const checkAll = document.getElementById('checkAll');
-              if (checkAll) checkAll.checked = false;
+          /* ══════════════════════════════════════════════════════════════
+           * AJAX FETCH — AbortController prevents stale responses
+           * ══════════════════════════════════════════════════════════════ */
+          async function fetchFilteredProducts() {
+            // Cancel any in-flight request
+            if (currentAbortController) {
+              currentAbortController.abort();
             }
-            handleFilterChange();
-          }
+            currentAbortController = new AbortController();
+            const signal = currentAbortController.signal;
 
-          function handleMobileAllCheck(el) {
-            if (el.checked) {
-              document.querySelectorAll('.mobile-sub-check').forEach(c => c.checked = false);
-            }
-            handleFilterChange();
-          }
-
-          function handleMobileSubCheck(el) {
-            if (el.checked) {
-              const checkAll = document.getElementById('mobileCheckAll');
-              if (checkAll) checkAll.checked = false;
-            }
-            handleFilterChange();
-          }
-
-          /* ── Dual price-range slider ── */
-          function updateRange(type) {
-            const minSlider = document.getElementById('rangeMin');
-            const maxSlider = document.getElementById('rangeMax');
-            const minDisp = document.getElementById('minDisplay');
-            const maxDisp = document.getElementById('maxDisplay');
-            const track = document.getElementById('priceTrack');
-            if (!minSlider || !maxSlider || !track) return;
-
-            let minVal = parseInt(minSlider.value);
-            let maxVal = parseInt(maxSlider.value);
-            const LIMIT = 10000;
-
-            if (type === 'min' && minVal > maxVal) {
-              minVal = maxVal;
-              minSlider.value = minVal;
-            } else if (type === 'max' && maxVal < minVal) {
-              maxVal = minVal;
-              maxSlider.value = maxVal;
-            }
-
-            const pct = v => (v / LIMIT) * 100;
-            track.style.left = pct(minVal) + '%';
-            track.style.width = (pct(maxVal) - pct(minVal)) + '%';
-
-            if (minDisp) minDisp.value = minVal;
-            if (maxDisp) maxDisp.value = maxVal;
-          }
-
-          updateRange();
-
-          document.getElementById('minDisplay')?.addEventListener('change', function () {
-            const val = Math.max(0, Math.min(parseInt(this.value) || 0, 10000));
-            document.getElementById('rangeMin').value = val;
-            updateRange('min');
-          });
-          document.getElementById('maxDisplay')?.addEventListener('change', function () {
-            const val = Math.max(0, Math.min(parseInt(this.value) || 10000, 10000));
-            document.getElementById('rangeMax').value = val;
-            updateRange('max');
-          });
-
-          /* ── AJAX Filter Handler ── */
-          async function handleFilterChange(event, pageNum = 1) {
-            if (event) event.preventDefault();
-
-            const isMobile = window.innerWidth < 1024;
-            const filterForm = isMobile ? document.getElementById('mobileFilterForm') : document.getElementById('filterForm');
-            const searchForm = document.getElementById('searchForm');
+            const params  = buildParams(true);
             const content = document.getElementById('productContent');
             const countText = document.getElementById('resultsCount');
 
-            // Collect all params
-            const params = new URLSearchParams();
-
-            if (filterForm) {
-              const formData = new FormData(filterForm);
-              for (let [key, val] of formData.entries()) { if (val) params.append(key, val); }
-            }
-            if (searchForm) {
-              const searchData = new FormData(searchForm);
-              for (let [key, val] of searchData.entries()) {
-                if (val) {
-                  // Interactive sort/search values should ALWAYS overwrite hidden state
-                  if (key === 'sort' || key === 'search') {
-                    params.set(key, val);
-                  } else if (key !== 'sub' && !params.has(key)) {
-                    // Avoid appending stale 'sub' or other filters from searchForm
-                    params.append(key, val);
-                  }
-                }
-              }
-            }
-
-            params.set('page', pageNum);
-            params.set('ajax', 'true');
-
-            // Visual feedback
             if (content) {
               content.style.opacity = '0.5';
               content.style.pointerEvents = 'none';
             }
 
             try {
-              const response = await fetch('/products?' + params.toString());
+              const response = await fetch('/products?' + params.toString(), { signal });
               const data = await response.json();
 
               if (data.success) {
                 if (content) {
-                  content.innerHTML = `<div class="mb-10">${data.gridHtml}</div><div id="paginationContainer">${data.paginationHtml}</div>`;
+                  content.innerHTML =
+                    `<div class="mb-10">${data.gridHtml}</div>` +
+                    `<div id="paginationContainer">${data.paginationHtml}</div>`;
                 }
                 if (countText) {
-                  countText.innerHTML = `Showing <span class="font-bold text-gray-800">${data.startItem}–${data.endItem}</span> of <span class="font-bold text-gray-800">${data.totalProducts}</span> products`;
+                  countText.innerHTML =
+                    `Showing <span class="font-bold text-gray-800">${data.startItem}–${data.endItem}</span>` +
+                    ` of <span class="font-bold text-gray-800">${data.totalProducts}</span> products`;
                 }
 
-                // Update URL
-                params.delete('ajax');
-                const newUrl = '/products?' + params.toString();
-                window.history.pushState({ path: newUrl }, '', newUrl);
+                // Push clean URL (no ajax param)
+                const cleanParams = buildParams(false);
+                const newUrl = '/products?' + cleanParams.toString();
+                window.history.pushState({ filterState: serializeState() }, '', newUrl);
+
+                // Scroll only on page navigation
+                if (_pageChanging) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  _pageChanging = false;
+                }
               }
             } catch (err) {
-              console.error('Filter Error:', err);
+              if (err.name === 'AbortError') {
+                // Expected — a newer request cancelled this one
+                return;
+              }
+              console.error('Filter Fetch Error:', err);
             } finally {
               if (content) {
                 content.style.opacity = '1';
                 content.style.pointerEvents = 'auto';
               }
-              window.scrollTo({ top: 0, behavior: 'smooth' });
             }
           }
 
-          // addToCart and toggleWishlist are now handled by the global layout.ejs scripts
+          /* ══════════════════════════════════════════════════════════════
+           * BROWSER BACK / FORWARD — restore filterState from URL
+           * ══════════════════════════════════════════════════════════════ */
+          function serializeState() {
+            return {
+              category: filterState.category,
+              search:   filterState.search,
+              sort:     filterState.sort,
+              minPrice: filterState.minPrice,
+              maxPrice: filterState.maxPrice,
+              sizes:    [...filterState.sizes],
+              subcategories: [...filterState.subcategories],
+              page:     filterState.page
+            };
+          }
 
-          window.onpopstate = function () { window.location.reload(); };
+          function restoreStateFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            filterState.category  = params.get('category')  || '';
+            filterState.search    = params.get('search')    || '';
+            filterState.sort      = params.get('sort')      || 'newest';
+            filterState.minPrice  = params.get('minPrice')  || '';
+            filterState.maxPrice  = params.get('maxPrice')  || '';
+            filterState.page      = parseInt(params.get('page')) || 1;
+            filterState.sizes     = new Set(params.getAll('size'));
+            filterState.subcategories = new Set(params.getAll('sub'));
+          }
+
+          window.onpopstate = function () {
+            restoreStateFromUrl();
+            repaintUI();
+            fetchFilteredProducts();
+          };
+
+          // Seed initial chips on page load
+          renderFilterChips();
         </script>
+

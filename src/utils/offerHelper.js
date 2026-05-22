@@ -22,6 +22,21 @@ export const getApplicableOffers = async (productId, categoryId) => {
 };
 
 /**
+ * Fetch all currently active offers across the entire system.
+ * Useful for batching to avoid N+1 queries.
+ * @returns {Promise<Array>} Array of all active offers
+ */
+export const getAllActiveOffers = async () => {
+    const now = new Date();
+    return await Offer.find({
+        isActive: true,
+        isDeleted: false,
+        startDate: { $lte: now },
+        expiryDate: { $gt: now }
+    }).lean();
+};
+
+/**
  * Fetch the single best active offer for a product variant based on basePrice.
  * 
  * @param {ObjectId|string} productId 
@@ -113,4 +128,45 @@ export const applyOffersToProducts = async (products) => {
 
         return { ...p, bestOffer: bestOfferData };
     }));
+};
+
+/**
+ * Apply best offer to an array of raw Product documents/objects (for listings),
+ * using a pre-fetched array of all active offers to avoid N+1 queries.
+ * @param {Array} products 
+ * @param {Array} allActiveOffers - Pre-fetched active offers
+ * @returns {Array} - Enriched products with .bestOffer
+ */
+export const applyOffersToProductsBatched = (products, allActiveOffers) => {
+    return products.map(p => {
+        if (!p.variants || p.variants.length === 0) return p;
+        
+        const basePrice = Math.min(...p.variants.map(v => v.price));
+        const categoryId = (p.category && p.category._id) ? p.category._id.toString() : (p.category ? p.category.toString() : null);
+        const productId = p._id.toString();
+
+        const applicableOffers = allActiveOffers.filter(offer => {
+            if (offer.offerType === 'product' && offer.applicableTo && offer.applicableTo.toString() === productId) return true;
+            if (offer.offerType === 'category' && offer.applicableTo && offer.applicableTo.toString() === categoryId) return true;
+            return false;
+        });
+
+        const pricing = pricingService.calculateItemPrice(basePrice, applicableOffers);
+        
+        let bestOfferData = null;
+        if (pricing.appliedOffer) {
+            bestOfferData = {
+                offerId: pricing.appliedOffer.offerId,
+                offerName: pricing.appliedOffer.name,
+                offerType: pricing.appliedOffer.offerType,
+                discountType: pricing.appliedOffer.discountType,
+                discountValue: pricing.appliedOffer.discountValue,
+                discountAmount: pricing.discountAmount,
+                originalPrice: pricing.originalPrice,
+                finalPrice: pricing.finalPrice
+            };
+        }
+
+        return { ...p, bestOffer: bestOfferData };
+    });
 };

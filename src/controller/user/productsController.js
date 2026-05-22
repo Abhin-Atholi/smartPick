@@ -4,8 +4,7 @@ import Offer from "../../model/offerModel.js";
 import Coupon from "../../model/couponModel.js";
 import * as cartService from "../../services/user/cartService.js";
 import * as offerHelper from "../../utils/offerHelper.js";
-
-const PER_PAGE = 9;
+import { PRODUCTS_PER_PAGE } from "../../config/productConstants.js";
 
 export const loadProducts = async (req, res) => {
   try {
@@ -22,8 +21,8 @@ export const loadProducts = async (req, res) => {
       currentCategory, sidebarSubcategories, filterData 
     } = data;
 
-    const startItem = totalProducts === 0 ? 0 : (currentPage - 1) * 6 + 1;
-    const endItem = Math.min(currentPage * 6, totalProducts);
+    const startItem = totalProducts === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
+    const endItem = Math.min(currentPage * PRODUCTS_PER_PAGE, totalProducts);
 
     const renderData = {
       title: currentCategory ? `${currentCategory.name} — SmartPick` : "Products — SmartPick",
@@ -62,7 +61,8 @@ export const loadProducts = async (req, res) => {
           paginationHtml,
           totalProducts,
           startItem,
-          endItem
+          endItem,
+          filterData
         });
       } catch (renderError) {
         console.error("AJAX Partial Render Error:", renderError);
