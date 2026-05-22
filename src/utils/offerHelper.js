@@ -12,6 +12,7 @@ export const getApplicableOffers = async (productId, categoryId) => {
     return await Offer.find({
         isActive: true,
         isDeleted: false,
+        startDate: { $lte: now },
         expiryDate: { $gt: now },
         $or: [
             { offerType: 'product', applicableTo: productId },

@@ -24,6 +24,10 @@ export const validateAndCalculateDiscount = async (couponCode, cartTotal, userId
         throw new Error("This coupon is currently inactive.");
     }
 
+    if (coupon.startDate && new Date(coupon.startDate) > new Date()) {
+        throw new Error("This coupon is not active yet.");
+    }
+
     if (new Date(coupon.expiryDate) < new Date()) {
         throw new Error("This coupon has expired.");
     }

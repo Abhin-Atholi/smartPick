@@ -139,6 +139,7 @@ export const getAvailableCoupons = async (req, res) => {
         const coupons = await Coupon.find({
             isActive: true,
             isDeleted: false,
+            startDate: { $lte: now },
             expiryDate: { $gt: now }
         })
         .select('code description discountType discountValue minimumAmount maximumDiscount expiryDate usedCount usageLimit')
