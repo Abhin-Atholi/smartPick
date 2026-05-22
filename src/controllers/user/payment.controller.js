@@ -8,6 +8,7 @@ import Address from '../../model/addressModel.js';
 import * as couponHelper from '../../utils/couponHelper.js';
 import * as offerHelper from '../../utils/offerHelper.js';
 import Coupon from '../../model/couponModel.js';
+import * as walletService from '../../services/user/wallet.service.js';
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'test_key',
@@ -205,13 +206,45 @@ export const renderPaymentFailurePage = async (req, res) => {
         const order = await orderService.getOrderById(userId, orderId);
         if (!order) return res.redirect('/orders');
 
+        // Fetch wallet balance so the failure page can show it next to the Wallet option
+        const walletData = await walletService.getOrCreateWallet(userId);
+        const walletBalance = walletData?.balance || 0;
+
         res.render('user/payments/payment-failure', {
             title: 'Payment Failed',
-            order
+            order,
+            walletBalance
         });
     } catch (error) {
         console.error("renderPaymentFailurePage Error:", error);
         res.redirect('/orders');
+    }
+};
+
+export const completePendingOrder = async (req, res) => {
+    try {
+        const userId = req.currentUser?._id || req.session?.user?._id;
+        const { orderId, paymentMethod } = req.body;
+
+        if (!orderId || !paymentMethod) {
+            return res.status(400).json({ success: false, message: 'orderId and paymentMethod are required.' });
+        }
+        if (!['COD', 'Wallet'].includes(paymentMethod)) {
+            return res.status(400).json({ success: false, message: 'Invalid payment method. Choose COD or Wallet.' });
+        }
+
+        const result = await orderService.completeFailedOrder(userId, orderId, paymentMethod);
+
+        if (!result.success) {
+            // Return a 402 for insufficient balance so the frontend can detect it specifically
+            const status = result.insufficientBalance ? 402 : 400;
+            return res.status(status).json(result);
+        }
+
+        return res.status(200).json({ success: true, redirectUrl: `/order/success?orderId=${result.orderId}` });
+    } catch (error) {
+        console.error('completePendingOrder Error:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 };
 

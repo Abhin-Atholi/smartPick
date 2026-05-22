@@ -5,7 +5,8 @@ import {
     verifyPayment,
     handlePaymentFailure,
     retryPayment,
-    renderPaymentFailurePage
+    renderPaymentFailurePage,
+    completePendingOrder
 } from '../../controllers/user/payment.controller.js';
 
 const router = express.Router();
@@ -16,7 +17,9 @@ router.post('/initiate', initiateCheckout);
 router.post('/verify', verifyPayment);
 router.post('/failure', handlePaymentFailure);
 router.post('/retry', retryPayment);
+router.post('/complete-pending', completePendingOrder);
 router.get('/failure/:orderId', renderPaymentFailurePage);
+
 
 export default router;
 

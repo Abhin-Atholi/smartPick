@@ -8,7 +8,7 @@ export const getOrders = async (req, res, next) => {
         const data = await orderService.getAllOrders({ page: parseInt(page), limit: 10, search, status, dateFrom, dateTo, sort });
         const formattedOrders = data.orders.map(order => formatAdminOrderForDisplay(order));
         
-        res.render('admin/orders', {
+        res.render('admin/orders/orders', {
             title: 'Orders — Admin | SmartPick',
             ...data,
             orders: data.orders, // keep original for backward compatibility if needed, though we will replace rendering with formattedOrders
@@ -27,7 +27,7 @@ export const getOrderDetails = async (req, res, next) => {
         const order = await orderService.getOrderByIdAdmin(req.params.id);
         if (!order) return res.status(404).render('error', { message: 'Order not found' });
         const formattedOrder = formatAdminOrderForDisplay(order);
-        res.render('admin/orderDetails', {
+        res.render('admin/orders/orderDetails', {
             title: `Order ${formattedOrder.orderId} — Admin | SmartPick`,
             order,
             formattedOrder,
@@ -73,7 +73,7 @@ export const getReturnRequests = async (req, res, next) => {
         const { formatAdminReturnItemForDisplay } = await import('../../services/common/adminOrderPresentation.service.js');
         const formattedItems = data.returnItems.map(item => formatAdminReturnItemForDisplay(item));
 
-        res.render('admin/returnRequests', {
+        res.render('admin/orders/returnRequests', {
             title: 'Return Management — Admin | SmartPick',
             ...data,
             formattedItems,

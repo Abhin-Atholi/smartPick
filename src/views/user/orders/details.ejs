@@ -738,6 +738,7 @@
               
               const rzp = new Razorpay(options);
               rzp.on('payment.failed', async function (response) {
+                  console.error("Razorpay Payment Failed:", response ? response.error : 'No response error');
                   await axios.post('/payment/failure', { orderId });
                   window.location.reload();
               });

@@ -37,7 +37,7 @@ export const loadReferrals = async (req, res, next) => {
             rewardAmount: u.referralRewardClaimed ? REFERRER_REWARD : 0,
         }));
 
-        res.render('user/referrals', {
+        res.render('user/referrals/referrals', {
             title: 'My Referrals — SmartPick',
             activePath: '/account/referrals',
             user,

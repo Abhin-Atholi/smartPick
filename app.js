@@ -22,6 +22,7 @@ app.set("trust proxy", process.env.NODE_ENV === "production" ? 1 : false);
 
 app.use(helmet({
   contentSecurityPolicy: false, // Allowed to load external CDN assets and inline scripts in EJS
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 
 connectDB();

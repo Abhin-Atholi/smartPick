@@ -21,7 +21,7 @@ const fmtDatetime = d => {
 // ── Page render ───────────────────────────────────────────────────────────────
 export const getSalesReportsPage = async (req, res) => {
     try {
-        res.render('admin/salesReports', { title: 'Sales Reports — SmartPick', activePath: '/admin/sales-reports' });
+        res.render('admin/reports/salesReports', { title: 'Sales Reports — SmartPick', activePath: '/admin/sales-reports' });
     } catch (error) {
         console.error('Error rendering sales reports:', error);
         res.status(500).send('Internal Server Error');

@@ -444,6 +444,86 @@ export const checkPaymentStatus = async (userId, orderId) => {
     };
 };
 
+// ── Complete Failed Order via COD or Wallet ──────────────────────────────────
+export const completeFailedOrder = async (userId, orderId, paymentMethod) => {
+    return withTransaction(async (session) => {
+        const orderQuery = Order.findOne({
+            _id: orderId,
+            user: userId,
+            orderStatus: { $in: ['Payment Pending', 'Payment Failed'] },
+            paymentStatus: { $nin: ['Paid'] }
+        }).populate('items.product');
+        if (session) orderQuery.session(session);
+        const order = await orderQuery;
+
+        if (!order) {
+            return { success: false, message: 'Order not found or not eligible for payment method change.' };
+        }
+
+        // Guard: already expired
+        if (order.retryExpiresAt && new Date() > order.retryExpiresAt) {
+            return { success: false, message: 'Payment session expired. Items have been returned to your cart.' };
+        }
+
+        let walletAmountUsed = 0;
+
+        if (paymentMethod === 'Wallet') {
+            const wallet = await walletService.getOrCreateWallet(userId, session);
+            if (wallet.balance < order.totalAmount) {
+                return {
+                    success: false,
+                    message: `Insufficient wallet balance. Available: ₹${wallet.balance.toFixed(2)}, Required: ₹${order.totalAmount.toFixed(2)}`,
+                    insufficientBalance: true,
+                    balance: wallet.balance,
+                    required: order.totalAmount,
+                    shortfall: Math.max(0, order.totalAmount - wallet.balance)
+                };
+            }
+
+            await walletService.debitWallet(
+                userId,
+                order.totalAmount,
+                `Order ${order.orderId} — Wallet Payment (retry)`,
+                'Order Payment',
+                order._id,
+                session
+            );
+            walletAmountUsed = order.totalAmount;
+            order.paymentStatus  = 'Paid';
+            order.walletAmountUsed = walletAmountUsed;
+        } else if (paymentMethod === 'COD') {
+            order.paymentStatus = 'Pending';
+        } else {
+            return { success: false, message: 'Invalid payment method. Only COD and Wallet are supported here.' };
+        }
+
+        order.paymentMethod = paymentMethod;
+        order.orderStatus   = 'Processing';
+        order.retryExpiresAt = null;
+        if (order.paymentDetails) {
+            order.paymentDetails.retryExpiryTime = null;
+        }
+
+        for (const item of order.items) {
+            item.itemStatus = 'Processing';
+        }
+
+        // Finalise coupon usage
+        if (order.couponApplied?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
+            await Coupon.updateOne(
+                { code: order.couponApplied.code },
+                { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } },
+                sessionOpts(session)
+            );
+        }
+
+        updateLedger(order);
+        await order.save(sessionOpts(session));
+
+        return { success: true, orderId: order._id };
+    });
+};
+
 // ── Background Cleanup Task ──────────────────────────────────────────────────
 export const startStockCleanupTask = () => {
     console.log('📦 Cron: Order cleanup task initialized (Every 10m)');

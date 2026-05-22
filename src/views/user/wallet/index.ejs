@@ -344,7 +344,8 @@
             };
 
             const rzp = new Razorpay(options);
-            rzp.on('payment.failed', function() {
+            rzp.on('payment.failed', function(response) {
+                console.error("Razorpay Payment Failed:", response ? response.error : 'No response error');
                 if (window.paymentUI) {
                     window.paymentUI.showOverlay('error', { message: 'Wallet top-up was not completed.' });
                 }

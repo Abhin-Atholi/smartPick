@@ -696,6 +696,7 @@
                                     };
                                     const rzp1 = new Razorpay(options);
                                     rzp1.on('payment.failed', async function (response) {
+                                        console.error("Razorpay Payment Failed:", response ? response.error : 'No response error');
                                         await axios.post('/payment/failure', { orderId: initRes.data.orderId });
                                         if (window.paymentUI) await window.paymentUI.hideOverlay();
                                         window.location.href = `/payment/failure/${initRes.data.orderId}`;

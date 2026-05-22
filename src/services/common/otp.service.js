@@ -175,7 +175,7 @@ export const resendAnyOtp = async (email, explicitPurpose = null) => {
   await Otp.deleteMany({ email, purpose });
 
   const otp = genOtp();
-  console.log(otp);
+  console.log(`\n---------------------------------------\n🔄 [OTP SERVICE] RESENT OTP to ${email}: ${otp}\n---------------------------------------\n`);
 
   await Otp.create({ email, otp, purpose });
   await sendOtpEmail(email, otp);
@@ -202,7 +202,7 @@ export const sendOtp = async ({ email, purpose }) => {
   await Otp.deleteMany({ email: normalizedEmail, purpose });
 
   const otp = genOtp();
-  console.log(otp)
+  console.log(`\n---------------------------------------\n🔑 [OTP SERVICE] SENT OTP to ${normalizedEmail}: ${otp}\n---------------------------------------\n`);
   await Otp.create({ email: normalizedEmail, otp, purpose });
 
   await sendOtpEmail(email, otp);

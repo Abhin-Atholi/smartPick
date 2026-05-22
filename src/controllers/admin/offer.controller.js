@@ -12,7 +12,7 @@ export const getOffers = async (req, res) => {
             offerService.getCategoriesForSelect()
         ]);
 
-        res.render('admin/offers', {
+        res.render('admin/offers/offers', {
             title: 'Offer Management',
             offers: result.offers,
             currentPage: page,
@@ -26,7 +26,7 @@ export const getOffers = async (req, res) => {
         });
     } catch (error) {
         console.error('getOffers Error:', error);
-        res.status(500).render('admin/offers', {
+        res.status(500).render('admin/offers/offers', {
             title: 'Offer Management',
             offers: [], currentPage: 1, totalPages: 1,
             search: '', offerType: '', status: '',

@@ -78,19 +78,78 @@
             </div>
             <% } %>
 
-            <!-- Action Buttons -->
-            <div class="space-y-3">
-                <button id="retryBtn" onclick="retryPayment()"
-                    class="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-gray-200">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-4.65L1 10"></path></svg>
-                    Retry Payment
-                </button>
-                <a id="cancelBtn" href="/checkout"
-                    class="w-full py-4 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors active:scale-95">
-                    Choose Another Payment Method
-                </a>
+            <!-- Payment Method Selector -->
+            <div class="bg-white border border-gray-100 rounded-3xl shadow-sm p-5 space-y-3">
+                <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Choose How to Pay</p>
+
+                <!-- Razorpay -->
+                <label id="pf-opt-razorpay"
+                    class="pf-payment-option flex items-center gap-3.5 p-3.5 border-2 border-indigo-500 bg-indigo-50/40 rounded-2xl cursor-pointer transition-all">
+                    <input type="radio" name="pf-payment" value="Razorpay" checked
+                        class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                    <div class="flex items-center gap-2.5 flex-1">
+                        <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </div>
+                        <div>
+                            <span class="font-bold text-gray-900 text-sm">Razorpay</span>
+                            <p class="text-[10px] text-gray-400 font-semibold">Cards / UPI / NetBanking</p>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- COD -->
+                <label id="pf-opt-cod"
+                    class="pf-payment-option flex items-center gap-3.5 p-3.5 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-all">
+                    <input type="radio" name="pf-payment" value="COD"
+                        class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                    <div class="flex items-center gap-2.5 flex-1">
+                        <div class="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        </div>
+                        <div>
+                            <span class="font-bold text-gray-900 text-sm">Cash on Delivery</span>
+                            <p class="text-[10px] text-gray-400 font-semibold">Pay when you receive</p>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Wallet -->
+                <label id="pf-opt-wallet"
+                    class="pf-payment-option flex items-center gap-3.5 p-3.5 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition-all">
+                    <input type="radio" name="pf-payment" value="Wallet"
+                        class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                    <div class="flex items-center gap-2.5 flex-1">
+                        <div class="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg>
+                        </div>
+                        <div class="flex-1 flex items-center justify-between">
+                            <div>
+                                <span class="font-bold text-gray-900 text-sm">SmartPick Wallet</span>
+                                <p class="text-[10px] text-gray-400 font-semibold">Instant deduction</p>
+                            </div>
+                            <% if (typeof walletBalance !== 'undefined' && walletBalance > 0) { %>
+                                <span class="text-xs font-black text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-100 ml-2 flex-shrink-0">
+                                    ₹<%= walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
+                                </span>
+                            <% } else { %>
+                                <span class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg ml-2 flex-shrink-0">No Balance</span>
+                            <% } %>
+                        </div>
+                    </div>
+                </label>
             </div>
-        </div>
+
+            <!-- Single Proceed Button -->
+            <div class="space-y-3">
+                <button id="proceedBtn" onclick="proceedPayment()"
+                    class="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-gray-200">
+                    <svg id="proceedBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span id="proceedBtnLabel">Retry with Razorpay</span>
+                </button>
+            </div>
+
+        </div><!-- /#retrySection -->
 
         <!-- ── EXPIRED SECTION ─────────────────────────────────────────── -->
         <div id="expiredSection" class="space-y-4 fade-up delay-1">
@@ -131,32 +190,77 @@
     </div>
 </main>
 
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="/js/payment/paymentUIManager.js"></script>
 
 <script>
-    const orderId      = "<%= order._id %>";
+    const orderId       = "<%= order._id %>";
     const expiryTimeIso = "<%= order.paymentDetails?.retryExpiryTime?.toISOString() || '' %>";
-    const expiryTime   = expiryTimeIso ? new Date(expiryTimeIso).getTime() : 0;
+    const expiryTime    = expiryTimeIso ? new Date(expiryTimeIso).getTime() : 0;
     const totalDuration = 5 * 60 * 1000; // 5 min
 
     const countdownHUD   = document.getElementById('countdownHUD');
     const progressBar    = document.getElementById('progressBar');
-    const retryBtn       = document.getElementById('retryBtn');
+    const proceedBtn     = document.getElementById('proceedBtn');
     const retrySection   = document.getElementById('retrySection');
     const expiredSection = document.getElementById('expiredSection');
     const statusMessage  = document.getElementById('statusMessage');
     const pageTitle      = document.getElementById('pageTitle');
 
+    // ── Payment Method Option Highlighting ───────────────────────────────────
+    const btnLabel = document.getElementById('proceedBtnLabel');
+    const btnIcon  = document.getElementById('proceedBtnIcon');
+
+    const ICONS = {
+        Razorpay: `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>`,
+        COD:      `<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>`,
+        Wallet:   `<path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path>`
+    };
+    const LABELS = {
+        Razorpay: 'Retry with Razorpay',
+        COD:      'Complete Order (Cash on Delivery)',
+        Wallet:   'Pay with Wallet'
+    };
+
+    function getSelectedPayment() {
+        const el = document.querySelector('input[name="pf-payment"]:checked');
+        return el ? el.value : 'Razorpay';
+    }
+
+    function updateProceedButton(method) {
+        btnLabel.textContent = LABELS[method] || 'Proceed';
+        btnIcon.innerHTML    = ICONS[method] || ICONS.Razorpay;
+
+        // Highlight selected label, de-highlight others
+        document.querySelectorAll('.pf-payment-option').forEach(lbl => {
+            lbl.classList.remove('border-indigo-500', 'bg-indigo-50/40');
+            lbl.classList.add('border-gray-200');
+        });
+        const radio = document.querySelector(`input[name="pf-payment"][value="${method}"]`);
+        if (radio) {
+            const parent = radio.closest('.pf-payment-option');
+            if (parent) {
+                parent.classList.add('border-indigo-500', 'bg-indigo-50/40');
+                parent.classList.remove('border-gray-200');
+            }
+        }
+    }
+
+    document.querySelectorAll('input[name="pf-payment"]').forEach(radio => {
+        radio.addEventListener('change', () => updateProceedButton(radio.value));
+    });
+
+    // Initialise on load
+    updateProceedButton(getSelectedPayment());
+
+    // ── Session-Expired State ─────────────────────────────────────────────────
     function showExpiredState(summary) {
-        retrySection.style.display = 'none';
+        retrySection.style.display  = 'none';
         expiredSection.style.display = 'block';
-        pageTitle.textContent = 'Session Expired';
+        pageTitle.textContent    = 'Session Expired';
         statusMessage.textContent = 'This payment session expired.';
 
-        // Show partial restore badge if applicable
         if (summary && summary.wasPartial) {
             const badge = document.getElementById('partialRestoreBadge');
             const msg   = document.getElementById('partialRestoreMsg');
@@ -164,7 +268,7 @@
             if (msg) {
                 const parts = [];
                 if (summary.partialRestores > 0) parts.push(`${summary.partialRestores} item(s) restored with reduced quantity`);
-                if (summary.skippedItems > 0) parts.push(`${summary.skippedItems} item(s) unavailable`);
+                if (summary.skippedItems > 0)    parts.push(`${summary.skippedItems} item(s) unavailable`);
                 msg.textContent = parts.join(' · ') + ' due to stock changes.';
             }
         } else {
@@ -195,9 +299,8 @@
 
         if (distance <= 0) {
             clearInterval(timerInterval);
-            countdownHUD.textContent = '00:00';
-            progressBar.style.width = '0%';
-            // Fetch summary from server before showing expired state
+            countdownHUD.textContent  = '00:00';
+            progressBar.style.width   = '0%';
             (async () => {
                 try {
                     const res = await axios.get(`/order/status/${orderId}`);
@@ -213,32 +316,38 @@
         const secs = Math.floor((distance % 60000) / 1000);
         countdownHUD.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
 
-        // Update progress bar
         const pct = Math.max(0, Math.min(100, (distance / totalDuration) * 100));
         progressBar.style.width = pct + '%';
-        // Colour shift as time runs low
-        if (pct < 30) {
-            progressBar.classList.replace('bg-amber-400', 'bg-red-500');
-        }
-
+        if (pct < 30) progressBar.classList.replace('bg-amber-400', 'bg-red-500');
     }, 1000);
 
-    // ── Retry Payment ──────────────────────────────────────────────────────
-    async function retryPayment() {
-        if (retryBtn.disabled) return;
-        if (window.paymentUI) window.paymentUI.lockButton(retryBtn, 'Opening Payment...');
+    // ── Unified Proceed Handler ────────────────────────────────────────────
+    async function proceedPayment() {
+        if (proceedBtn.disabled) return;
+        const method = getSelectedPayment();
+
+        if (method === 'Razorpay') {
+            await retryWithRazorpay();
+        } else {
+            await completeWithAlternate(method);
+        }
+    }
+
+    // ── Razorpay Retry ─────────────────────────────────────────────────────
+    async function retryWithRazorpay() {
+        if (window.paymentUI) window.paymentUI.lockButton(proceedBtn, 'Opening Payment...');
 
         try {
             const res = await axios.post('/payment/retry', { orderId });
 
             if (res.data.success) {
                 const options = {
-                    key: res.data.key,
-                    amount: res.data.amount * 100,
-                    currency: 'INR',
-                    name: 'SmartPick',
+                    key:         res.data.key,
+                    amount:      res.data.amount * 100,
+                    currency:    'INR',
+                    name:        'SmartPick',
                     description: 'Retry Payment',
-                    order_id: res.data.razorpayOrderId,
+                    order_id:    res.data.razorpayOrderId,
                     handler: async function (paymentResponse) {
                         if (window.paymentUI) await window.paymentUI.showOverlay('razorpay');
                         try {
@@ -261,7 +370,7 @@
                                 await window.paymentUI.hideOverlay(true);
                                 await window.paymentUI.showOverlay('error', { message: 'Payment verification failed. Please try again.' });
                             }
-                            window.paymentUI.unlockButton(retryBtn);
+                            if (window.paymentUI) window.paymentUI.unlockButton(proceedBtn);
                         }
                     },
                     modal: {
@@ -273,15 +382,14 @@
                 };
 
                 const rzp = new Razorpay(options);
-                rzp.on('payment.failed', async function () {
+                rzp.on('payment.failed', async function (response) {
+                    console.error("Razorpay Payment Failed:", response ? response.error : 'No response error');
                     await axios.post('/payment/failure', { orderId });
                     window.location.reload();
                 });
                 rzp.open();
-                // Unlock btn once Razorpay modal is open
-                if (window.paymentUI) window.paymentUI.unlockButton(retryBtn);
+                if (window.paymentUI) window.paymentUI.unlockButton(proceedBtn);
             }
-
         } catch (err) {
             console.error(err);
             const errMsg = err.response?.data?.message || 'Could not initiate retry. Session may have expired.';
@@ -289,12 +397,56 @@
                 await window.paymentUI.hideOverlay(true);
                 await window.paymentUI.showOverlay('error', { message: errMsg });
             }
-            if (errMsg === 'Payment session expired') {
+            if (errMsg.toLowerCase().includes('session expired')) {
                 await new Promise(r => setTimeout(r, 2000));
                 window.location.reload();
             }
         } finally {
-            if (window.paymentUI) window.paymentUI.unlockButton(retryBtn);
+            if (window.paymentUI) window.paymentUI.unlockButton(proceedBtn);
+        }
+    }
+
+    // ── COD / Wallet Completion ────────────────────────────────────────────
+    async function completeWithAlternate(method) {
+        if (window.paymentUI) {
+            window.paymentUI.lockButton(proceedBtn, method === 'COD' ? 'Placing Order...' : 'Processing Wallet...');
+            await window.paymentUI.showOverlay(method === 'COD' ? 'cod' : 'wallet');
+        }
+
+        try {
+            const res = await axios.post('/payment/complete-pending', { orderId, paymentMethod: method });
+
+            if (res.data.success) {
+                if (window.paymentUI) {
+                    await window.paymentUI.showSuccess(res.data.redirectUrl);
+                } else {
+                    window.location.href = res.data.redirectUrl;
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            const errData = err.response?.data;
+
+            if (window.paymentUI) await window.paymentUI.hideOverlay(true);
+
+            if (err.response?.status === 402 && errData?.insufficientBalance) {
+                // Insufficient wallet balance — show the premium insufficient balance overlay
+                if (window.paymentUI) {
+                    await window.paymentUI.showOverlay('wallet_insufficient', {
+                        balance:  errData.balance  || 0,
+                        required: errData.required || 0,
+                        shortfall: errData.shortfall || 0
+                    });
+                }
+                if (window.paymentUI) window.paymentUI.unlockButton(proceedBtn);
+                return;
+            }
+
+            const msg = errData?.message || 'Something went wrong. Please try again.';
+            if (window.paymentUI) {
+                await window.paymentUI.showOverlay('error', { message: msg });
+            }
+            if (window.paymentUI) window.paymentUI.unlockButton(proceedBtn);
         }
     }
 </script>

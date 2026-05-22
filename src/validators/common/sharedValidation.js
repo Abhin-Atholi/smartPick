@@ -11,10 +11,3 @@ export const objectIdValidation = (message = 'Invalid ID format') => {
     }, 'ObjectId Validation');
 };
 
-// Common schema for pagination queries
-export const paginationSchema = Joi.object({
-    page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(100).default(10),
-    search: Joi.string().trim().allow('', null).optional(),
-    sort: Joi.string().trim().allow('', null).optional()
-}).unknown(true);

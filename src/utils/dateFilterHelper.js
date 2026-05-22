@@ -86,4 +86,3 @@ export const getGroupByFormat = (filter, startDate, endDate) => {
     }
 };
 
-export const validOrderStatuses = ['Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Return Requested', 'Return Rejected'];

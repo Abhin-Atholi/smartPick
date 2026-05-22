@@ -8,7 +8,7 @@ export const getCoupons = async (req, res) => {
 
         const result = await couponService.getCoupons(search, status, page, limit);
 
-        res.render('admin/coupons', {
+        res.render('admin/coupons/coupons', {
             coupons: result.coupons,
             currentPage: page,
             totalPages: result.totalPages,
@@ -20,7 +20,7 @@ export const getCoupons = async (req, res) => {
         });
     } catch (error) {
         console.error("getCoupons Error:", error);
-        res.status(500).render('admin/coupons', { 
+        res.status(500).render('admin/coupons/coupons', { 
             coupons: [], 
             currentPage: 1, 
             totalPages: 1, 
