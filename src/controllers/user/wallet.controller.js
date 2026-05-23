@@ -15,7 +15,15 @@ export const getWalletPage = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
 
-        const data = await walletService.getTransactionHistory(userId, page, limit);
+        // Extract filter params from query string
+        const filters = {
+            search:   (req.query.search   || '').trim(),
+            type:     req.query.type     || '',
+            dateFrom: req.query.dateFrom || '',
+            dateTo:   req.query.dateTo   || ''
+        };
+
+        const data = await walletService.getTransactionHistory(userId, page, limit, filters);
 
         res.render('user/wallet/index', {
             title: 'My Wallet — SmartPick',
@@ -25,7 +33,8 @@ export const getWalletPage = async (req, res, next) => {
             currentPage: data.currentPage,
             totalPages: data.totalPages,
             total: data.total,
-            razorpayKey: process.env.RAZORPAY_KEY_ID
+            razorpayKey: process.env.RAZORPAY_KEY_ID,
+            filters   // pass filters back so the view can pre-fill inputs
         });
     } catch (err) {
         console.error('getWalletPage Error:', err);

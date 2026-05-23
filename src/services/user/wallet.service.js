@@ -96,19 +96,54 @@ export const debitWallet = async (userId, amount, description, method, orderId =
 };
 
 /**
- * Get paginated transaction history from the separate collection.
+ * Get paginated + filtered transaction history from the separate collection.
+ * @param {string} userId
+ * @param {number} page
+ * @param {number} limit
+ * @param {object} filters  - { search, type, dateFrom, dateTo }
  */
-export const getTransactionHistory = async (userId, page = 1, limit = 10) => {
+export const getTransactionHistory = async (userId, page = 1, limit = 10, filters = {}) => {
     const wallet = await getOrCreateWallet(userId);
     const skip = (page - 1) * limit;
 
+    // Build query object
+    const query = { userId };
+
+    // Keyword search: match description or transactionId (case-insensitive)
+    if (filters.search && filters.search.trim()) {
+        const regex = new RegExp(filters.search.trim(), 'i');
+        query.$or = [
+            { description: regex },
+            { transactionId: regex }
+        ];
+    }
+
+    // Transaction type filter
+    if (filters.type && ['Credit', 'Debit'].includes(filters.type)) {
+        query.type = filters.type;
+    }
+
+    // Date range filter (inclusive)
+    if (filters.dateFrom || filters.dateTo) {
+        query.createdAt = {};
+        if (filters.dateFrom) {
+            query.createdAt.$gte = new Date(filters.dateFrom);
+        }
+        if (filters.dateTo) {
+            // Include the entire dateTo day by moving to 23:59:59.999
+            const to = new Date(filters.dateTo);
+            to.setHours(23, 59, 59, 999);
+            query.createdAt.$lte = to;
+        }
+    }
+
     const [transactions, total] = await Promise.all([
-        WalletTransaction.find({ userId })
+        WalletTransaction.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean(),
-        WalletTransaction.countDocuments({ userId })
+        WalletTransaction.countDocuments(query)
     ]);
 
     return {
