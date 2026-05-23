@@ -27,7 +27,7 @@ const mapImageCounts = (req, res, next) => {
     next();
 };
 
-router.use(isAdmin);
+// router.use(isAdmin); // Already protected by parent admin.routes.js
 
 // Listing
 router.get("/", productController.getProducts);

@@ -7,8 +7,7 @@ import { createCloudinaryUpload, handleUploadError } from "../../config/multer.j
 
 const uploadBanner = createCloudinaryUpload('smartpick/banners');
 
-// Protect all routes
-router.use(isAdmin);
+// Protect all routes (already protected by parent admin.routes.js)
 
 router.get("/", bannerController.getBanners);
 router.post("/upload", uploadBanner.single("image"), handleUploadError, bannerController.uploadBanner);

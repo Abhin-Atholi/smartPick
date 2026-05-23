@@ -8,8 +8,7 @@ import { createCloudinaryUpload, handleUploadError } from "../../config/multer.j
 
 const uploadSubcategory = createCloudinaryUpload('smartpick/subcategories');
 
-// Protect all routes in this file
-router.use(isAdmin);
+// Protect all routes in this file (already protected by parent admin.routes.js)
 
 // All routes are implicitly prefixed with "/admin/subcategory"
 router.get("/", subcategoryController.getSubcategories);

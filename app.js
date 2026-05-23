@@ -90,7 +90,15 @@ orderService.startStockCleanupTask();
 import { globalErrorHandler } from "./src/middleware/errorHandler.js";
 mountRoutes(app);
 
-// Global Error Handler (must be after routes)
+// 404 Handler for Unmatched Routes
+app.use((req, res, next) => {
+    if (req.originalUrl.startsWith('/admin')) {
+        return res.status(404).render('admin/error/404', { title: 'Admin - Page Not Found' });
+    }
+    return res.status(404).render('user/error/404', { title: 'Page Not Found — SmartPick' });
+});
+
+// Global Error Handler (must be after routes and 404)
 app.use(globalErrorHandler);
 
 

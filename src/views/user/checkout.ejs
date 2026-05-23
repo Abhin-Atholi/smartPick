@@ -460,7 +460,7 @@
                         btn.disabled = true;
                         btn.innerHTML = 'Applying...';
                         try {
-                            const res = await axios.post('/apply-coupon', { couponCode: code });
+                            const res = await axios.post('/coupons/apply', { couponCode: code });
                             if (res.data.success) {
                                 updateSummary(res.data.breakdown);
                                 document.getElementById('couponInputRow').classList.add('hidden');
@@ -478,7 +478,7 @@
 
                     async function handleRemoveCoupon() {
                         try {
-                            const res = await axios.post('/remove-coupon');
+                            const res = await axios.post('/coupons/remove');
                             if (res.data.success) {
                                 updateSummary(res.data.breakdown);
                                 document.getElementById('couponAppliedBadge').classList.add('hidden');
@@ -507,7 +507,7 @@
                         const body = document.getElementById('couponsModalBody');
                         body.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full"></div></div>';
                         try {
-                            const res = await axios.get('/available-coupons');
+                            const res = await axios.get('/coupons/available');
                             const coupons = res.data.coupons;
                             if (!coupons || coupons.length === 0) {
                                 body.innerHTML = '<p class="text-center text-gray-400 font-semibold py-8">No coupons available right now.</p>';
@@ -710,12 +710,12 @@
                                 if (window.paymentUI) await window.paymentUI.showOverlay('wallet');
                                 
                                 try {
-                                    const response = await axios.post('/order/place', { addressId, paymentMethod });
+                                    const response = await axios.post('/orders/place', { addressId, paymentMethod });
                                     if (response.data.success) {
                                         if (window.paymentUI) {
-                                            await window.paymentUI.showSuccess(`/order/success?orderId=${response.data.orderId}`);
+                                            await window.paymentUI.showSuccess(`/orders/success?orderId=${response.data.orderId}`);
                                         } else {
-                                            window.location.href = `/order/success?orderId=${response.data.orderId}`;
+                                            window.location.href = `/orders/success?orderId=${response.data.orderId}`;
                                         }
                                     }
                                 } catch (err) {
@@ -746,12 +746,12 @@
                                 if (window.paymentUI) await window.paymentUI.showOverlay('cod');
                                 
                                 try {
-                                    const response = await axios.post('/order/place', { addressId, paymentMethod });
+                                    const response = await axios.post('/orders/place', { addressId, paymentMethod });
                                     if (response.data.success) {
                                         if (window.paymentUI) {
-                                            await window.paymentUI.showSuccess(`/order/success?orderId=${response.data.orderId}`);
+                                            await window.paymentUI.showSuccess(`/orders/success?orderId=${response.data.orderId}`);
                                         } else {
-                                            window.location.href = `/order/success?orderId=${response.data.orderId}`;
+                                            window.location.href = `/orders/success?orderId=${response.data.orderId}`;
                                         }
                                     }
                                 } catch (err) {

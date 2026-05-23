@@ -1,4 +1,5 @@
 import * as orderService from '../../services/user/order.service.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as cartService from '../../services/user/cart.service.js';
 import Address from '../../model/addressModel.js';
 import { generateInvoice } from '../../utils/invoiceGenerator.js';
@@ -8,105 +9,100 @@ import * as taxHelper from '../../utils/taxHelper.js';
 import * as orderPresentationService from '../../services/common/orderPresentation.service.js';
 import { SHIPPING_RULES } from '../../config/storeConfig.js';
 
-export const loadCheckout = async (req, res, next) => {
-    try {
-        const userId = req.currentUser?._id || req.session?.user?._id;
-        if (!userId) return res.redirect('/login');
+export const loadCheckout = asyncHandler(async (req, res) => {
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    if (!userId) return res.redirect('/login');
 
-        // Fetch addresses and wallet balance in parallel
-        const [addresses, walletData] = await Promise.all([
-            Address.find({ userId }),
-            walletService.getOrCreateWallet(userId)
-        ]);
-        const walletBalance = walletData?.balance || 0;
+    // Fetch addresses and wallet balance in parallel
+    const [addresses, walletData] = await Promise.all([
+        Address.find({ userId }),
+        walletService.getOrCreateWallet(userId)
+    ]);
+    const walletBalance = walletData?.balance || 0;
 
 
-        // Fetch cart (use a high limit to get all items for checkout)
-        const cartData = await cartService.getCart(userId, 1, 100);
+    // Fetch cart (use a high limit to get all items for checkout)
+    const cartData = await cartService.getCart(userId, 1, 100);
 
-        if (!cartData || cartData.items.length === 0) {
-            return res.redirect('/cart'); // Don't allow checkout with empty cart
-        }
-
-        // Calculate totals and check stock
-        let subtotal = 0;
-        let totalOfferDiscount = 0;
-        let hasStockIssue = false;
-
-        const cartItemsWithStock = cartData.items
-            .filter(i => i.product.isActive && !i.product.isDeleted)
-            .map(item => {
-                let variant;
-                if (item.variantId) {
-                    variant = item.product.variants.find(v => v._id.toString() === item.variantId.toString());
-                } else {
-                    const normalize = str => String(str || '').trim().toLowerCase();
-                    variant = item.product.variants.find(v => normalize(v.size) === normalize(item.size) && normalize(v.color) === normalize(item.color));
-                }
-                const availableStock = variant ? variant.stock : 0;
-                const isLowStock = availableStock > 0 && availableStock < item.quantity;
-                const isOutOfStock = availableStock === 0;
-                const isLimitExceeded = item.quantity > 5;
-                const stockIssue = isLowStock || isOutOfStock || isLimitExceeded;
-                if (stockIssue) hasStockIssue = true;
-
-                if (!stockIssue) {
-                    subtotal += item.effectiveTotalPrice || item.totalPrice;
-                    if (item.offerApplied) {
-                        totalOfferDiscount += ((item.originalPrice || item.price) - (item.finalPrice || item.price)) * item.quantity;
-                    }
-                }
-                return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };
-            });
-
-        const shippingFee = subtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
-
-        let couponDiscount = 0;
-        let appliedCoupon = null;
-
-        // Revalidate coupon on page load just in case it expired while browsing
-        if (req.session.appliedCoupon && subtotal > 0 && !hasStockIssue) {
-            try {
-                const result = await couponHelper.validateAndCalculateDiscount(
-                    req.session.appliedCoupon.code,
-                    subtotal,
-                    userId
-                );
-                couponDiscount = result.discountAmount;
-                appliedCoupon = req.session.appliedCoupon;
-                // Update session accurately
-                req.session.appliedCoupon.discountAmount = couponDiscount;
-            } catch (err) {
-                // If invalid, drop from session
-                delete req.session.appliedCoupon;
-                req.session.save();
-            }
-        }
-
-        const taxableAmount = taxHelper.calculateTaxableAmount(subtotal, couponDiscount);
-        const tax = taxHelper.calculateTax(taxableAmount);
-        const totalAmount = subtotal - couponDiscount + shippingFee + tax;
-
-        res.render('user/checkout', {
-            title: "Checkout — SmartPick",
-            activePath: "/checkout",
-            addresses,
-            cartItems: cartItemsWithStock,
-            subtotal: subtotal + totalOfferDiscount, // Show original subtotal before offers
-            totalOfferDiscount,
-            shippingFee,
-            couponDiscount,
-            tax,
-            appliedCoupon,
-            totalAmount,
-            hasStockIssue,
-            walletBalance
-        });
-    } catch (err) {
-        console.error("loadCheckout error:", err);
-        next(err);
+    if (!cartData || cartData.items.length === 0) {
+        return res.redirect('/cart'); // Don't allow checkout with empty cart
     }
-};
+
+    // Calculate totals and check stock
+    let subtotal = 0;
+    let totalOfferDiscount = 0;
+    let hasStockIssue = false;
+
+    const cartItemsWithStock = cartData.items
+        .filter(i => i.product.isActive && !i.product.isDeleted)
+        .map(item => {
+            let variant;
+            if (item.variantId) {
+                variant = item.product.variants.find(v => v._id.toString() === item.variantId.toString());
+            } else {
+                const normalize = str => String(str || '').trim().toLowerCase();
+                variant = item.product.variants.find(v => normalize(v.size) === normalize(item.size) && normalize(v.color) === normalize(item.color));
+            }
+            const availableStock = variant ? variant.stock : 0;
+            const isLowStock = availableStock > 0 && availableStock < item.quantity;
+            const isOutOfStock = availableStock === 0;
+            const isLimitExceeded = item.quantity > 5;
+            const stockIssue = isLowStock || isOutOfStock || isLimitExceeded;
+            if (stockIssue) hasStockIssue = true;
+
+            if (!stockIssue) {
+                subtotal += item.effectiveTotalPrice || item.totalPrice;
+                if (item.offerApplied) {
+                    totalOfferDiscount += ((item.originalPrice || item.price) - (item.finalPrice || item.price)) * item.quantity;
+                }
+            }
+            return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };
+        });
+
+    const shippingFee = subtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
+
+    let couponDiscount = 0;
+    let appliedCoupon = null;
+
+    // Revalidate coupon on page load just in case it expired while browsing
+    if (req.session.appliedCoupon && subtotal > 0 && !hasStockIssue) {
+        try {
+            const result = await couponHelper.validateAndCalculateDiscount(
+                req.session.appliedCoupon.code,
+                subtotal,
+                userId
+            );
+            couponDiscount = result.discountAmount;
+            appliedCoupon = req.session.appliedCoupon;
+            // Update session accurately
+            req.session.appliedCoupon.discountAmount = couponDiscount;
+        } catch (err) {
+            // If invalid, drop from session
+            delete req.session.appliedCoupon;
+            req.session.save();
+        }
+    }
+
+    const taxableAmount = taxHelper.calculateTaxableAmount(subtotal, couponDiscount);
+    const tax = taxHelper.calculateTax(taxableAmount);
+    const totalAmount = subtotal - couponDiscount + shippingFee + tax;
+
+    res.render('user/checkout', {
+        title: "Checkout — SmartPick",
+        activePath: "/checkout",
+        addresses,
+        cartItems: cartItemsWithStock,
+        subtotal: subtotal + totalOfferDiscount, // Show original subtotal before offers
+        totalOfferDiscount,
+        shippingFee,
+        couponDiscount,
+        tax,
+        appliedCoupon,
+        totalAmount,
+        hasStockIssue,
+        walletBalance
+    });
+});
 
 export const placeOrder = async (req, res, next) => {
     try {
@@ -143,58 +139,48 @@ export const placeOrder = async (req, res, next) => {
     }
 };
 
-export const loadOrderSuccess = async (req, res, next) => {
-    try {
-        const userId = req.currentUser?._id || req.session?.user?._id;
-        if (!userId) return res.redirect('/login');
+export const loadOrderSuccess = asyncHandler(async (req, res) => {
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    if (!userId) return res.redirect('/login');
 
-        const orderId = req.query.orderId || null;
-        let order = null;
-        
-        if (orderId) {
-            order = await orderService.getOrderById(userId, orderId);
-        }
-
-        res.render('user/orders/success', {
-            title: "Order Successful — SmartPick",
-            activePath: "/checkout",
-            orderId,
-            order
-        });
-    } catch (err) {
-        console.error("loadOrderSuccess error:", err);
-        next(err);
+    const orderId = req.query.orderId || null;
+    let order = null;
+    
+    if (orderId) {
+        order = await orderService.getOrderById(userId, orderId);
     }
-};
 
-export const getOrders = async (req, res, next) => {
-    try {
-        const userId = req.currentUser?._id || req.session?.user?._id;
-        if (!userId) return res.redirect('/login');
+    res.render('user/orders/success', {
+        title: "Order Successful — SmartPick",
+        activePath: "/checkout",
+        orderId,
+        order
+    });
+});
 
-        const page = parseInt(req.query.page) || 1;
-        const filter = req.query.status || 'All';
-        const limit = 5;
-        const search = { q: req.query.q || '', date: req.query.date || '' };
+export const getOrders = asyncHandler(async (req, res) => {
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    if (!userId) return res.redirect('/login');
 
-        const orderData = await orderService.getOrders(userId, page, limit, filter, search);
+    const page = parseInt(req.query.page) || 1;
+    const filter = req.query.status || 'All';
+    const limit = 5;
+    const search = { q: req.query.q || '', date: req.query.date || '' };
 
-        res.render('user/orders/index', {
-            title: "My Orders — SmartPick",
-            activePath: "/orders",
-            orders: orderData.orders,
-            currentPage: orderData.currentPage,
-            totalPages: orderData.totalPages,
-            totalOrders: orderData.totalOrders,
-            stats: orderData.stats,
-            filter,
-            search   // forward back to view so inputs stay filled
-        });
-    } catch (err) {
-        console.error("getOrders error:", err);
-        next(err);
-    }
-};
+    const orderData = await orderService.getOrders(userId, page, limit, filter, search);
+
+    res.render('user/orders/index', {
+        title: "My Orders — SmartPick",
+        activePath: "/orders",
+        orders: orderData.orders,
+        currentPage: orderData.currentPage,
+        totalPages: orderData.totalPages,
+        totalOrders: orderData.totalOrders,
+        stats: orderData.stats,
+        filter,
+        search   // forward back to view so inputs stay filled
+    });
+});
 
 export const cancelOrder = async (req, res, next) => {
     try {
@@ -265,41 +251,36 @@ export const returnOrder = async (req, res, next) => {
     }
 };
 
-export const getOrderDetails = async (req, res, next) => {
-    try {
-        const userId = req.currentUser?._id || req.session?.user?._id;
-        if (!userId) return res.redirect('/login');
+export const getOrderDetails = asyncHandler(async (req, res) => {
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    if (!userId) return res.redirect('/login');
 
-        const { id } = req.params;
-        const order = await orderService.getOrderById(userId, id);
+    const { id } = req.params;
+    const order = await orderService.getOrderById(userId, id);
 
-        if (!order) {
-            return res.status(404).render('error', { message: 'Order not found' });
-        }
-
-        // Fetch user reviews for products in this order
-        const ProductReview = (await import("../../model/reviewModel.js")).default;
-        const productIds = order.items.map(item => item.product._id || item.product);
-        const reviews = await ProductReview.find({ userId, productId: { $in: productIds } });
-
-        // Create a map of productId -> review
-        const userReviews = {};
-        reviews.forEach(r => userReviews[r.productId.toString()] = r);
-
-        const formattedOrder = orderPresentationService.formatOrderForDisplay(order);
-
-        res.render('user/orders/details', {
-            title: `Order ${formattedOrder.orderId} — SmartPick`,
-            activePath: '/orders',
-            order, // Keep original order for legacy JS modals if needed
-            formattedOrder,
-            userReviews
-        });
-    } catch (err) {
-        console.error('getOrderDetails error:', err);
-        next(err);
+    if (!order) {
+        return res.status(404).render('error', { message: 'Order not found' });
     }
-};
+
+    // Fetch user reviews for products in this order
+    const ProductReview = (await import("../../model/reviewModel.js")).default;
+    const productIds = order.items.map(item => item.product._id || item.product);
+    const reviews = await ProductReview.find({ userId, productId: { $in: productIds } });
+
+    // Create a map of productId -> review
+    const userReviews = {};
+    reviews.forEach(r => userReviews[r.productId.toString()] = r);
+
+    const formattedOrder = orderPresentationService.formatOrderForDisplay(order);
+
+    res.render('user/orders/details', {
+        title: `Order ${formattedOrder.orderId} — SmartPick`,
+        activePath: '/orders',
+        order, // Keep original order for legacy JS modals if needed
+        formattedOrder,
+        userReviews
+    });
+});
 
 export const checkPaymentStatus = async (req, res, next) => {
     try {
@@ -314,24 +295,19 @@ export const checkPaymentStatus = async (req, res, next) => {
 };
 
 // ── Shared helper for both invoice routes ────────────────────────────────────
-const serveInvoice = async (req, res, next, disposition) => {
-    try {
-        const userId = req.currentUser?._id || req.session?.user?._id;
-        if (!userId) return res.redirect('/login');
+const serveInvoice = asyncHandler(async (req, res, next, disposition) => {
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    if (!userId) return res.redirect('/login');
 
-        const { id } = req.params;
-        const order = await orderService.getOrderById(userId, id);
+    const { id } = req.params;
+    const order = await orderService.getOrderById(userId, id);
 
-        if (!order) {
-            return res.status(404).json({ message: 'Order not found or access denied' });
-        }
-
-        generateInvoice(order, res, disposition);
-    } catch (err) {
-        console.error('Invoice error:', err);
-        next(err);
+    if (!order) {
+        return res.status(404).json({ message: 'Order not found or access denied' });
     }
-};
+
+    generateInvoice(order, res, disposition);
+});
 
 export const viewInvoice = (req, res, next) =>
     serveInvoice(req, res, next, 'inline');

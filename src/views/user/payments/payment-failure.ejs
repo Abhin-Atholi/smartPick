@@ -282,7 +282,7 @@
     // ── Polling ────────────────────────────────────────────────────────────
     const pollingInterval = setInterval(async () => {
         try {
-            const res = await axios.get(`/order/status/${orderId}`);
+            const res = await axios.get(`/orders/status/${orderId}`);
             if (res.data.isExpired) {
                 clearInterval(pollingInterval);
                 clearInterval(timerInterval);
@@ -303,7 +303,7 @@
             progressBar.style.width   = '0%';
             (async () => {
                 try {
-                    const res = await axios.get(`/order/status/${orderId}`);
+                    const res = await axios.get(`/orders/status/${orderId}`);
                     showExpiredState(res.data?.cartRestorationSummary);
                 } catch {
                     showExpiredState(null);

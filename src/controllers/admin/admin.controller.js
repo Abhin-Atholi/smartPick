@@ -1,27 +1,24 @@
 
 import * as adminService from "../../services/admin/admin.service.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
-export const postLogin = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        
-        // Controller calls the service
-        const admin = await adminService.authenticateAdmin(email, password);
+export const postLogin = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    
+    // Controller calls the service
+    const admin = await adminService.authenticateAdmin(email, password);
 
-        // Controller handles the session
-        req.session.adminId = admin._id;
-        req.session.admin = {
-            _id: admin._id,
-            email: admin.email,
-            role: admin.role,
-            fullName:admin.fullName
-        };
+    // Controller handles the session
+    req.session.adminId = admin._id;
+    req.session.admin = {
+        _id: admin._id,
+        email: admin.email,
+        role: admin.role,
+        fullName:admin.fullName
+    };
 
-        req.session.save(() => res.redirect("/admin/dashboard"));
-    } catch (error) {
-        res.redirect(`/admin/login?msg=${encodeURIComponent(error.message)}`);
-    }
-};
+    req.session.save(() => res.redirect("/admin/dashboard"));
+});
 
 export const getLogin = (req, res) => {
     res.render("admin/auth/login", { msg: req.query.msg || null, title: "Admin Login", layout: "layout/layout" });
@@ -47,41 +44,30 @@ export const adminLogout = (req, res) => {
 /**
  * Customer Management with Pagination & Search
  */
-export const getCustomers = async (req, res) => {
-    try {
-        const { search, status } = req.query;
-        const page = parseInt(req.query.page) || 1;
-        const limit = 10;
+export const getCustomers = asyncHandler(async (req, res) => {
+    const { search, status } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
 
-        const { customers, totalPages } = await adminService.getCustomers(search, status, page, limit);
+    const { customers, totalPages } = await adminService.getCustomers(search, status, page, limit);
 
-        res.render("admin/customers/customers", {
-            customers,
-            title: "Customer Management",
-            currentSearch: search || "",
-            currentStatus: status || "All",
-            currentPage: page,
-            totalPages: totalPages,
-            activePath: "/admin/customers"
-        });
-    } catch (error) {
-        res.status(500).send("Server Error");
-    }
-};
+    res.render("admin/customers/customers", {
+        customers,
+        title: "Customer Management",
+        currentSearch: search || "",
+        currentStatus: status || "All",
+        currentPage: page,
+        totalPages: totalPages,
+        activePath: "/admin/customers"
+    });
+});
 
 /**
  * Toggle Block/Unblock via Fetch API
  */
-export const toggleCustomerStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const user = await adminService.toggleCustomerStatus(id);
-        res.json({ success: true, newStatus: user.status });
-    } catch (error) {
-        if (error.message === "Permission denied.") {
-            return res.status(403).json({ success: false });
-        }
-        res.status(500).json({ success: false });
-    }
-};
+export const toggleCustomerStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const user = await adminService.toggleCustomerStatus(id);
+    res.json({ success: true, newStatus: user.status });
+});
 

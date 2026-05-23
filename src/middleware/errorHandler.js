@@ -46,6 +46,9 @@ export const globalErrorHandler = (err, req, res, next) => {
     const statusCode = err.statusCode || err.status || 500;
 
     if (statusCode === 404 || err.message?.toLowerCase().includes('not found')) {
+      if (req.originalUrl.startsWith('/admin')) {
+          return res.status(404).render('admin/error/404', { title: 'Admin - Page Not Found' });
+      }
       return res.status(404).render('user/error/404', {
         title: 'Page Not Found — SmartPick'
       });

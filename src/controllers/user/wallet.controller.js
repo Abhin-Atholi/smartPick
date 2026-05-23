@@ -1,4 +1,5 @@
 import * as walletService from '../../services/user/wallet.service.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
@@ -7,40 +8,35 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET || 'test_secret'
 });
 
-export const getWalletPage = async (req, res, next) => {
-    try {
-        const userId = req.currentUser?._id || req.session?.user?._id;
-        if (!userId) return res.redirect('/login');
+export const getWalletPage = asyncHandler(async (req, res) => {
+    const userId = req.currentUser?._id || req.session?.user?._id;
+    if (!userId) return res.redirect('/login');
 
-        const page = parseInt(req.query.page) || 1;
-        const limit = 10;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
 
-        // Extract filter params from query string
-        const filters = {
-            search:   (req.query.search   || '').trim(),
-            type:     req.query.type     || '',
-            dateFrom: req.query.dateFrom || '',
-            dateTo:   req.query.dateTo   || ''
-        };
+    // Extract filter params from query string
+    const filters = {
+        search:   (req.query.search   || '').trim(),
+        type:     req.query.type     || '',
+        dateFrom: req.query.dateFrom || '',
+        dateTo:   req.query.dateTo   || ''
+    };
 
-        const data = await walletService.getTransactionHistory(userId, page, limit, filters);
+    const data = await walletService.getTransactionHistory(userId, page, limit, filters);
 
-        res.render('user/wallet/index', {
-            title: 'My Wallet — SmartPick',
-            activePath: '/wallet',
-            balance: data.balance,
-            transactions: data.transactions,
-            currentPage: data.currentPage,
-            totalPages: data.totalPages,
-            total: data.total,
-            razorpayKey: process.env.RAZORPAY_KEY_ID,
-            filters   // pass filters back so the view can pre-fill inputs
-        });
-    } catch (err) {
-        console.error('getWalletPage Error:', err);
-        next(err);
-    }
-};
+    res.render('user/wallet/index', {
+        title: 'My Wallet — SmartPick',
+        activePath: '/wallet',
+        balance: data.balance,
+        transactions: data.transactions,
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        total: data.total,
+        razorpayKey: process.env.RAZORPAY_KEY_ID,
+        filters   // pass filters back so the view can pre-fill inputs
+    });
+});
 
 /**
  * Create a Razorpay order for wallet top-up

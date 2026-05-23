@@ -5,17 +5,21 @@ import { protectRoute } from "../../middleware/user/isAuth.js";
 
 router.use(protectRoute); // All order routes require authentication
 
-router.get("/checkout", orderController.loadCheckout);
-router.post("/order/place", orderController.placeOrder);
-router.get("/order/success", orderController.loadOrderSuccess);
+// Checkout & post-order flow  (mounted at /orders)
+router.get("/checkout", orderController.loadCheckout);    // GET /orders/checkout
+router.post("/place", orderController.placeOrder);        // POST /orders/place
+router.get("/success", orderController.loadOrderSuccess); // GET /orders/success
 
-router.get("/orders", orderController.getOrders);
-router.get("/orders/:id", orderController.getOrderDetails);
-router.get("/orders/:id/view-invoice", orderController.viewInvoice);
-router.get("/orders/:id/download-invoice", orderController.downloadInvoice);
-router.post("/order/cancel", orderController.cancelOrder);
-router.post("/order/return", orderController.returnOrder);
-router.get("/order/status/:id", orderController.checkPaymentStatus);
+// Order listing & detail
+router.get("/", orderController.getOrders);               // GET /orders
+router.get("/:id", orderController.getOrderDetails);      // GET /orders/:id
+router.get("/:id/view-invoice", orderController.viewInvoice);
+router.get("/:id/download-invoice", orderController.downloadInvoice);
+
+// Order actions
+router.post("/cancel", orderController.cancelOrder);      // POST /orders/cancel
+router.post("/return", orderController.returnOrder);      // POST /orders/return
+router.get("/status/:id", orderController.checkPaymentStatus); // GET /orders/status/:id
 
 export default router;
 

@@ -7,8 +7,7 @@ import { createCloudinaryUpload, handleUploadError } from "../../config/multer.j
 
 const uploadCategory = createCloudinaryUpload('smartpick/categories');
 
-// Protect all routes in this file
-router.use(isAdmin); 
+// Protect all routes in this file (already protected by parent admin.routes.js)
 
 router.get("/", categoryController.getCategories);
 router.post("/add", uploadCategory.single("image"), handleUploadError, categoryController.addCategory);

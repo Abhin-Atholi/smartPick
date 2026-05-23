@@ -492,7 +492,7 @@
     btn.disabled = true;
 
     try {
-      const endpoint = type === 'cancel' ? '/order/cancel' : '/order/return';
+      const endpoint = type === 'cancel' ? '/orders/cancel' : '/orders/return';
       const payload = { orderId, reason };
       if (itemId) payload.itemId = itemId;
 

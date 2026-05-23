@@ -4,13 +4,15 @@ const router = express.Router();
 import * as authController from "../../controllers/user/auth.controller.js";
 import { redirectIfVerified, redirectIfAuth } from "../../middleware/user/isAuth.js";
 import { loginLimiter, registerLimiter, otpLimiter } from "../../middleware/user/authRateLimiter.js";
+import { validateRequest } from "../../middleware/validationMiddleware.js";
+import { loginSchema, registerSchema } from "../../validators/user/authValidation.js";
 
 // Auth pages (avoid showing on back button)
 router.get("/login", redirectIfAuth, authController.loadLogin);
 router.get("/register", redirectIfAuth, authController.loadRegister);
 
-router.post("/login", loginLimiter, authController.loginUser);
-router.post("/register", registerLimiter, authController.registerUser);
+router.post("/login", loginLimiter, validateRequest(loginSchema), authController.loginUser);
+router.post("/register", registerLimiter, validateRequest(registerSchema), authController.registerUser);
 
 // Validation
 router.get("/check-email", authController.checkEmail);

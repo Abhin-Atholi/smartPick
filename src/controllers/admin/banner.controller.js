@@ -1,73 +1,55 @@
 import * as bannerService from "../../services/admin/banner.service.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { sendSuccess, sendError } from "../../utils/responseHandler.js";
 
-export const getBanners = async (req, res) => {
-    try {
-        const banners = await bannerService.getAllBanners();
-        const activeBanner = banners.find(b => b.isActive);
-        
-        res.render("admin/banners/banners", {
-            title: "Banner Management",
-            banners,
-            activeBanner,
-            activePath: "/admin/banners"
-        });
-    } catch (error) {
-        console.error("Error fetching banners:", error);
-        res.status(500).send("Server Error");
+export const getBanners = asyncHandler(async (req, res) => {
+    const banners = await bannerService.getAllBanners();
+    const activeBanner = banners.find(b => b.isActive);
+    
+    res.render("admin/banners/banners", {
+        title: "Banner Management",
+        banners,
+        activeBanner,
+        activePath: "/admin/banners"
+    });
+});
+
+export const uploadBanner = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        return sendError(res, "A banner image is required.", 400);
     }
-};
 
-export const uploadBanner = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "A banner image is required." });
-        }
+    const { title } = req.body;
 
-        const { title } = req.body;
+    await bannerService.createBanner({
+        title: title || "Homepage Banner",
+        imageUrl: req.file.path,
+        isActive: true // Make new uploads active by default
+    });
 
-        await bannerService.createBanner({
-            title: title || "Homepage Banner",
-            imageUrl: req.file.path,
-            isActive: true // Make new uploads active by default
-        });
+    sendSuccess(res, { message: "Banner uploaded and activated successfully!" }, 201);
+});
 
-        res.status(201).json({ success: true, message: "Banner uploaded and activated successfully!" });
-    } catch (error) {
-        console.error("Banner upload error:", error);
-        res.status(500).json({ success: false, message: "Internal server error during upload." });
+export const activateBanner = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const banner = await bannerService.activateBanner(id);
+    
+    if (!banner) {
+        return sendError(res, "Banner not found.", 404);
     }
-};
+    
+    sendSuccess(res, { message: "Banner activated successfully." });
+});
 
-export const activateBanner = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const banner = await bannerService.activateBanner(id);
-        
-        if (!banner) {
-            return res.status(404).json({ success: false, message: "Banner not found." });
-        }
-        
-        res.json({ success: true, message: "Banner activated successfully." });
-    } catch (error) {
-        console.error("Activate banner error:", error);
-        res.status(500).json({ success: false, message: "Server error activating banner." });
+export const deleteBanner = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const deleted = await bannerService.deleteBanner(id);
+    
+    if (!deleted) {
+        return sendError(res, "Banner not found.", 404);
     }
-};
-
-export const deleteBanner = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deleted = await bannerService.deleteBanner(id);
-        
-        if (!deleted) {
-            return res.status(404).json({ success: false, message: "Banner not found." });
-        }
-        
-        res.json({ success: true, message: "Banner deleted successfully." });
-    } catch (error) {
-        console.error("Delete banner error:", error);
-        res.status(500).json({ success: false, message: "Server error deleting banner." });
-    }
-};
+    
+    sendSuccess(res, { message: "Banner deleted successfully." });
+});
 
 

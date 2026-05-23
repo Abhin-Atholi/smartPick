@@ -23,15 +23,15 @@ router.get("/home", userController.loadHome);
 router.get("/logout", userController.logout);
 
 // Mount Modular Routers
-router.use("/", authRoutes);          // /login, /register, etc.
-router.use("/account", accountRoutes); // /account, /account/addresses, etc.
+router.use("/", authRoutes);             // /login, /register, etc.
+router.use("/account", accountRoutes);   // /account, /account/addresses, etc.
 router.use("/wishlist", wishlistRoutes); // /wishlist, /wishlist/toggle, etc.
 router.use("/cart", cartRoutes);
-router.use("/products", productRoutes); // /products, /products/details, etc.
+router.use("/products", productRoutes);  // /products, /products/details/:id, etc.
 router.use("/payment", paymentRoutes);
-router.use("/", orderRoutes); // Mounts /checkout, /order/place, /order/success
-router.use("/", couponRoutes); // Mounts /apply-coupon, /remove-coupon
-router.use("/", walletRoutes); // Mounts /wallet
+router.use("/orders", orderRoutes);      // /orders, /orders/:id, /orders/checkout, etc.
+router.use("/coupons", couponRoutes);    // /coupons/apply, /coupons/remove, etc.
+router.use("/wallet", walletRoutes);     // /wallet, /wallet/topup/initiate, etc.
 router.use("/reviews", reviewRoutes);
 
 // --- 404 Fallback (must be last) ---
