@@ -67,5 +67,12 @@ router.use("/banners", bannerRoutes);
 // --- Order Management ---
 router.use("/orders", orderRoutes);
 
+// --- 404 Fallback (must be last) ---
+router.use((req, res) => {
+  res.status(404).render("admin/error/404", {
+    title: "Page Not Found — Admin | SmartPick"
+  });
+});
+
 export default router;
 

@@ -42,6 +42,17 @@ export const globalErrorHandler = (err, req, res, next) => {
         }
     }
 
-    // 5. Default fallback for normal page loads (GET)
-    res.status(err.statusCode || err.status || 500).send(err.message || "Something went wrong on the server.");
+    // 5. Render appropriate error page based on status code
+    const statusCode = err.statusCode || err.status || 500;
+
+    if (statusCode === 404 || err.message?.toLowerCase().includes('not found')) {
+      return res.status(404).render('user/error/404', {
+        title: 'Page Not Found — SmartPick'
+      });
+    }
+
+    res.status(statusCode).render('error', {
+      title: 'Something Went Wrong — SmartPick',
+      message: err.message || 'Something went wrong on the server.'
+    });
 };

@@ -1,0 +1,82 @@
+<!-- ===== ADMIN 404 PAGE ===== -->
+<!-- Rendered inside adminLayout's <main> via res.render('admin/error/404') -->
+
+<div class="flex items-center justify-center min-h-[70vh] px-4">
+  <div class="max-w-md w-full text-center">
+
+    <!-- Illustration container -->
+    <div class="relative inline-flex items-center justify-center w-32 h-32 mx-auto mb-8">
+      <!-- Outer ring -->
+      <div class="absolute inset-0 rounded-full border-2 border-dashed border-indigo-200 animate-spin" style="animation-duration:12s"></div>
+      <!-- Inner circle -->
+      <div class="w-24 h-24 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+             class="text-indigo-400">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 404 number -->
+    <div class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 mb-3 leading-none select-none">
+      404
+    </div>
+
+    <!-- Title & description -->
+    <h1 class="text-xl font-black text-slate-800 mb-2">Page Not Found</h1>
+    <p class="text-sm text-gray-500 leading-relaxed mb-8">
+      This admin page doesn't exist. It may have been removed, renamed, or you may have followed a broken link.
+    </p>
+
+    <!-- Divider -->
+    <div class="h-px bg-gray-100 mb-8"></div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+      <a href="/admin/dashboard"
+         id="admin-btn-dashboard"
+         class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200 hover:-translate-y-0.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="/admin/orders"
+         id="admin-btn-orders"
+         class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-slate-700 font-black text-sm hover:bg-gray-50 hover:border-indigo-200 transition-all hover:-translate-y-0.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Orders
+      </a>
+      <button onclick="history.back()"
+              id="admin-btn-back"
+              class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 font-black text-sm hover:bg-gray-50 transition-all hover:-translate-y-0.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Go Back
+      </button>
+    </div>
+
+    <!-- Breadcrumb hint -->
+    <p class="mt-8 text-[11px] text-gray-400 font-bold uppercase tracking-widest">
+      SmartPick Admin &nbsp;·&nbsp; 404 Not Found
+    </p>
+
+  </div>
+</div>

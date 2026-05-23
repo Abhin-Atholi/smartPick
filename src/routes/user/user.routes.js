@@ -34,5 +34,12 @@ router.use("/", couponRoutes); // Mounts /apply-coupon, /remove-coupon
 router.use("/", walletRoutes); // Mounts /wallet
 router.use("/reviews", reviewRoutes);
 
+// --- 404 Fallback (must be last) ---
+router.use((req, res) => {
+  res.status(404).render("user/error/404", {
+    title: "Page Not Found — SmartPick"
+  });
+});
+
 export default router;
 

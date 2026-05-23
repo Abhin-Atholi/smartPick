@@ -1,0 +1,86 @@
+<%- include("user/partials/navbar") %>
+
+<!-- ===== GENERIC ERROR FALLBACK ===== -->
+<div class="min-h-[75vh] flex items-center justify-center px-4 py-16">
+
+  <!-- Soft ambient blob -->
+  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-red-100/40 rounded-full blur-3xl pointer-events-none"></div>
+
+  <div class="relative z-10 max-w-md w-full">
+
+    <!-- Card -->
+    <div class="bg-white border border-gray-100 rounded-3xl shadow-xl shadow-gray-100/80 overflow-hidden">
+
+      <!-- Red top bar -->
+      <div class="h-1.5 bg-gradient-to-r from-rose-400 via-red-500 to-orange-400"></div>
+
+      <div class="p-8 sm:p-10 text-center">
+
+        <!-- Status badge -->
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-red-600 text-xs font-black uppercase tracking-widest mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Error
+        </div>
+
+        <!-- Icon -->
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+               class="text-red-400">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+
+        <!-- Title -->
+        <h1 class="text-xl font-black text-slate-800 mb-3">Something Went Wrong</h1>
+
+        <!-- Error message -->
+        <% if (typeof message !== 'undefined' && message) { %>
+          <div class="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-6">
+            <p class="text-sm text-red-700 font-medium"><%= message %></p>
+          </div>
+        <% } else { %>
+          <p class="text-gray-500 text-sm leading-relaxed mb-6">
+            We encountered an unexpected issue. Please try again or head back to continue shopping.
+          </p>
+        <% } %>
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-2">
+          <a href="/"
+             id="error-btn-home"
+             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200 hover:-translate-y-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Go Home
+          </a>
+          <button onclick="history.back()"
+                  id="error-btn-back"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-slate-700 font-black text-sm hover:bg-gray-50 hover:border-indigo-200 transition-all hover:-translate-y-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Go Back
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<%- include("user/partials/footer") %>
+<%- include("user/partials/drawer") %>
