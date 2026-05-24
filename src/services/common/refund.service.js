@@ -3,7 +3,8 @@ import { roundCurrency } from './pricing.service.js';
 export const REFUND_TYPES = {
     FULL_CANCEL: 'FULL_CANCEL',
     PARTIAL_CANCEL: 'PARTIAL_CANCEL',
-    RETURN: 'RETURN'
+    RETURN: 'RETURN',
+    PARTIAL_RETURN: 'RETURN'
 };
 
 /**

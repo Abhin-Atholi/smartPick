@@ -40,6 +40,13 @@ export const initiateCheckout = asyncHandler(async (req, res) => {
 
     const { orderId, totalAmount } = result;
 
+    // Clear coupon from session now — it is permanently stored in order.couponApplied
+    // and baked into the frozen order.totalAmount. Keeping it in session would allow
+    // the same coupon to be applied again on a subsequent order if this payment fails.
+    if (req.session.appliedCoupon) {
+        delete req.session.appliedCoupon;
+    }
+
     // 2. Initialize Razorpay Gateway Order
     const rzpOrder = await razorpay.orders.create({
         amount: Math.round(totalAmount * 100), // paise

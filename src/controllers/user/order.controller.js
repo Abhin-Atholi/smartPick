@@ -8,6 +8,7 @@ import * as walletService from '../../services/user/wallet.service.js';
 import * as taxHelper from '../../utils/taxHelper.js';
 import * as orderPresentationService from '../../services/common/orderPresentation.service.js';
 import { SHIPPING_RULES } from '../../config/storeConfig.js';
+import * as pricingService from '../../services/common/pricing.service.js';
 
 export const loadCheckout = asyncHandler(async (req, res) => {
     const userId = req.currentUser?._id || req.session?.user?._id;
@@ -29,8 +30,7 @@ export const loadCheckout = asyncHandler(async (req, res) => {
     }
 
     // Calculate totals and check stock
-    let subtotal = 0;
-    let totalOfferDiscount = 0;
+    let tempSubtotal = 0;
     let hasStockIssue = false;
 
     const cartItemsWithStock = cartData.items
@@ -51,31 +51,22 @@ export const loadCheckout = asyncHandler(async (req, res) => {
             if (stockIssue) hasStockIssue = true;
 
             if (!stockIssue) {
-                subtotal += item.effectiveTotalPrice || item.totalPrice;
-                if (item.offerApplied) {
-                    totalOfferDiscount += ((item.originalPrice || item.price) - (item.finalPrice || item.price)) * item.quantity;
-                }
+                tempSubtotal += item.effectiveTotalPrice || item.totalPrice;
             }
             return { ...item, availableStock, isLowStock, isOutOfStock, stockIssue };
         });
 
-    const shippingFee = subtotal >= SHIPPING_RULES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_RULES.STANDARD_SHIPPING_FEE;
-
-    let couponDiscount = 0;
     let appliedCoupon = null;
 
     // Revalidate coupon on page load just in case it expired while browsing
-    if (req.session.appliedCoupon && subtotal > 0 && !hasStockIssue) {
+    if (req.session.appliedCoupon && tempSubtotal > 0 && !hasStockIssue) {
         try {
-            const result = await couponHelper.validateAndCalculateDiscount(
+            await couponHelper.validateAndCalculateDiscount(
                 req.session.appliedCoupon.code,
-                subtotal,
+                tempSubtotal,
                 userId
             );
-            couponDiscount = result.discountAmount;
             appliedCoupon = req.session.appliedCoupon;
-            // Update session accurately
-            req.session.appliedCoupon.discountAmount = couponDiscount;
         } catch (err) {
             // If invalid, drop from session
             delete req.session.appliedCoupon;
@@ -83,22 +74,43 @@ export const loadCheckout = asyncHandler(async (req, res) => {
         }
     }
 
-    const taxableAmount = taxHelper.calculateTaxableAmount(subtotal, couponDiscount);
-    const tax = taxHelper.calculateTax(taxableAmount);
-    const totalAmount = subtotal - couponDiscount + shippingFee + tax;
+    // Process pricing via centralized engine
+    const eligibleItems = cartItemsWithStock.filter(i => !i.stockIssue);
+    const pricingResult = pricingService.processPricing(eligibleItems, appliedCoupon);
+    const breakdown = pricingResult.breakdown;
+
+    // Map item-level snapshot fields back for correct frontend item-level displaying
+    cartItemsWithStock.forEach(item => {
+        if (!item.stockIssue) {
+            const processed = pricingResult.items.find(pi => 
+                (pi.variantId && item.variantId && pi.variantId.toString() === item.variantId.toString()) ||
+                ((pi.product._id || pi.product).toString() === (item.product._id || item.product).toString() && pi.size === item.size && pi.color === item.color)
+            );
+            if (processed) {
+                item.couponAllocated = processed.couponAllocated;
+                item.finalPriceBeforeCoupon = processed.finalPriceBeforeCoupon;
+                item.finalPriceAfterCoupon = processed.finalPriceAfterCoupon;
+            }
+        }
+    });
+
+    if (appliedCoupon) {
+        req.session.appliedCoupon.discountAmount = breakdown.couponDiscount;
+        req.session.save();
+    }
 
     res.render('user/checkout', {
         title: "Checkout — SmartPick",
-        activePath: "/checkout",
+        activePath: "/orders/checkout",
         addresses,
         cartItems: cartItemsWithStock,
-        subtotal: subtotal + totalOfferDiscount, // Show original subtotal before offers
-        totalOfferDiscount,
-        shippingFee,
-        couponDiscount,
-        tax,
+        subtotal: breakdown.originalSubtotal, // Show original subtotal before offers
+        totalOfferDiscount: breakdown.offerDiscount,
+        shippingFee: breakdown.shippingFee,
+        couponDiscount: breakdown.couponDiscount,
+        tax: breakdown.tax,
         appliedCoupon,
-        totalAmount,
+        totalAmount: breakdown.totalAmount,
         hasStockIssue,
         walletBalance
     });
@@ -152,7 +164,7 @@ export const loadOrderSuccess = asyncHandler(async (req, res) => {
 
     res.render('user/orders/success', {
         title: "Order Successful — SmartPick",
-        activePath: "/checkout",
+        activePath: "/orders/checkout",
         orderId,
         order
     });
