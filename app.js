@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.set("trust proxy", process.env.NODE_ENV === "production" ? 1 : false);
+app.set("trust proxy", 1);
 
 app.use(helmet({
   contentSecurityPolicy: false, // Allowed to load external CDN assets and inline scripts in EJS

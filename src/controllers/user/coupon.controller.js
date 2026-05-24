@@ -44,7 +44,12 @@ export const applyCoupon = asyncHandler(async (req, res) => {
         return res.status(400).json({ success: false, message: "No valid items in cart to apply coupon." });
     }
 
-    const result = await couponHelper.validateAndCalculateDiscount(couponCode, effectiveSubtotal, userId);
+    let result;
+    try {
+        result = await couponHelper.validateAndCalculateDiscount(couponCode, effectiveSubtotal, userId);
+    } catch (err) {
+        return res.status(400).json({ success: false, message: err.message });
+    }
 
     req.session.appliedCoupon = {
         code: result.coupon.code,
