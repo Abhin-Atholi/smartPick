@@ -25,7 +25,7 @@ export const getOffers = async (req, res) => {
             activePath: '/admin/offers'
         });
     } catch (error) {
-        console.error('getOffers Error:', error);
+        if (!error.isOperational) console.error('getOffers Error:', error);
         res.status(500).render('admin/offers/offers', {
             title: 'Offer Management',
             offers: [], currentPage: 1, totalPages: 1,

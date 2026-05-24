@@ -74,7 +74,7 @@ export const loadProducts = async (req, res) => {
     res.render("user/products/index", renderData);
 
   } catch (err) {
-    console.error("loadProducts error:", err);
+    if (!err.isOperational) console.error("loadProducts error:", err);
     res.status(500).send("Something went wrong while loading products.");
   }
 };
@@ -147,7 +147,7 @@ export const loadProductDetails = async (req, res) => {
       reviewsData
     });
   } catch (err) {
-    console.error("Product details error:", err);
+    if (!err.isOperational) console.error("Product details error:", err);
     if (err.name === 'CastError') {
       return res.status(404).render('user/404', { title: 'Product Not Found' });
     }
@@ -213,7 +213,7 @@ export const getProductOffers = async (req, res) => {
       basePrice 
     });
   } catch (err) {
-    console.error("getProductOffers error:", err);
+    if (!err.isOperational) console.error("getProductOffers error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -290,7 +290,7 @@ export const getEligibleCoupons = async (req, res) => {
       appliedCoupon: req.session.appliedCoupon || null
     });
   } catch (err) {
-    console.error("getEligibleCoupons error:", err);
+    if (!err.isOperational) console.error("getEligibleCoupons error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

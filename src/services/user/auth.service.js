@@ -10,7 +10,7 @@ import AppError from "../../utils/AppError.js";
  * Register: Handles temporary user creation and OTP generation
  */
 export const register = async (data) => {
-  const { error, value } = registerSchema.validate(data);
+  const { error, value } = registerSchema.validate(data, { stripUnknown: true });
   if (error) throw new AppError(error.details[0].message, 400);
 
   let { name, email, password, referralCode } = value;
@@ -39,7 +39,7 @@ export const register = async (data) => {
  * Login: Handles credentials, block status, and verification checks
  */
 export const login = async (data) => {
-  const { error, value } = loginSchema.validate(data);
+  const { error, value } = loginSchema.validate(data, { stripUnknown: true });
   if (error) throw new AppError(error.details[0].message, 400);
   
   let { email, password } = value;
@@ -81,7 +81,7 @@ export const login = async (data) => {
 export const finalizePasswordReset = async (data) => {
   if (!data.otp) throw new AppError("Please enter the otp", 400);
   
-  const { error, value } = resetPasswordSchema.validate(data);
+  const { error, value } = resetPasswordSchema.validate(data, { stripUnknown: true });
   if (error) throw new AppError(error.details[0].message, 400);
 
   const { email, otp, password } = value;

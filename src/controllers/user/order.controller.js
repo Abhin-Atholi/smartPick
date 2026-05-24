@@ -145,8 +145,8 @@ export const placeOrder = async (req, res, next) => {
             res.status(400).json({ success: false, message: result.message, affectedItems: result.affectedItems || [] });
         }
     } catch (err) {
-        console.error("placeOrder error:", err.message);
-        console.error(err.stack);
+        if (!err.message.isOperational) console.error("placeOrder error:", err.message);
+        if (!err.stack.isOperational) console.error(err.stack);
         res.status(500).json({ success: false, message: err.message || "An error occurred while placing your order" });
     }
 };
@@ -222,7 +222,7 @@ export const cancelOrder = async (req, res, next) => {
             res.status(400).json({ success: false, message: result.message });
         }
     } catch (err) {
-        console.error("cancelOrder error:", err);
+        if (!err.isOperational) console.error("cancelOrder error:", err);
         res.status(500).json({ success: false, message: "An error occurred during cancellation" });
     }
 };
@@ -258,7 +258,7 @@ export const returnOrder = async (req, res, next) => {
             res.status(400).json({ success: false, message: result.message });
         }
     } catch (err) {
-        console.error("returnOrder error:", err);
+        if (!err.isOperational) console.error("returnOrder error:", err);
         res.status(500).json({ success: false, message: "An error occurred during return request" });
     }
 };
@@ -301,7 +301,7 @@ export const checkPaymentStatus = async (req, res, next) => {
         const result = await orderService.checkPaymentStatus(userId, id);
         res.json(result);
     } catch (err) {
-        console.error('checkPaymentStatus error:', err);
+        if (!err.isOperational) console.error('checkPaymentStatus error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };

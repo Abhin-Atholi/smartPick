@@ -123,7 +123,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
                 { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } }
             );
         } catch (err) {
-            console.error('Coupon final usage update failed:', err);
+            if (!err.isOperational) console.error('Coupon final usage update failed:', err);
         }
     }
 

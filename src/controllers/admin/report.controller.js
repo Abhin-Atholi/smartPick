@@ -46,7 +46,7 @@ export const getSalesReportsPage = async (req, res) => {
     try {
         res.render('admin/reports/salesReports', { title: 'Sales Reports — SmartPick', activePath: '/admin/sales-reports' });
     } catch (error) {
-        console.error('Error rendering sales reports:', error);
+        if (!error.isOperational) console.error('Error rendering sales reports:', error);
         res.status(500).send('Internal Server Error');
     }
 };
@@ -70,7 +70,7 @@ export const getSalesReportData = async (req, res) => {
         ]);
         res.json({ success: true, data: { kpis, ledger } });
     } catch (error) {
-        console.error('Report data error:', error);
+        if (!error.isOperational) console.error('Report data error:', error);
         res.status(500).json({ success: false, message: 'Failed to fetch data' });
     }
 };
@@ -257,7 +257,7 @@ export const exportExcelReport = async (req, res) => {
         await wb.xlsx.write(res);
         res.end();
     } catch (error) {
-        console.error('Excel Export Error:', error);
+        if (!error.isOperational) console.error('Excel Export Error:', error);
         res.status(500).send('Export failed');
     }
 };
@@ -397,7 +397,7 @@ export const exportPdfReport = async (req, res) => {
 
         doc.end();
     } catch (error) {
-        console.error('PDF Export Error:', error);
+        if (!error.isOperational) console.error('PDF Export Error:', error);
         res.status(500).send('Export failed');
     }
 };

@@ -13,7 +13,7 @@ export const addReview = async (req, res) => {
         
         return res.status(200).json({ success: true, message: "Review added successfully!" });
     } catch (error) {
-        console.error("addReview Error:", error);
+        if (!error.isOperational) console.error("addReview Error:", error);
         return res.status(400).json({ success: false, message: error.message || "Failed to add review." });
     }
 };
@@ -32,7 +32,7 @@ export const updateReview = async (req, res) => {
         
         return res.status(200).json({ success: true, message: "Review updated successfully!" });
     } catch (error) {
-        console.error("updateReview Error:", error);
+        if (!error.isOperational) console.error("updateReview Error:", error);
         return res.status(400).json({ success: false, message: error.message || "Failed to update review." });
     }
 };
@@ -46,7 +46,7 @@ export const deleteReview = async (req, res) => {
         
         return res.status(200).json({ success: true, message: "Review deleted successfully!" });
     } catch (error) {
-        console.error("deleteReview Error:", error);
+        if (!error.isOperational) console.error("deleteReview Error:", error);
         return res.status(400).json({ success: false, message: error.message || "Failed to delete review." });
     }
 };
@@ -60,7 +60,7 @@ export const getReviews = async (req, res) => {
         
         return res.status(200).json({ success: true, data });
     } catch (error) {
-        console.error("getReviews Error:", error);
+        if (!error.isOperational) console.error("getReviews Error:", error);
         return res.status(500).json({ success: false, message: "Internal server error." });
     }
 };
@@ -78,7 +78,7 @@ export const checkReviewEligibility = async (req, res) => {
         
         return res.status(200).json({ success: true, eligible: eligibility.eligible, message: eligibility.message });
     } catch (error) {
-        console.error("checkReviewEligibility Error:", error);
+        if (!error.isOperational) console.error("checkReviewEligibility Error:", error);
         return res.status(500).json({ success: false, message: "Internal server error." });
     }
 };

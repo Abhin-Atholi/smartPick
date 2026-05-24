@@ -21,7 +21,7 @@ export const loadHome = async (req, res) => {
       activeBanner
     });
   } catch (error) {
-    console.error("Home load error:", error);
+    if (!error.isOperational) console.error("Home load error:", error);
     res.render("user/home/home", { title: "SmartPick", categories: [], latestProducts: [], activeBanner: null });
   }
 };
@@ -36,7 +36,7 @@ export const logout = (req, res) => {
 
   if (req.user) {
     req.logout({ keepSessionInfo: true }, (err) => {
-      if (err) console.error("Passport logout error:", err);
+      if (err) if (!err.isOperational) console.error("Passport logout error:", err);
 
       // Restore admin session
       if (adminId && adminData) {
@@ -45,13 +45,13 @@ export const logout = (req, res) => {
       }
 
       req.session.save((err) => {
-        if (err) console.error("Logout error:", err);
+        if (err) if (!err.isOperational) console.error("Logout error:", err);
         res.redirect("/login");
       });
     });
   } else {
     req.session.save((err) => {
-      if (err) console.error("Logout error:", err);
+      if (err) if (!err.isOperational) console.error("Logout error:", err);
       res.redirect("/login");
     });
   }

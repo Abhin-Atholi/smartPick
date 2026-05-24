@@ -12,7 +12,7 @@ export const renderDashboard = async (req, res) => {
             activePath: "/admin/dashboard"
         });
     } catch (error) {
-        console.error("Error rendering dashboard:", error);
+        if (!error.isOperational) console.error("Error rendering dashboard:", error);
         res.status(500).send("Internal Server Error");
     }
 };
@@ -24,7 +24,7 @@ export const getDashboardData = async (req, res) => {
         const data = await dashboardService.getDashboardData(filter || 'Monthly', customFrom, customTo);
         res.json({ success: true, data });
     } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        if (!error.isOperational) console.error("Error fetching dashboard data:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };

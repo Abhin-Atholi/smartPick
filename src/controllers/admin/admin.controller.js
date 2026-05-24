@@ -40,7 +40,7 @@ export const adminLogout = (req, res) => {
     req.session.adminId = null;
     // Force save to ensure the change is written to the database/store
     req.session.save((err) => {
-        if (err) console.error(err);
+        if (err) if (!err.isOperational) console.error(err);
         res.redirect("/admin/login");
     });
 };

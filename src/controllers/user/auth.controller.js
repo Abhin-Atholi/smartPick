@@ -133,7 +133,11 @@ export const loadVerify = async (req, res) => {
       msg: msg || (remainingSeconds === 0 ? "OTP Expired" : null) 
     });
   } catch (err) {
-    console.error("loadVerify Error:", err);
+    if (!err.isOperational) {
+      console.error("loadVerify Error:", err);
+    } else {
+      console.log(`loadVerify Info: ${err.message}`);
+    }
     res.redirect("/register?msg=" + encodeURIComponent(err.message));
   }
 };
@@ -164,7 +168,11 @@ export const verifyOtp = async (req, res, next) => {
       res.redirect("/home");
     });
   } catch (err) {
-    console.error("verifyOtp Error:", err);
+    if (!err.isOperational) {
+      console.error("verifyOtp Error:", err);
+    } else {
+      console.log(`verifyOtp Info: ${err.message} (${req.body.email || 'no-email'})`);
+    }
     const email = req.body.email || "";
     const purpose = req.body.purpose || "register";
     res.redirect(`/verify?email=${encodeURIComponent(email)}&context=${encodeURIComponent(purpose)}&msg=${encodeURIComponent(err.message)}`);

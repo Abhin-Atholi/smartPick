@@ -26,7 +26,7 @@ export const getWishlist = async (req, res) => {
             totalProducts: totalItems
         });
     } catch (err) {
-        console.error("getWishlist error:", err);
+        if (!err.isOperational) console.error("getWishlist error:", err);
         res.status(500).send("Internal Server Error");
     }
 };
@@ -42,7 +42,7 @@ export const toggleWishlist = async (req, res) => {
         const action = await wishlistService.toggleWishlist(userId, productId);
         return res.json({ success: true, action });
     } catch (err) {
-        console.error("toggleWishlist error:", err);
+        if (!err.isOperational) console.error("toggleWishlist error:", err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
@@ -56,7 +56,7 @@ export const removeFromWishlist = async (req, res) => {
 
         res.json({ success: true });
     } catch (err) {
-        console.error("removeFromWishlist error:", err);
+        if (!err.isOperational) console.error("removeFromWishlist error:", err);
         res.status(500).json({ success: false });
     }
 };

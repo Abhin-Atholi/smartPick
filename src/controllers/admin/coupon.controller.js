@@ -19,7 +19,7 @@ export const getCoupons = async (req, res) => {
             stats: result.stats
         });
     } catch (error) {
-        console.error("getCoupons Error:", error);
+        if (!error.isOperational) console.error("getCoupons Error:", error);
         res.status(500).render('admin/coupons/coupons', { 
             coupons: [], 
             currentPage: 1, 
@@ -38,7 +38,7 @@ export const addCoupon = async (req, res) => {
         return res.status(201).json({ success: true, message: "Coupon added successfully!" });
     } catch (error) {
         if (error.message.includes("Internal server error")) {
-            console.error("addCoupon Error:", error);
+            if (!error.isOperational) console.error("addCoupon Error:", error);
             return res.status(500).json({ success: false, message: "Internal server error." });
         }
         return res.status(400).json({ success: false, message: error.message });
@@ -52,7 +52,7 @@ export const editCoupon = async (req, res) => {
         return res.status(200).json({ success: true, message: "Coupon updated successfully!" });
     } catch (error) {
         if (error.message.includes("Internal server error")) {
-            console.error("editCoupon Error:", error);
+            if (!error.isOperational) console.error("editCoupon Error:", error);
             return res.status(500).json({ success: false, message: "Internal server error." });
         }
         return res.status(400).json({ success: false, message: error.message });
@@ -70,7 +70,7 @@ export const toggleCoupon = async (req, res) => {
         });
     } catch (error) {
         if (error.message.includes("Internal server error")) {
-            console.error("toggleCoupon Error:", error);
+            if (!error.isOperational) console.error("toggleCoupon Error:", error);
             return res.status(500).json({ success: false, message: "Internal server error." });
         }
         return res.status(404).json({ success: false, message: error.message });
@@ -84,7 +84,7 @@ export const deleteCoupon = async (req, res) => {
         return res.status(200).json({ success: true, message: "Coupon deleted successfully!" });
     } catch (error) {
         if (error.message.includes("Internal server error")) {
-            console.error("deleteCoupon Error:", error);
+            if (!error.isOperational) console.error("deleteCoupon Error:", error);
             return res.status(500).json({ success: false, message: "Internal server error." });
         }
         return res.status(404).json({ success: false, message: error.message });

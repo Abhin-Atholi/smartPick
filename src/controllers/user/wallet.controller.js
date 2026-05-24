@@ -64,7 +64,7 @@ export const initiateWalletTopup = async (req, res) => {
             key: process.env.RAZORPAY_KEY_ID
         });
     } catch (err) {
-        console.error('initiateWalletTopup Error:', err);
+        if (!err.isOperational) console.error('initiateWalletTopup Error:', err);
         return res.status(500).json({ success: false, message: 'Could not initiate payment.' });
     }
 };
@@ -106,7 +106,7 @@ export const verifyWalletTopup = async (req, res) => {
             message: `₹${creditAmount.toLocaleString('en-IN')} added to your wallet successfully!`
         });
     } catch (err) {
-        console.error('verifyWalletTopup Error:', err);
+        if (!err.isOperational) console.error('verifyWalletTopup Error:', err);
         return res.status(500).json({ success: false, message: 'Verification failed.' });
     }
 };

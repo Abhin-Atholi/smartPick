@@ -19,7 +19,7 @@ export const loadCart = async (req, res, next) => {
             activePath: "/cart"
         });
     } catch (err) {
-        console.error("loadCart error:", err);
+        if (!err.isOperational) console.error("loadCart error:", err);
         next(err);
     }
 };
@@ -46,7 +46,7 @@ export const addToCart = async (req, res, next) => {
         res.json({ success: true, message: "Added to cart successfully!", itemCount: result.items.length });
     } catch (err) {
         if (!err.message.includes("already in your cart")) {
-            console.error("addToCart error:", err);
+            if (!err.isOperational) console.error("addToCart error:", err);
         }
         res.status(400).json({ success: false, message: err.message });
     }
@@ -75,7 +75,7 @@ export const updateQuantity = async (req, res, next) => {
         });
     } catch (err) {
         if (!err.message.includes("Maximum limit reached") && !err.message.includes("Units per product")) {
-            console.error("updateQuantity error:", err);
+            if (!err.isOperational) console.error("updateQuantity error:", err);
         }
         res.status(400).json({ success: false, message: err.message });
     }
@@ -95,7 +95,7 @@ export const removeItem = async (req, res, next) => {
             estimatedTax: taxHelper.calculateTax(cart.activeTotal)
         });
     } catch (err) {
-        console.error("removeItem error:", err);
+        if (!err.isOperational) console.error("removeItem error:", err);
         res.status(400).json({ success: false, message: err.message });
     }
 };

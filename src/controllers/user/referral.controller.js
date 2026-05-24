@@ -45,7 +45,7 @@ export const loadReferrals = async (req, res, next) => {
             stats: { totalReferrals, successfulReferrals, pendingReferrals, totalEarned },
         });
     } catch (err) {
-        console.error('loadReferrals error:', err);
+        if (!err.isOperational) console.error('loadReferrals error:', err);
         next(err);
     }
 };
