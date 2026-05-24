@@ -3,6 +3,7 @@ import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
 import Wishlist from '../../model/wishlistModel.js';
 import * as offerHelper from '../../utils/offerHelper.js';
+import AppError from '../../utils/AppError.js';
 
 import * as pricingService from '../common/pricing.service.js';
 
@@ -131,18 +132,18 @@ export const getCart = async (userId, page = 1, limit = 4) => {
 
 export const addToCart = async (userId, productId, quantity, variantId) => {
     const product = await Product.findById(productId).populate('category subcategory');
-    if (!product || !product.isCurrentlyAvailable) throw new Error("This product is no longer available.");
+    if (!product || !product.isCurrentlyAvailable) throw new AppError("This product is no longer available.", 400);
 
     let variant;
     if (!variantId) {
         variant = product.variants.find(v => v.stock > 0);
-        if (!variant) throw new Error("This product is currently out of stock");
+        if (!variant) throw new AppError("This product is currently out of stock", 400);
         variantId = variant._id;
     } else {
         variant = product.variants.find(v => v._id.toString() === variantId.toString());
     }
 
-    if (!variant) throw new Error("Requested product variant not found");
+    if (!variant) throw new AppError("Requested product variant not found", 400);
 
     // Check stock
     if (variant.stock < quantity) {
@@ -201,7 +202,7 @@ export const addToCart = async (userId, productId, quantity, variantId) => {
 export const updateQuantity = async (userId, productId, variantId, quantity) => {
     const MAX_PER_PRODUCT = 5;
     const cart = await Cart.findOne({ user: userId });
-    if (!cart) throw new Error("Cart not found");
+    if (!cart) throw new AppError("Cart not found", 400);
 
     // Fetch product first to resolve variant details for robust matching
     const product = await Product.findById(productId).populate('category subcategory');
@@ -223,7 +224,7 @@ export const updateQuantity = async (userId, productId, variantId, quantity) => 
         )
     );
 
-    if (itemIndex === -1) throw new Error("Item not found in cart");
+    if (itemIndex === -1) throw new AppError("Item not found in cart", 400);
 
     if (quantity > MAX_PER_PRODUCT) {
         return { success: false, message: `Maximum limit reached. You can only have ${MAX_PER_PRODUCT} units per product.`, code: "LIMIT_REACHED" };
@@ -270,7 +271,7 @@ export const updateQuantity = async (userId, productId, variantId, quantity) => 
 
 export const removeItem = async (userId, productId, variantId) => {
     const cart = await Cart.findOne({ user: userId });
-    if (!cart) throw new Error("Cart not found");
+    if (!cart) throw new AppError("Cart not found", 400);
 
     // Fetch product to resolve variant details for robust matching
     const product = await Product.findById(productId);

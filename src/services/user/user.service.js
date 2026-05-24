@@ -4,6 +4,7 @@ import { deleteLocalFile, deleteCloudinaryFile } from "../../utils/fileHelper.js
 import * as otpService from "../common/otp.service.js";
 import Address from "../../model/addressModel.js";
 import { addressSchema } from "../../validators/user/addressValidation.js";
+import AppError from "../../utils/AppError.js";
 
 /**
  * Logic: Process Profile Updates, handle image replacement, and email change security.
@@ -11,7 +12,7 @@ import { addressSchema } from "../../validators/user/addressValidation.js";
 export const processProfileUpdate = async (userId, updateData, file) => {
   const { fullName, email, phone } = updateData;
   const user = await User.findById(userId);
-  if (!user) throw new Error("User not found");
+  if (!user) throw new AppError("User not found", 400);
 
   // Handle Image Replacement
   if (file) {
@@ -32,11 +33,11 @@ export const processProfileUpdate = async (userId, updateData, file) => {
   const normalizedEmail = email ? email.trim().toLowerCase() : email;
   if (normalizedEmail && normalizedEmail !== user.email) {
     if (user.authProvider === 'google') {
-      throw new Error("Email cannot be changed for Google accounts.");
+      throw new AppError("Email cannot be changed for Google accounts.", 400);
     }
 
     const emailExists = await User.findOne({ email: normalizedEmail, _id: { $ne: userId } });
-    if (emailExists) throw new Error("Email already taken");
+    if (emailExists) throw new AppError("Email already taken", 400);
 
     user.pendingEmail = normalizedEmail;
     
@@ -60,10 +61,10 @@ export const processProfileUpdate = async (userId, updateData, file) => {
  */
 export const removeImage = async (userId) => {
   const user = await User.findById(userId);
-  if (!user || (!user.profileImage && !user.profileImageId)) throw new Error("No image to remove");
+  if (!user || (!user.profileImage && !user.profileImageId)) throw new AppError("No image to remove", 400);
 
   if (user.authProvider === 'google') {
-    throw new Error("Profile image is managed via Google Account.");
+    throw new AppError("Profile image is managed via Google Account.", 400);
   }
 
   if (user.profileImageId) {
@@ -82,7 +83,7 @@ export const removeImage = async (userId) => {
  */
 export const addAddress = async (userId, addressData) => {
   const { error, value } = addressSchema.validate(addressData, { abortEarly: false, stripUnknown: true });
-  if (error) throw new Error(error.details[0].message);
+  if (error) throw new AppError(error.details[0].message, 400);
 
   let defaultStatus = value.isDefault === true;
 
@@ -98,7 +99,7 @@ export const addAddress = async (userId, addressData) => {
 
 export const updateAddress = async (userId, addressId, addressData) => {
   const { error, value } = addressSchema.validate(addressData, { abortEarly: false, stripUnknown: true });
-  if (error) throw new Error(error.details[0].message);
+  if (error) throw new AppError(error.details[0].message, 400);
 
   const defaultStatus = value.isDefault === true;
 
@@ -125,14 +126,14 @@ export const changePassword = async (userId, { currentPassword, newPassword, con
   const user = await User.findById(userId);
   
   if (user.authProvider === 'google') {
-    throw new Error("Password cannot be changed for Google accounts.");
+    throw new AppError("Password cannot be changed for Google accounts.", 400);
   }
 
   // Local users must provide correct current password
   const isMatch = await bcrypt.compare(currentPassword, user.password);
-  if (!isMatch) throw new Error("Current password is incorrect");
+  if (!isMatch) throw new AppError("Current password is incorrect", 400);
 
-  if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
+  if (newPassword !== confirmPassword) throw new AppError("Passwords do not match", 400);
 
   user.password = await bcrypt.hash(newPassword, 12);
   await user.save();

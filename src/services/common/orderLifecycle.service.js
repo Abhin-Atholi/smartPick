@@ -4,6 +4,7 @@ import * as walletService from '../user/wallet.service.js';
 import { createLogger } from '../../utils/logger.js';
 import { sessionOpts } from '../../utils/transactionHelper.js';
 import { updateLedger } from './financialLedger.service.js';
+import AppError from '../../utils/AppError.js';
 
 const log = createLogger('orderLifecycleService');
 
@@ -203,13 +204,13 @@ const deriveOrderStatus = (order) => {
  */
 export const cancelOrder = async (order, actorId, role, reason, session = null) => {
     if (!['Processing', 'Payment Pending', 'Payment Failed'].includes(order.orderStatus)) {
-        throw new Error(`Cannot cancel order in ${order.orderStatus} status`);
+        throw new AppError(`Cannot cancel order in ${order.orderStatus} status`, 400);
     }
 
     const eligibleItems = order.items.filter(i =>
         ['Processing', 'Payment Pending', 'Payment Failed'].includes(i.itemStatus)
     );
-    if (eligibleItems.length === 0) throw new Error('No eligible items to cancel');
+    if (eligibleItems.length === 0) throw new AppError('No eligible items to cancel', 400);
 
     const itemIds = eligibleItems.map(i => i._id.toString());
     const actorModel = role === 'admin' ? 'Admin' : role === 'system' ? 'System' : 'User';
@@ -243,9 +244,9 @@ export const cancelOrder = async (order, actorId, role, reason, session = null) 
  */
 export const cancelOrderItem = async (order, itemId, actorId, role, reason, session = null) => {
     const item = order.items.id(itemId);
-    if (!item) throw new Error('Item not found');
+    if (!item) throw new AppError('Item not found', 400);
     if (!['Processing', 'Payment Pending', 'Payment Failed'].includes(item.itemStatus)) {
-        throw new Error(`Cannot cancel item in ${item.itemStatus} status`);
+        throw new AppError(`Cannot cancel item in ${item.itemStatus} status`, 400);
     }
 
     const actorModel = role === 'admin' ? 'Admin' : 'User';
@@ -268,9 +269,9 @@ export const cancelOrderItem = async (order, itemId, actorId, role, reason, sess
  */
 export const requestItemReturn = async (order, itemId, userId, reason, session = null) => {
     const item = order.items.id(itemId);
-    if (!item) throw new Error('Item not found');
-    if (item.itemStatus !== 'Delivered') throw new Error('Only delivered items can be returned');
-    if (item.returnRejected) throw new Error('Return previously rejected. Cannot request again.');
+    if (!item) throw new AppError('Item not found', 400);
+    if (item.itemStatus !== 'Delivered') throw new AppError('Only delivered items can be returned', 400);
+    if (item.returnRejected) throw new AppError('Return previously rejected. Cannot request again.', 400);
 
     const prevStatus  = item.itemStatus;
     item.itemStatus   = 'Return Requested';
@@ -296,8 +297,8 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
     const { decision, notes, restockable } = decisionPayload;
 
     const item = order.items.id(itemId);
-    if (!item) throw new Error('Item not found');
-    if (item.itemStatus !== 'Return Requested') throw new Error('Item is not pending a return request');
+    if (!item) throw new AppError('Item not found', 400);
+    if (item.itemStatus !== 'Return Requested') throw new AppError('Item is not pending a return request', 400);
 
     const prevStatus = item.itemStatus;
 
@@ -331,7 +332,7 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
         auditLog(order, 'ADMIN_REJECTED_RETURN', adminId, 'Admin', prevStatus, 'Delivered',
             notes || 'Return rejected');
     } else {
-        throw new Error('Invalid decision');
+        throw new AppError('Invalid decision', 400);
     }
 
     deriveOrderStatus(order);
@@ -356,7 +357,7 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
  */
 export const updateOrderStatus = async (order, adminId, newStatus, session = null) => {
     if (!isValidTransition(order.orderStatus, newStatus)) {
-        throw new Error(`Invalid status transition from ${order.orderStatus} to ${newStatus}`);
+        throw new AppError(`Invalid status transition from ${order.orderStatus} to ${newStatus}`, 400);
     }
 
     const prevStatus = order.orderStatus;

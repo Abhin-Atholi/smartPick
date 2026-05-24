@@ -1,4 +1,5 @@
 import Coupon from '../model/couponModel.js';
+import AppError from './AppError.js';
 
 /**
  * Validates a coupon and calculates the applicable discount.
@@ -10,38 +11,38 @@ import Coupon from '../model/couponModel.js';
  */
 export const validateAndCalculateDiscount = async (couponCode, cartTotal, userId) => {
     if (!couponCode) {
-        throw new Error("Invalid coupon code.");
+        throw new AppError("Invalid coupon code.", 400);
     }
 
     const codeToSearch = couponCode.toUpperCase().trim();
     const coupon = await Coupon.findOne({ code: codeToSearch, isDeleted: false });
 
     if (!coupon) {
-        throw new Error("Invalid coupon code.");
+        throw new AppError("Invalid coupon code.", 400);
     }
 
     if (!coupon.isActive) {
-        throw new Error("This coupon is currently inactive.");
+        throw new AppError("This coupon is currently inactive.", 400);
     }
 
     if (coupon.startDate && new Date(coupon.startDate) > new Date()) {
-        throw new Error("This coupon is not active yet.");
+        throw new AppError("This coupon is not active yet.", 400);
     }
 
     if (new Date(coupon.expiryDate) < new Date()) {
-        throw new Error("This coupon has expired.");
+        throw new AppError("This coupon has expired.", 400);
     }
 
     if (coupon.usedCount >= coupon.usageLimit) {
-        throw new Error("Coupon usage limit has been reached.");
+        throw new AppError("Coupon usage limit has been reached.", 400);
     }
 
     if (coupon.usedBy && coupon.usedBy.includes(userId)) {
-        throw new Error("You have already used this coupon.");
+        throw new AppError("You have already used this coupon.", 400);
     }
 
     if (cartTotal < coupon.minimumAmount) {
-        throw new Error(`Minimum purchase of ₹${coupon.minimumAmount} required to use this coupon.`);
+        throw new AppError(`Minimum purchase of ₹${coupon.minimumAmount} required to use this coupon.`, 400);
     }
 
     let discount = 0;

@@ -3,6 +3,7 @@ import TempUser from "../../model/tempUserModel.js";
 import Otp from "../../model/otpModel.js";
 import { sendOtpEmail } from "./email.service.js";
 import * as walletService from "../user/wallet.service.js";
+import AppError from "../../utils/AppError.js";
 
 const REFERRER_REWARD = 100;
 const REFERRED_REWARD = 50;
@@ -24,7 +25,7 @@ export const getRemainingSeconds = async (email, purpose) => {
 
 // Unified function to find a target for verification (used by loadVerify)
 export const getVerificationTarget = async (email, context) => {
-  if (!email) throw new Error("Session expired. Please start over.");
+  if (!email) throw new AppError("Session expired. Please start over.", 400);
   
   const normalizedEmail = email.trim().toLowerCase();
   let target;
@@ -34,14 +35,14 @@ export const getVerificationTarget = async (email, context) => {
   } else if (context === "resetPassword") {
     target = await User.findOne({ email: normalizedEmail });
     if (target && target.authProvider === "google") {
-      throw new Error("This account is registered via Google OAuth. Please sign in using Google.");
+      throw new AppError("This account is registered via Google OAuth. Please sign in using Google.", 400);
     }
   } else {
     // register context
     target = await TempUser.findOne({ email: normalizedEmail });
   }
   
-  if (!target) throw new Error("Session expired. Please start over.");
+  if (!target) throw new AppError("Session expired. Please start over.", 400);
   return target;
 };
 
@@ -83,7 +84,7 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
   }
 
   const result = await verifyOtp({ email, otp, purpose });
-  if (!result.ok) throw new Error(result.msg);
+  if (!result.ok) throw new AppError(result.msg, 400);
   console.log("the otp is okay")
   if (purpose === "changeEmail") {
     const user = result.user;
@@ -95,7 +96,7 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
 
   const normalizedEmail = email.trim().toLowerCase();
   const tempUser = await TempUser.findOne({ email: normalizedEmail });
-  if (!tempUser) throw new Error("Session expired. Please register again.");
+  if (!tempUser) throw new AppError("Session expired. Please register again.", 400);
 
   // Resolve referral code to a referrer user ID (if provided)
   let referredById = null;
@@ -148,7 +149,7 @@ export const verifyUniversalOtp = async (email, otp, explicitPurpose) => {
  * Resend Logic (Infers purpose by finding which model matches)
  */
 export const resendAnyOtp = async (email, explicitPurpose = null) => {
-  if (!email) throw new Error("Email is required");
+  if (!email) throw new AppError("Email is required", 400);
   const normalizedEmail = email.trim().toLowerCase();
   let target = await User.findOne({ pendingEmail: normalizedEmail }) || await TempUser.findOne({ email: normalizedEmail });
   let purpose = explicitPurpose;
@@ -165,18 +166,18 @@ export const resendAnyOtp = async (email, explicitPurpose = null) => {
   }
 
   // For reset password, `target` is the user. We just want to ensure user exists
-  if (!target) throw new Error("Session expired.");
+  if (!target) throw new AppError("Session expired.", 400);
 
   // Block Google Auth users from requesting password reset OTP resend
   if (purpose === "reset_password" && target.authProvider === "google") {
-    throw new Error("This account is registered via Google OAuth. Please sign in using Google.");
+    throw new AppError("This account is registered via Google OAuth. Please sign in using Google.", 400);
   }
 
   // Check if current OTP is still valid
   const existingOtp = await Otp.findOne({ email, purpose });
   if (existingOtp) {
      const diff = Math.floor((new Date(existingOtp.createdAt).getTime() + 120000 - Date.now()) / 1000);
-     if (diff > 0) throw new Error("Please wait for your previous OTP to expire before requesting a new one.");
+     if (diff > 0) throw new AppError("Please wait for your previous OTP to expire before requesting a new one.", 400);
   }
 
   // Delete old OTP if expired but still in DB
@@ -195,20 +196,20 @@ export const resendAnyOtp = async (email, explicitPurpose = null) => {
  * Creates and sends a new OTP for any purpose
  */
 export const sendOtp = async ({ email, purpose }) => {
-  if (!email) throw new Error("Email is required");
+  if (!email) throw new AppError("Email is required", 400);
   const normalizedEmail = email.trim().toLowerCase();
   if (purpose === "reset_password" || purpose === "changeEmail") {
       const field = purpose === "changeEmail" ? { pendingEmail: normalizedEmail } : { email: normalizedEmail };
       const user = await User.findOne(field);
-      if (!user) throw new Error("User not found");
+      if (!user) throw new AppError("User not found", 400);
 
       // Block Google Auth users from resetting their password
       if (purpose === "reset_password" && user.authProvider === "google") {
-        throw new Error("This account is registered via Google OAuth. Please sign in using Google.");
+        throw new AppError("This account is registered via Google OAuth. Please sign in using Google.", 400);
       }
   } else if (purpose === "register") {
       const tempUser = await TempUser.findOne({ email: normalizedEmail });
-      if (!tempUser) throw new Error("Session expired.");
+      if (!tempUser) throw new AppError("Session expired.", 400);
   }
 
   // Remove existing OTPs for same email and purpose

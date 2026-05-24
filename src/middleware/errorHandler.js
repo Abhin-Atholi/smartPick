@@ -1,7 +1,10 @@
 import multer from "multer";
 
 export const globalErrorHandler = (err, req, res, next) => {
-    console.error("Global Error Caught:", err);
+    // Only log full stack traces for unexpected system/programmer errors
+    if (!err.isOperational) {
+        console.error("🔥 Programmer/System Error Caught:", err);
+    }
 
     // 1. Handle Multer Errors
     if (err instanceof multer.MulterError) {

@@ -1,6 +1,7 @@
 import Wallet from '../../model/walletModel.js';
 import WalletTransaction from '../../model/walletTransactionModel.js';
 import { sessionOpts } from '../../utils/transactionHelper.js';
+import AppError from '../../utils/AppError.js';
 
 /**
  * Get or atomically create a wallet for a user.
@@ -44,7 +45,7 @@ export const createWalletTransaction = async (
  * @param {mongoose.ClientSession|null} session
  */
 export const creditWallet = async (userId, amount, description, method, orderId = null, session = null) => {
-    if (amount <= 0) throw new Error('Credit amount must be positive.');
+    if (amount <= 0) throw new AppError('Credit amount must be positive.', 400);
 
     const wallet = await Wallet.findOneAndUpdate(
         { userId },
@@ -69,12 +70,12 @@ export const creditWallet = async (userId, amount, description, method, orderId 
  * @param {mongoose.ClientSession|null} session
  */
 export const debitWallet = async (userId, amount, description, method, orderId = null, session = null) => {
-    if (amount <= 0) throw new Error('Debit amount must be positive.');
+    if (amount <= 0) throw new AppError('Debit amount must be positive.', 400);
 
     // Pre-check balance (within session if active)
     const walletCheck = await getOrCreateWallet(userId, session);
     if (walletCheck.balance < amount) {
-        throw new Error(`Insufficient wallet balance. Available: ₹${walletCheck.balance.toFixed(2)}`);
+        throw new AppError(`Insufficient wallet balance. Available: ₹${walletCheck.balance.toFixed(2)}`, 400);
     }
 
     // Atomic decrement — conditional on balance to prevent race condition
@@ -85,7 +86,7 @@ export const debitWallet = async (userId, amount, description, method, orderId =
     );
 
     if (!wallet) {
-        throw new Error('Insufficient wallet balance or concurrent update failed.');
+        throw new AppError('Insufficient wallet balance or concurrent update failed.', 400);
     }
 
     await createWalletTransaction(
