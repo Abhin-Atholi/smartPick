@@ -9,13 +9,13 @@ import AppError from './AppError.js';
  * @param {string|ObjectId} userId - The ID of the user attempting to use the coupon.
  * @returns {Promise<{coupon: object, discountAmount: number, finalPayable: number}>}
  */
-export const validateAndCalculateDiscount = async (couponCode, cartTotal, userId) => {
+export const validateAndCalculateDiscount = async (couponCode, cartTotal, userId, session = null) => {
     if (!couponCode) {
         throw new AppError("Invalid coupon code.", 400);
     }
 
     const codeToSearch = couponCode.toUpperCase().trim();
-    const coupon = await Coupon.findOne({ code: codeToSearch, isDeleted: false });
+    const coupon = await Coupon.findOne({ code: codeToSearch, isDeleted: false }, null, session ? { session } : {});
 
     if (!coupon) {
         throw new AppError("Invalid coupon code.", 400);

@@ -27,15 +27,18 @@
     return;
   }
 
+  // ── Global Defaults ────────────────────────────────────────────────────────
+  axios.defaults.withCredentials = true;
+  axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (csrfToken) {
+    axios.defaults.headers.common['x-csrf-token'] = csrfToken;
+  }
+
   // ── Request Interceptor ────────────────────────────────────────────────────
   axios.interceptors.request.use(
     function (config) {
-      // CSRF Protection
-      const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-      if (csrfMeta) {
-        config.headers['x-csrf-token'] = csrfMeta.getAttribute('content');
-      }
-
       // If the caller explicitly opts in, show the overlay
       if (config.showLoader === true) {
         window.Loader.show(config.loaderMessage || 'Please wait...');
@@ -44,7 +47,7 @@
     },
     function (error) {
       // On request error, ensure overlay is always cleared
-      window.Loader.hide();
+      if (window.Loader) window.Loader.hide();
       return Promise.reject(error);
     }
   );
@@ -52,17 +55,20 @@
   // ── Response Interceptor ───────────────────────────────────────────────────
   axios.interceptors.response.use(
     function (response) {
-      // Only hide if the original request had showLoader — prevents hiding
-      // overlays opened by other means (e.g. payment UI manager)
+      // Only hide if the original request had showLoader
       if (response.config && response.config.showLoader === true) {
-        window.Loader.hide();
+        if (window.Loader) window.Loader.hide();
       }
       return response;
     },
     function (error) {
+      if (error?.response?.status === 403) {
+          console.error('CSRF/session validation failed');
+      }
+
       // Always hide on error if this request had showLoader
       if (error.config && error.config.showLoader === true) {
-        window.Loader.hide();
+        if (window.Loader) window.Loader.hide();
       }
       return Promise.reject(error);
     }

@@ -14,6 +14,7 @@ import * as orderLifecycleService from '../common/orderLifecycle.service.js';
 import paymentRecoveryService from '../common/paymentRecovery.service.js';
 import { updateLedger } from '../common/financialLedger.service.js';
 import { withTransaction, sessionOpts } from '../../utils/transactionHelper.js';
+import * as couponHelper from '../../utils/couponHelper.js';
 export const getOrderById = async (userId, orderId) => {
     const order = await Order.findOne({ _id: orderId, user: userId })
         .populate('user', 'fullName email phone')
@@ -154,8 +155,31 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             return { success: false, message: 'Some items in your cart are no longer available', affectedItems };
         }
 
+        // 3.5. Re-validate Coupon against DB (if applied)
+        let validatedCouponData = null;
+        if (couponData && couponData.code) {
+            const tempSubtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            try {
+                const validation = await couponHelper.validateAndCalculateDiscount(
+                    couponData.code,
+                    tempSubtotal,
+                    userId,
+                    session
+                );
+                validatedCouponData = {
+                    code: validation.coupon.code,
+                    discountType: validation.coupon.discountType,
+                    discountValue: validation.coupon.discountValue,
+                    maximumDiscount: validation.coupon.maximumDiscount,
+                    discountAmount: validation.discountAmount
+                };
+            } catch (err) {
+                return { success: false, message: err.message || 'Coupon validation failed' };
+            }
+        }
+
         // 4. Calculate Totals via Centralized Pricing Engine
-        const pricingResult = pricingService.processPricing(orderItems, couponData);
+        const pricingResult = pricingService.processPricing(orderItems, validatedCouponData);
         const breakdown = pricingResult.breakdown;
         const finalOrderItems = pricingResult.items;
         
@@ -209,10 +233,10 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
             pricingAdjusted: breakdown.pricingAdjusted,
             couponCapped: breakdown.couponCapped,
 
-            couponApplied: couponData ? {
-                code: couponData.code,
+            couponApplied: validatedCouponData ? {
+                code: validatedCouponData.code,
                 discountAmount: breakdown.couponDiscount, 
-                discountType: couponData.discountType
+                discountType: validatedCouponData.discountType
             } : undefined
         });
 
@@ -276,9 +300,9 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         await cart.save(sessionOpts(session));
 
         // 10. Mark coupon used (Only for immediate payment methods)
-        if (couponData?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
+        if (validatedCouponData?.code && (paymentMethod === 'Wallet' || paymentMethod === 'COD')) {
             await Coupon.updateOne(
-                { code: couponData.code },
+                { code: validatedCouponData.code },
                 { $inc: { usedCount: 1 }, $addToSet: { usedBy: userId } },
                 sessionOpts(session)
             );
