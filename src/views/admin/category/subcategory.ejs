@@ -56,11 +56,11 @@
             <input name="search" id="searchInput"
                 value="<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>" type="text"
                 placeholder="Search subcategories..."
-                class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all">
+                class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base sm:text-sm focus:ring-4 focus:ring-indigo-100 outline-none transition-all">
         </div>
 
-        <div class="flex gap-2 flex-wrap sm:flex-nowrap">
-            <select name="sort" onchange="document.getElementById('subcatOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <select name="sort" onchange="document.getElementById('subcatOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 text-base sm:text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="createdAt" data-order="desc" <%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && typeof currentOrder !== 'undefined' && currentOrder === 'desc' ? 'selected' : '' %>>Newest First</option>
                 <option value="createdAt" data-order="asc" <%= typeof currentSort !== 'undefined' && currentSort === 'createdAt' && typeof currentOrder !== 'undefined' && currentOrder === 'asc' ? 'selected' : '' %>>Oldest First</option>
                 <option value="name" data-order="asc" <%= typeof currentSort !== 'undefined' && currentSort === 'name' && typeof currentOrder !== 'undefined' && currentOrder === 'asc' ? 'selected' : '' %>>Name (A-Z)</option>
@@ -69,7 +69,7 @@
             <input type="hidden" name="order" id="subcatOrderInput" value="<%= typeof currentOrder !== 'undefined' ? currentOrder : 'desc' %>">
 
             <select name="parentCategory" onchange="this.form.submit()"
-                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 text-base sm:text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="All" <%=typeof currentParent !=='undefined' && currentParent==='All' ? 'selected' : '' %>
                     >All Parent Categories</option>
                 <% if(typeof categories !=='undefined' ) { %>
@@ -82,7 +82,7 @@
             </select>
 
             <select name="status" onchange="this.form.submit()"
-                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 text-base sm:text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="All" <%=typeof currentStatus !=='undefined' && currentStatus==='All' ? 'selected' : '' %>
                     >All Statuses</option>
                 <option value="Active" <%=typeof currentStatus !=='undefined' && currentStatus==='Active' ? 'selected'
@@ -92,7 +92,7 @@
             </select>
 
             <button type="submit"
-                class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 hidden sm:block">
+                class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 text-base sm:text-sm transition shadow-lg shadow-indigo-100 hidden sm:block w-full sm:w-auto">
                 SEARCH
             </button>
         </div>

@@ -58,10 +58,10 @@
         <div class="relative flex-1">
             <span class="absolute left-4 top-3 text-gray-400">🔍</span>
             <input name="search" value="<%= currentSearch %>" type="text" placeholder="Search by product name..."
-                class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm">
+                class="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-base">
         </div>
         <div class="flex gap-2 flex-wrap sm:flex-nowrap">
-            <select name="sort" onchange="document.getElementById('productOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+            <select name="sort" onchange="document.getElementById('productOrderInput').value = this.options[this.selectedIndex].dataset.order; this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none font-bold text-slate-700 cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto text-base sm:text-sm">
                 <option value="createdAt" data-order="desc" <%= currentSort === 'createdAt' && currentOrder === 'desc' ? 'selected' : '' %>>Newest First</option>
                 <option value="createdAt" data-order="asc" <%= currentSort === 'createdAt' && currentOrder === 'asc' ? 'selected' : '' %>>Oldest First</option>
                 <option value="name" data-order="asc" <%= currentSort === 'name' && currentOrder === 'asc' ? 'selected' : '' %>>Name (A-Z)</option>
@@ -70,7 +70,7 @@
             <input type="hidden" name="order" id="productOrderInput" value="<%= currentOrder || 'desc' %>">
 
             <select name="category" id="filterCategory"
-                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-base sm:text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="All" <%=currentCategory==='All' ? 'selected' : '' %>>All Categories</option>
                 <% categories.forEach(cat=> { %>
                     <option value="<%= cat._id %>" <%=currentCategory==cat._id ? 'selected' : '' %>><%= cat.name %>
@@ -79,7 +79,7 @@
             </select>
             <!-- Subcategory filter — populated via AJAX when category changes -->
             <select name="subcategory" id="filterSubcategory"
-                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-base sm:text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="All">All Subcategories</option>
                 <% if (typeof subcategories !== 'undefined' && subcategories.length > 0) { %>
                     <% subcategories.forEach(sub => { %>
@@ -88,13 +88,13 @@
                 <% } %>
             </select>
             <select name="status" onchange="this.form.submit()"
-                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
+                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-base sm:text-sm cursor-pointer hover:border-indigo-300 transition-colors w-full sm:w-auto">
                 <option value="All" <%=currentStatus==='All' ? 'selected' : '' %>>All Statuses</option>
                 <option value="Active" <%=currentStatus==='Active' ? 'selected' : '' %>>Active</option>
                 <option value="Hidden" <%=currentStatus==='Hidden' ? 'selected' : '' %>>Hidden</option>
             </select>
             <button type="submit"
-                class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition text-sm">SEARCH</button>
+                class="px-6 py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition text-base sm:text-sm">SEARCH</button>
         </div>
     </form>
 

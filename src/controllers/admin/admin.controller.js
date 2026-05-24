@@ -2,23 +2,27 @@
 import * as adminService from "../../services/admin/admin.service.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
-export const postLogin = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    
-    // Controller calls the service
-    const admin = await adminService.authenticateAdmin(email, password);
+export const postLogin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        // Controller calls the service
+        const admin = await adminService.authenticateAdmin(email, password);
 
-    // Controller handles the session
-    req.session.adminId = admin._id;
-    req.session.admin = {
-        _id: admin._id,
-        email: admin.email,
-        role: admin.role,
-        fullName:admin.fullName
-    };
+        // Controller handles the session
+        req.session.adminId = admin._id;
+        req.session.admin = {
+            _id: admin._id,
+            email: admin.email,
+            role: admin.role,
+            fullName: admin.fullName
+        };
 
-    req.session.save(() => res.redirect("/admin/dashboard"));
-});
+        req.session.save(() => res.redirect("/admin/dashboard"));
+    } catch (err) {
+        res.redirect(`/admin/login?msg=${encodeURIComponent(err.message)}`);
+    }
+};
 
 export const getLogin = (req, res) => {
     res.render("admin/auth/login", { msg: req.query.msg || null, title: "Admin Login", layout: "layout/layout" });

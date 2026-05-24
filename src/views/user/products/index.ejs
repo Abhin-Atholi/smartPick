@@ -80,7 +80,7 @@
             <% if (catName) { %>
               <input type="hidden" name="category" value="<%= catName %>">
             <% } %>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <div class="relative flex-1 group">
                         <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-gray-400">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -91,10 +91,10 @@
                         </span>
                         <input type="text" name="search" id="searchInput" value="<%= activeSearch %>"
                           placeholder="Search products..."
-                          class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-indigo-500 transition-all">
+                          class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-2xl text-base font-semibold text-gray-800 focus:ring-2 focus:ring-indigo-500 transition-all">
                       </div>
                       <select name="sort" onchange="handleFilterChange(event)"
-                        class="border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-800 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer h-full">
+                        class="border border-gray-200 rounded-2xl px-4 py-2.5 text-base sm:text-sm font-bold text-gray-800 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer h-full w-full sm:w-auto">
                         <option value="newest" <%=sortVal==='newest' ? 'selected' : '' %>>Newest</option>
                         <option value="price_asc" <%=sortVal==='price_asc' ? 'selected' : '' %>>Price ↑</option>
                         <option value="price_desc" <%=sortVal==='price_desc' ? 'selected' : '' %>>Price ↓</option>

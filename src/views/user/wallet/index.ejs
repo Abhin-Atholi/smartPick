@@ -80,13 +80,13 @@
                             <input type="text" name="search" id="txSearch"
                                 value="<%= filters && filters.search ? filters.search : '' %>"
                                 placeholder="Search description or ref…"
-                                class="w-full pl-9 pr-3 py-2.5 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all placeholder-gray-400">
+                                class="w-full pl-9 pr-3 py-2.5 text-base sm:text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all placeholder-gray-400">
                         </div>
 
                         <!-- Type Filter -->
                         <div>
                             <select name="type" id="txType"
-                                class="w-full px-3 py-2.5 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 appearance-none cursor-pointer">
+                                class="w-full px-3 py-2.5 text-base sm:text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 appearance-none cursor-pointer">
                                 <option value="" <%= (!filters || !filters.type) ? 'selected' : '' %>>All Types</option>
                                 <option value="Credit" <%= (filters && filters.type === 'Credit') ? 'selected' : '' %>>Credit (Money In)</option>
                                 <option value="Debit"  <%= (filters && filters.type === 'Debit')  ? 'selected' : '' %>>Debit (Money Out)</option>
@@ -97,16 +97,16 @@
                         <div>
                             <input type="date" name="dateFrom" id="txDateFrom"
                                 value="<%= filters && filters.dateFrom ? filters.dateFrom : '' %>"
-                                class="w-full px-3 py-2.5 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 cursor-pointer">
+                                class="w-full px-3 py-2.5 text-base sm:text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 cursor-pointer">
                         </div>
 
                         <!-- Date To -->
                         <div class="flex gap-2">
                             <input type="date" name="dateTo" id="txDateTo"
                                 value="<%= filters && filters.dateTo ? filters.dateTo : '' %>"
-                                class="flex-1 px-3 py-2.5 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 cursor-pointer">
+                                class="flex-1 px-3 py-2.5 text-base sm:text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 cursor-pointer">
                             <button type="submit"
-                                class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all active:scale-95 flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+                                class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-base sm:text-xs font-black rounded-xl transition-all active:scale-95 flex items-center gap-1.5 whitespace-nowrap shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                                 Filter
                             </button>

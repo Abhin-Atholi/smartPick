@@ -269,7 +269,7 @@
                 <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Order Items</p>
                 <div class="space-y-3 mb-6">
                   <% order.items.forEach(item => { %>
-                    <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 items-center">
+                    <div class="flex flex-wrap sm:flex-nowrap gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 items-center justify-between">
                       <% 
                         const normalize = str => String(str || '').trim().toLowerCase();
                         const colorOpt = item.product?.colorOptions?.find(c => normalize(c.name) === normalize(item.color));
@@ -289,7 +289,7 @@
                           <% } %>
                         </div>
                       </div>
-                      <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                      <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50">
                         <span class="text-xs font-bold px-2 py-1 rounded-full
                           <%= item.itemStatus === 'Delivered' ? 'bg-green-50 text-green-700' :
                               item.itemStatus === 'Cancelled' || item.itemStatus === 'Return Rejected' ? 'bg-red-50 text-red-700' :
