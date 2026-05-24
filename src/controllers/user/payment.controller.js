@@ -222,3 +222,43 @@ export const completePendingOrder = asyncHandler(async (req, res) => {
     return res.status(200).json({ success: true, redirectUrl: `/orders/success?orderId=${result.orderId}` });
 });
 
+export const handleRazorpayWebhook = asyncHandler(async (req, res) => {
+    // Razorpay webhook signature verification
+    const secret = process.env.RAZORPAY_KEY_SECRET; // Or a dedicated webhook secret if configured in Razorpay dashboard
+    const signature = req.headers['x-razorpay-signature'];
+
+    if (!signature) {
+        return res.status(400).send("No signature provided");
+    }
+
+    // Verify signature
+    const shasum = crypto.createHmac('sha256', secret);
+    // Important: we need the raw string body. Assuming we are using express.raw or express.json stringified.
+    // If body-parser already parsed it to an object, we must stringify it.
+    shasum.update(JSON.stringify(req.body));
+    const digest = shasum.digest('hex');
+
+    if (digest !== signature) {
+        return res.status(400).send("Invalid signature");
+    }
+
+    const event = req.body.event;
+    const paymentEntity = req.body.payload.payment.entity;
+
+    if (event === 'payment.captured' || event === 'order.paid') {
+        const orderId = paymentEntity.notes?.orderId || paymentEntity.order_id;
+        
+        if (orderId) {
+            // Find order by internal orderId or by Razorpay orderId
+            const order = await Order.findOne({ 
+                $or: [{ orderId: orderId }, { 'paymentDetails.razorpayOrderId': orderId }] 
+            });
+
+            if (order && order.paymentStatus === 'Pending') {
+                await orderService.completeFailedOrder(order.userId, order.orderId, 'Razorpay');
+            }
+        }
+    }
+
+    res.status(200).json({ status: 'ok' });
+});

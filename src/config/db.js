@@ -6,6 +6,10 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     console.log(`MongoDB connected: ${conn.connection.host}`);
+    
+    mongoose.connection.on("error", (err) => {
+      console.error("MongoDB Connection Error at runtime:", err);
+    });
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);

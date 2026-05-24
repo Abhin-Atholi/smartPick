@@ -29,6 +29,7 @@
 <% } %>
 
     <form action="/register" id="registerForm" method="POST" class="space-y-5">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
 
       <div>
         <label class="block text-sm font-bold text-gray-700 mb-1.5">Full Name</label>

@@ -235,11 +235,25 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
         // 7. STOCK RESERVATION
         for (const item of orderItems) {
             const arrayFilter = item.variantId ? { 'v._id': item.variantId } : { 'v.size': item.size, 'v.color': item.color };
-            await Product.updateOne(
-                { _id: item.product },
+            
+            // Build a query that ensures the specific variant has enough stock
+            const variantQuery = item.variantId 
+                ? { _id: item.variantId, stock: { $gte: item.quantity } }
+                : { size: item.size, color: item.color, stock: { $gte: item.quantity } };
+
+            const updateResult = await Product.updateOne(
+                { 
+                    _id: item.product,
+                    variants: { $elemMatch: variantQuery }
+                },
                 { $inc: { 'variants.$[v].stock': -item.quantity } },
                 { arrayFilters: [arrayFilter], ...sessionOpts(session) }
             );
+
+            if (updateResult.modifiedCount === 0) {
+                // Because we are in a transaction, throwing this error will roll back everything!
+                throw new Error(`Race condition caught: Insufficient stock remaining for one or more items.`);
+            }
         }
 
         // 8. Wallet debit (Atomic)

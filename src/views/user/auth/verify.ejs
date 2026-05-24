@@ -20,6 +20,7 @@
     <% } %>
 
     <form id="verifyOtpForm" method="POST" action="/verify" class="space-y-4">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
       <input type="hidden" name="email" value="<%= email %>">
       <input type="hidden" name="purpose" value="<%= typeof purpose !== 'undefined' ? purpose : 'register' %>">
 
@@ -46,6 +47,7 @@
     </form>
 
     <form id="resendOtpForm" method="POST" action="/resend-otp" class="mt-4">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
       <input type="hidden" name="email" value="<%= email %>">
       <input type="hidden" name="purpose" value="<%= typeof purpose !== 'undefined' ? purpose : 'register' %>">
       <button

@@ -30,6 +30,12 @@
   // ── Request Interceptor ────────────────────────────────────────────────────
   axios.interceptors.request.use(
     function (config) {
+      // CSRF Protection
+      const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      if (csrfMeta) {
+        config.headers['x-csrf-token'] = csrfMeta.getAttribute('content');
+      }
+
       // If the caller explicitly opts in, show the overlay
       if (config.showLoader === true) {
         window.Loader.show(config.loaderMessage || 'Please wait...');

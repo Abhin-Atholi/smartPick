@@ -6,10 +6,14 @@ import {
     handlePaymentFailure,
     retryPayment,
     renderPaymentFailurePage,
-    completePendingOrder
+    completePendingOrder,
+    handleRazorpayWebhook
 } from '../../controllers/user/payment.controller.js';
 
 const router = express.Router();
+
+// Webhook doesn't require user session
+router.post('/webhook', handleRazorpayWebhook);
 
 router.use(protectRoute);
 
