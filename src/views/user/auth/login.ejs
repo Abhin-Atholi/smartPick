@@ -52,7 +52,7 @@
       </div>
 
       <div class="pt-2">
-        <button type="submit" class="w-full rounded-xl bg-indigo-600 text-white font-bold py-3 text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+        <button type="submit" id="loginSubmitBtn" class="w-full rounded-xl bg-indigo-600 text-white font-bold py-3 text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
           Log In
         </button>
       </div>
@@ -88,6 +88,8 @@
     eyeIcon.classList.toggle('hidden');
     eyeSlashIcon.classList.toggle('hidden');
   });
+
+  // Loader is handled dynamically inside authValidation.js after validation
 </script>
 
 <script src="/js/validation.js"></script>

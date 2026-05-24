@@ -344,7 +344,10 @@
         if (window.paymentUI) window.paymentUI.lockButton(btn, 'Opening Payment...');
 
         try {
-            const { data } = await axios.post('/wallet/topup/initiate', { amount });
+            const { data } = await axios.post('/wallet/topup/initiate', { amount }, {
+                showLoader: true,
+                loaderMessage: 'Initiating Secure Payment...'
+            });
             if (!data.success) throw new Error(data.message);
 
             const options = {

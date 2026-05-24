@@ -188,7 +188,27 @@ const setupFormSubmit = (form, formType) => {
         } else if (formType === 'login') {
             validatorsToUse = { email: AuthValidators.email, password: (v) => (!v ? 'Password is required' : null) };
         } else if (formType === 'reset') {
-            validatorsToUse = { password: AuthValidators.password, confirmPassword: AuthValidators.confirmPassword };
+            validatorsToUse = { 
+                otp: (v) => {
+                    if (!v || v.trim().length === 0) return 'OTP is required';
+                    if (!/^\d{6}$/.test(v.trim())) return 'OTP must be exactly 6 digits';
+                    return null;
+                },
+                password: AuthValidators.password, 
+                confirmPassword: AuthValidators.confirmPassword 
+            };
+        } else if (formType === 'forgot') {
+            validatorsToUse = { email: AuthValidators.email };
+        } else if (formType === 'verify') {
+            validatorsToUse = {
+                otp: (v) => {
+                    if (!v || v.trim().length === 0) return 'OTP is required';
+                    if (!/^\d{6}$/.test(v.trim())) return 'OTP must be exactly 6 digits';
+                    return null;
+                }
+            };
+        } else if (formType === 'resend') {
+            validatorsToUse = {};
         }
         
         const isValid = ValidationHelper.validateForm(form, validatorsToUse);
@@ -205,6 +225,18 @@ const setupFormSubmit = (form, formType) => {
         if (!isValid) {
             e.preventDefault();
             return;
+        }
+
+        // Show global loader ONLY after validation passes
+        if (window.Loader) {
+            let msg = 'Please wait...';
+            if (formType === 'register') msg = 'Creating your account...';
+            else if (formType === 'login') msg = 'Signing you in...';
+            else if (formType === 'reset') msg = 'Resetting your password...';
+            else if (formType === 'forgot') msg = 'Sending OTP...';
+            else if (formType === 'verify') msg = 'Verifying OTP...';
+            else if (formType === 'resend') msg = 'Resending OTP...';
+            window.Loader.show(msg);
         }
 
         // Disable button, show spinner
@@ -229,6 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const resetForm = document.getElementById('resetPasswordForm');
     const updatePasswordForm = document.getElementById('updatePasswordForm');
+    const forgotForm = document.getElementById('forgotPasswordForm');
+    const verifyOtpForm = document.getElementById('verifyOtpForm');
+    const resendOtpForm = document.getElementById('resendOtpForm');
+    const resendResetOtpForm = document.getElementById('resendResetOtpForm');
 
     if (registerForm) {
         ValidationHelper.attachRealTimeValidation(registerForm, {
@@ -254,12 +290,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (resetForm) {
         ValidationHelper.attachRealTimeValidation(resetForm, {
+            otp: (v) => {
+                if (!v || v.trim().length === 0) return 'OTP is required';
+                if (!/^\d{6}$/.test(v.trim())) return 'OTP must be exactly 6 digits';
+                return null;
+            },
             password: AuthValidators.password,
             confirmPassword: AuthValidators.confirmPassword
         });
         setupPasswordStrengthMeter(resetForm);
         setupCapsLockDetection(resetForm);
         setupFormSubmit(resetForm, 'reset');
+    }
+
+    if (forgotForm) {
+        ValidationHelper.attachRealTimeValidation(forgotForm, {
+            email: AuthValidators.email
+        });
+        setupFormSubmit(forgotForm, 'forgot');
+    }
+
+    if (verifyOtpForm) {
+        ValidationHelper.attachRealTimeValidation(verifyOtpForm, {
+            otp: (v) => {
+                if (!v || v.trim().length === 0) return 'OTP is required';
+                if (!/^\d{6}$/.test(v.trim())) return 'OTP must be exactly 6 digits';
+                return null;
+            }
+        });
+        setupFormSubmit(verifyOtpForm, 'verify');
+    }
+
+    if (resendOtpForm) {
+        setupFormSubmit(resendOtpForm, 'resend');
+    }
+
+    if (resendResetOtpForm) {
+        setupFormSubmit(resendResetOtpForm, 'resend');
     }
 
     if (updatePasswordForm) {

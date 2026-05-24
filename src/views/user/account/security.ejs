@@ -116,12 +116,10 @@
         const data = Object.fromEntries(formData.entries());
         const msgContainer = document.getElementById('js-msg-container');
         const submitBtn = form.querySelector('button[type="submit"]');
-        let originalBtnText = submitBtn.innerText;
+        
+        const unlock = window.Loader ? window.Loader.withButton(submitBtn, 'Updating...') : null;
         
         try {
-          submitBtn.disabled = true;
-          submitBtn.innerText = 'Updating...';
-
           const response = await axios.put('/account/update-password', data);
           
           msgContainer.className = 'p-4 mb-6 text-sm rounded-xl font-bold bg-green-50 text-green-700 border border-green-100';
@@ -136,8 +134,7 @@
           msgContainer.innerText = errorMsg;
           msgContainer.classList.remove('hidden');
         } finally {
-          submitBtn.disabled = false;
-          submitBtn.innerText = originalBtnText;
+          if (unlock) unlock();
         }
       });
     }

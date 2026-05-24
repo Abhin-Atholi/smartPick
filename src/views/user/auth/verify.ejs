@@ -19,7 +19,7 @@
       </div>
     <% } %>
 
-    <form method="POST" action="/verify" class="space-y-4">
+    <form id="verifyOtpForm" method="POST" action="/verify" class="space-y-4">
       <input type="hidden" name="email" value="<%= email %>">
       <input type="hidden" name="purpose" value="<%= typeof purpose !== 'undefined' ? purpose : 'register' %>">
 
@@ -45,7 +45,7 @@
       </button>
     </form>
 
-    <form method="POST" action="/resend-otp" class="mt-4">
+    <form id="resendOtpForm" method="POST" action="/resend-otp" class="mt-4">
       <input type="hidden" name="email" value="<%= email %>">
       <input type="hidden" name="purpose" value="<%= typeof purpose !== 'undefined' ? purpose : 'register' %>">
       <button
@@ -104,7 +104,6 @@
     }, 1000);
   }
 
-  // Initial Check
   if (timeLeft > 0) {
     startCountdown();
   } else {
@@ -114,3 +113,6 @@
     if(verifyBtn) verifyBtn.disabled = true;
   }
 </script>
+
+<script src="/js/validation.js"></script>
+<script src="/js/authValidation.js"></script>

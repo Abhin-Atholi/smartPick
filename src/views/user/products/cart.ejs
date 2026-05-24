@@ -177,12 +177,12 @@
                                                         </div>
                                                         <% } else { %>
                                                 <div class="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
-                                                <button onclick="updateQty('<%= product ? product._id : '' %>', '<%= item.variantId %>', -1)" 
+                                                <button onclick="updateQty('<%= product ? product._id : '' %>', '<%= item.variantId %>', -1, this)" 
                                                         class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white hover:shadow-sm transition-all text-gray-400 hover:text-indigo-600">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                                 </button>
                                                 <span class="w-8 text-center text-sm font-black text-gray-900" id="qty-<%= product ? product._id : 'deleted' %>-<%= item.variantId %>"><%= item.quantity %></span>
-                                                <button onclick="updateQty('<%= product ? product._id : '' %>', '<%= item.variantId %>', 1)" 
+                                                <button onclick="updateQty('<%= product ? product._id : '' %>', '<%= item.variantId %>', 1, this)" 
                                                         <%= item.quantity >= 5 ? 'disabled' : '' %>
                                                         id="plus-btn-<%= product ? product._id : 'deleted' %>-<%= item.variantId %>"
                                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all <%= item.quantity >= 5 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:bg-white hover:shadow-sm hover:text-indigo-600' %>">
@@ -343,7 +343,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        async function updateQty(productId, variantId, delta) {
+        async function updateQty(productId, variantId, delta, btn) {
             const qtyEl = document.getElementById(`qty-${productId}-${variantId}`);
             let currentQty = parseInt(qtyEl.innerText);
             let newQty;
@@ -359,6 +359,9 @@
                 Swal.fire({ icon: 'info', title: 'Limit Reached', text: 'You can only have up to 5 units per product.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                 return;
             }
+
+            // Button-level lock — prevents rapid double-tap (no full overlay for minor cart actions)
+            const unlock = (btn && window.Loader) ? window.Loader.withButton(btn, '') : null;
 
             try {
                 const response = await axios.patch('/cart/update', {
@@ -392,6 +395,8 @@
                     showConfirmButton: false,
                     timer: 3000
                 });
+            } finally {
+                if (unlock) unlock();
             }
         }
 

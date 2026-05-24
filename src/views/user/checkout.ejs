@@ -457,8 +457,9 @@
                         const code = couponInput.value.trim();
                         if (!code) { showCouponMsg('Please enter a coupon code.'); return; }
                         const btn = document.getElementById('applyCouponBtn');
-                        btn.disabled = true;
-                        btn.innerHTML = 'Applying...';
+                        const unlock = window.Loader ? window.Loader.withButton(btn, 'Applying...') : null;
+                        // Also show full overlay — coupon recalculates entire cart pricing
+                        if (window.Loader) window.Loader.show('Applying coupon...');
                         try {
                             const res = await axios.post('/coupons/apply', { couponCode: code });
                             if (res.data.success) {
@@ -471,12 +472,15 @@
                         } catch (err) {
                             showCouponMsg(err.response?.data?.message || 'Failed to apply coupon.');
                         } finally {
-                            btn.disabled = false;
-                            btn.innerHTML = 'Apply';
+                            if (window.Loader) window.Loader.hide();
+                            if (unlock) unlock();
                         }
                     }
 
                     async function handleRemoveCoupon() {
+                        const btn = document.getElementById('removeCouponBtn');
+                        const unlock = window.Loader ? window.Loader.withButton(btn, 'Removing...') : null;
+                        if (window.Loader) window.Loader.show('Removing coupon...');
                         try {
                             const res = await axios.post('/coupons/remove');
                             if (res.data.success) {
@@ -488,6 +492,9 @@
                             }
                         } catch (err) {
                             showCouponMsg(err.response?.data?.message || 'Failed to remove coupon.');
+                        } finally {
+                            if (window.Loader) window.Loader.hide();
+                            if (unlock) unlock();
                         }
                     }
 
