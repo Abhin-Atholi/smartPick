@@ -396,8 +396,10 @@
                       const isActive = activeSizes.includes(size);
                     %>
                       <label class="cursor-pointer">
-                        <input type="checkbox" name="size" value="<%= size %>" class="sr-only" <%=isActive ? 'checked' : '' %> onchange="handleFilterChange(event)">
-                        <span class="block px-4 py-2 text-sm font-bold rounded-xl border-2 transition-colors <%= isActive ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-gray-200 text-gray-600 bg-white hover:border-indigo-300' %>">
+                        <input type="checkbox" name="size" value="<%= size %>" class="peer sr-only" <%=isActive ? 'checked' : '' %> onchange="handleFilterChange(event)">
+                        <span class="block px-4 py-2 text-sm font-bold rounded-xl border-2 transition-colors 
+                          border-gray-200 text-gray-600 bg-white hover:border-indigo-300
+                          peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:shadow-md">
                           <%= size %>
                         </span>
                       </label>
