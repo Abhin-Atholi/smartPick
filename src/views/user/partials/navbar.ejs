@@ -82,6 +82,13 @@
         </div>
       </div>
 
+      <!-- Orders -->
+      <% if (typeof isAuth !== "undefined" && isAuth) { %>
+        <a href="/orders" class="pb-1 transition-colors <%= navActive('/orders') %>">
+          Orders
+        </a>
+      <% } %>
+
     </nav>
 
     <!-- Right-side actions -->

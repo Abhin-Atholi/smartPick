@@ -126,14 +126,17 @@
                 <p class="text-sm text-slate-500 font-medium mt-1">Audit-ready view of gross vs net retained values.</p>
             </div>
             <div class="flex items-center gap-3">
-                <!-- Status Pills Filter (Static UI for now, logic can be added) -->
-                <div class="hidden lg:flex items-center gap-2 p-1 bg-slate-50 rounded-xl">
-                    <button class="px-4 py-1.5 bg-white text-[10px] font-black text-indigo-600 rounded-lg shadow-sm">ALL</button>
-                    <button class="px-4 py-1.5 text-[10px] font-black text-slate-400 hover:text-slate-600">REFUNDED</button>
+                <!-- Status Pills Filter -->
+                <div class="flex items-center gap-2 p-1 bg-slate-50 rounded-xl">
+                    <button id="btnFilterAll" onclick="handleStatusFilterChange('All')" class="px-3 sm:px-4 py-1.5 bg-white text-[10px] font-black text-indigo-600 rounded-lg shadow-sm transition-all">ALL</button>
+                    <button id="btnFilterRefunded" onclick="handleStatusFilterChange('Refunded')" class="px-3 sm:px-4 py-1.5 text-[10px] font-black text-slate-400 hover:text-slate-600 rounded-lg transition-all">REFUNDED</button>
                 </div>
                 <div class="relative group">
-                    <input type="text" placeholder="Search by Order ID..." class="bg-slate-50 border-slate-100 text-base sm:text-sm font-bold text-slate-800 rounded-xl pl-12 pr-6 py-3 focus:ring-4 focus:ring-indigo-100 focus:bg-white w-full sm:w-72 transition-all">
+                    <input type="text" id="ledgerSearch" placeholder="Search by Order ID or Name..." class="bg-slate-50 border-slate-100 text-base sm:text-sm font-bold text-slate-800 rounded-xl pl-12 pr-10 py-3 focus:ring-4 focus:ring-indigo-100 focus:bg-white w-full sm:w-72 transition-all">
                     <svg class="w-5 h-5 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <button id="clearSearchBtn" onclick="clearLedgerSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors font-bold">
+                        ✕
+                    </button>
                 </div>
             </div>
         </div>
@@ -172,9 +175,66 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => fetchReportData(1));
-    
     let currentPage = 1;
+    let currentSearch = '';
+    let currentStatus = 'All';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchReportData(1);
+
+        // Restrict custom date inputs to max today (local date)
+        const todayStr = new Date().toLocaleDateString('en-CA'); // Returns YYYY-MM-DD in local time
+        const dateFrom = document.getElementById('dateFrom');
+        const dateTo = document.getElementById('dateTo');
+        if (dateFrom) dateFrom.max = todayStr;
+        if (dateTo) dateTo.max = todayStr;
+
+        // Search input logic with debounce
+        const searchInput = document.getElementById('ledgerSearch');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        let searchDebounce = null;
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                currentSearch = e.target.value;
+                if (currentSearch) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(() => {
+                    fetchReportData(1);
+                }, 300);
+            });
+        }
+    });
+
+    function clearLedgerSearch() {
+        const searchInput = document.getElementById('ledgerSearch');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (searchInput) {
+            searchInput.value = '';
+            currentSearch = '';
+            clearBtn.classList.add('hidden');
+            fetchReportData(1);
+        }
+    }
+
+    function handleStatusFilterChange(status) {
+        currentStatus = status;
+        const btnAll = document.getElementById('btnFilterAll');
+        const btnRef = document.getElementById('btnFilterRefunded');
+        
+        if (status === 'All') {
+            btnAll.className = "px-3 sm:px-4 py-1.5 bg-white text-[10px] font-black text-indigo-600 rounded-lg shadow-sm transition-all";
+            btnRef.className = "px-3 sm:px-4 py-1.5 text-[10px] font-black text-slate-400 hover:text-slate-600 rounded-lg transition-all";
+        } else {
+            btnAll.className = "px-3 sm:px-4 py-1.5 text-[10px] font-black text-slate-400 hover:text-slate-600 rounded-lg transition-all";
+            btnRef.className = "px-3 sm:px-4 py-1.5 bg-white text-[10px] font-black text-indigo-600 rounded-lg shadow-sm transition-all";
+        }
+        fetchReportData(1);
+    }
 
     function handleFilterChange() {
         const filter = document.getElementById('reportFilter').value;
@@ -196,8 +256,19 @@
             const from = document.getElementById('dateFrom').value;
             const to   = document.getElementById('dateTo').value;
             if (!from || !to) return;
+
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            if (from > todayStr || to > todayStr) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Date Range', text: 'Future dates are not allowed.' });
+                return;
+            }
+            if (from > to) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Date Range', text: 'Start date cannot be after end date.' });
+                return;
+            }
             url += `&customFrom=${from}&customTo=${to}`;
         }
+        url += `&search=${encodeURIComponent(currentSearch)}&status=${currentStatus}`;
 
         try {
             const res = await axios.get(url);
@@ -315,7 +386,7 @@
         const filter = document.getElementById('reportFilter').value;
         const from = document.getElementById('dateFrom').value;
         const to   = document.getElementById('dateTo').value;
-        let url = `/admin/sales-reports/export/${type}?filter=${filter}`;
+        let url = `/admin/sales-reports/export/${type}?filter=${filter}&search=${encodeURIComponent(currentSearch)}&status=${currentStatus}`;
         if (filter === 'Custom' && from && to) url += `&customFrom=${from}&customTo=${to}`;
         window.location.href = url;
     }

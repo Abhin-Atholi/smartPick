@@ -402,18 +402,37 @@ export const getCouponAnalytics = async (filter = 'Monthly', customFrom, customT
  * Paginated order ledger for PDF/Excel reports.
  * Each row has gross, refunded, and net columns.
  */
-export const getOrderLedger = async (filter = 'Monthly', customFrom, customTo, page = 1, limit = 50) => {
+export const getOrderLedger = async (filter = 'Monthly', customFrom, customTo, page = 1, limit = 50, search = '', status = 'All') => {
     const { startDate, endDate } = getDateRange(filter, customFrom, customTo);
     const skip = (page - 1) * limit;
 
+    const query = {
+        ...paidOrderMatch(startDate, endDate)
+    };
+
+    if (search && search.trim() !== '') {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        const users = await User.find({ fullName: { $regex: searchRegex } }).select('_id');
+        const userIds = users.map(u => u._id);
+
+        query.$or = [
+            { orderId: { $regex: searchRegex } },
+            { user: { $in: userIds } }
+        ];
+    }
+
+    if (status === 'Refunded') {
+        query.totalRefundedAmount = { $gt: 0 };
+    }
+
     const [orders, total] = await Promise.all([
-        Order.find(paidOrderMatch(startDate, endDate))
+        Order.find(query)
             .populate('user', 'fullName email')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean(),
-        Order.countDocuments(paidOrderMatch(startDate, endDate))
+        Order.countDocuments(query)
     ]);
 
     const rows = orders.map(o => ({

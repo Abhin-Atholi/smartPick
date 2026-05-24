@@ -18,6 +18,29 @@ const fmtDatetime = d => {
     return `${fmtDate(d)}, ${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`;
 };
 
+const validateCustomDates = (customFrom, customTo) => {
+    if (!customFrom || !customTo) return null;
+    const fromDate = new Date(customFrom);
+    const toDate = new Date(customTo);
+    
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        return 'Invalid custom date format.';
+    }
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    if (fromDate > today || toDate > today) {
+        return 'Future dates are not allowed.';
+    }
+
+    if (fromDate > toDate) {
+        return 'Start date cannot be after end date.';
+    }
+
+    return null;
+};
+
 // ── Page render ───────────────────────────────────────────────────────────────
 export const getSalesReportsPage = async (req, res) => {
     try {
@@ -31,11 +54,19 @@ export const getSalesReportsPage = async (req, res) => {
 // ── API: Report data (table) ──────────────────────────────────────────────────
 export const getSalesReportData = async (req, res) => {
     try {
-        const { filter = 'Monthly', customFrom, customTo } = req.query;
+        const { filter = 'Monthly', customFrom, customTo, search = '', status = 'All' } = req.query;
+
+        if (filter === 'Custom') {
+            const dateError = validateCustomDates(customFrom, customTo);
+            if (dateError) {
+                return res.status(400).json({ success: false, message: dateError });
+            }
+        }
+
         const page = parseInt(req.query.page) || 1;
         const [kpis, ledger] = await Promise.all([
             fas.getFinancialKPIs(filter, customFrom, customTo),
-            fas.getOrderLedger(filter, customFrom, customTo, page, 10)
+            fas.getOrderLedger(filter, customFrom, customTo, page, 10, search, status)
         ]);
         res.json({ success: true, data: { kpis, ledger } });
     } catch (error) {
@@ -47,11 +78,18 @@ export const getSalesReportData = async (req, res) => {
 // ── Excel Export: Multi-sheet Financial Workbook ──────────────────────────────
 export const exportExcelReport = async (req, res) => {
     try {
-        const { filter = 'Monthly', customFrom, customTo } = req.query;
+        const { filter = 'Monthly', customFrom, customTo, search = '', status = 'All' } = req.query;
+
+        if (filter === 'Custom') {
+            const dateError = validateCustomDates(customFrom, customTo);
+            if (dateError) {
+                return res.status(400).send(dateError);
+            }
+        }
 
         const [kpis, ledger, items, topProducts, taxes, coupons] = await Promise.all([
             fas.getFinancialKPIs(filter, customFrom, customTo),
-            fas.getOrderLedger(filter, customFrom, customTo, 1, 5000),
+            fas.getOrderLedger(filter, customFrom, customTo, 1, 5000, search, status),
             fas.getItemLedger(filter, customFrom, customTo),
             fas.getTopProducts(filter, customFrom, customTo, 20),
             fas.getTaxAnalytics(filter, customFrom, customTo),
@@ -227,11 +265,18 @@ export const exportExcelReport = async (req, res) => {
 // ── PDF Export: Financial Ledger Report ───────────────────────────────────────
 export const exportPdfReport = async (req, res) => {
     try {
-        const { filter = 'Monthly', customFrom, customTo } = req.query;
+        const { filter = 'Monthly', customFrom, customTo, search = '', status = 'All' } = req.query;
+
+        if (filter === 'Custom') {
+            const dateError = validateCustomDates(customFrom, customTo);
+            if (dateError) {
+                return res.status(400).send(dateError);
+            }
+        }
 
         const [kpis, ledger] = await Promise.all([
             fas.getFinancialKPIs(filter, customFrom, customTo),
-            fas.getOrderLedger(filter, customFrom, customTo, 1, 200)
+            fas.getOrderLedger(filter, customFrom, customTo, 1, 200, search, status)
         ]);
 
         // ── PDF Setup ──────────────────────────────────────────────────────
