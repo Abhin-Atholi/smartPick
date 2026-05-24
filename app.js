@@ -63,7 +63,8 @@ const {
     },
     size: 64,
     ignoredMethods: ["GET", "HEAD", "OPTIONS"],
-    getSessionIdentifier: (req) => req.session?.id || "",
+    getSessionIdentifier: () => "anonymous",
+    getTokenFromRequest: (req) => req.headers["x-csrf-token"] || req.body?._csrf,
 });
 
 
@@ -93,7 +94,10 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-    res.locals.csrfToken = generateToken(req, res);
+    // Skip token generation for background AJAX requests to prevent cookie overwrites
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/auth/check-email')) {
+        res.locals.csrfToken = generateToken(req, res);
+    }
     next();
 });
 

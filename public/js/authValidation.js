@@ -161,7 +161,9 @@ const setupEmailUniquenessCheck = (form) => {
         
         emailCheckTimeout = setTimeout(async () => {
             try {
-                const res = await fetch(`/auth/check-email?email=${encodeURIComponent(email)}`);
+                const res = await fetch(`/auth/check-email?email=${encodeURIComponent(email)}`, {
+                    credentials: 'same-origin'
+                });
                 const data = await res.json();
                 if (data.available) {
                     emailMsgContainer.innerHTML = '<span class="text-green-500">✔ Email available</span>';
