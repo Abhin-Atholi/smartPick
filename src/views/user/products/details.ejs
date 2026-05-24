@@ -48,6 +48,9 @@
       <!-- ── RIGHT: INFO (Increased to 7/12) ── -->
       <div class="lg:col-span-7 flex flex-col pt-1">
         <header class="mb-6">
+          <% if (product.brand) { %>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5"><%= product.brand.toUpperCase() %></p>
+          <% } %>
           <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2"><%= product.category.name %></p>
           <h1 class="text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-4"><%= product.name %></h1>
           

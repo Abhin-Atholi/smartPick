@@ -42,12 +42,15 @@
 
           <div class="p-3.5 sm:p-5 flex flex-col flex-1">
             <div class="mb-2.5">
+              <% if (p.brand) { %>
+                <p class="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1"><%= p.brand.toUpperCase() %></p>
+              <% } %>
               <a href="/products/details/<%= p._id %>">
                 <h3 class="font-bold text-slate-800 text-xs sm:text-sm truncate hover:text-indigo-600 transition-colors">
                   <%= p.name %>
                 </h3>
               </a>
-              <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5"><%= catName %></p>
+              <p class="text-[9px] sm:text-[10px] text-slate-500/60 font-bold uppercase tracking-wider mt-0.5"><%= catName %></p>
             </div>
 
             <!-- Variants Preview: Sizes & Colors -->

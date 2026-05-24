@@ -56,7 +56,10 @@ export const getProducts = async ({ search, status, categoryId, subcategoryId, p
   let query = { isDeleted: false }; // Only non-deleted products
 
   if (search) {
-    query.name = { $regex: search, $options: "i" };
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { brand: { $regex: search, $options: "i" } }
+    ];
   }
 
   if (status === "Active") query.isActive = true;

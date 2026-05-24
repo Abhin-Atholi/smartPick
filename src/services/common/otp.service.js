@@ -33,6 +33,9 @@ export const getVerificationTarget = async (email, context) => {
     target = await User.findOne({ pendingEmail: normalizedEmail });
   } else if (context === "resetPassword") {
     target = await User.findOne({ email: normalizedEmail });
+    if (target && target.authProvider === "google") {
+      throw new Error("This account is registered via Google OAuth. Please sign in using Google.");
+    }
   } else {
     // register context
     target = await TempUser.findOne({ email: normalizedEmail });
@@ -164,6 +167,11 @@ export const resendAnyOtp = async (email, explicitPurpose = null) => {
   // For reset password, `target` is the user. We just want to ensure user exists
   if (!target) throw new Error("Session expired.");
 
+  // Block Google Auth users from requesting password reset OTP resend
+  if (purpose === "reset_password" && target.authProvider === "google") {
+    throw new Error("This account is registered via Google OAuth. Please sign in using Google.");
+  }
+
   // Check if current OTP is still valid
   const existingOtp = await Otp.findOne({ email, purpose });
   if (existingOtp) {
@@ -193,6 +201,11 @@ export const sendOtp = async ({ email, purpose }) => {
       const field = purpose === "changeEmail" ? { pendingEmail: normalizedEmail } : { email: normalizedEmail };
       const user = await User.findOne(field);
       if (!user) throw new Error("User not found");
+
+      // Block Google Auth users from resetting their password
+      if (purpose === "reset_password" && user.authProvider === "google") {
+        throw new Error("This account is registered via Google OAuth. Please sign in using Google.");
+      }
   } else if (purpose === "register") {
       const tempUser = await TempUser.findOne({ email: normalizedEmail });
       if (!tempUser) throw new Error("Session expired.");

@@ -102,7 +102,6 @@ export const getStorefrontProducts = async (queryParams) => {
         $or: [
           { name: regex },
           { brand: regex },
-          { description: regex },
           { category: { $in: searchCatIds } },
           { subcategory: { $in: searchSubIds } }
         ]
