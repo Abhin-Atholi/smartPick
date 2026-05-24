@@ -64,7 +64,7 @@ const {
     size: 64,
     ignoredMethods: ["GET", "HEAD", "OPTIONS"],
     getSessionIdentifier: () => "anonymous",
-    getTokenFromRequest: (req) => req.headers["x-csrf-token"] || req.body?._csrf,
+    getCsrfTokenFromRequest: (req) => req.headers["x-csrf-token"] || req.body?._csrf,
 });
 
 
@@ -94,8 +94,10 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-    // Skip token generation for background AJAX requests to prevent cookie overwrites
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/auth/check-email')) {
+    // Only generate CSRF tokens for GET requests to prevent cookie overwrites
+    // from background/partial requests.
+    res.locals.csrfToken = null;
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/auth/check-email')) {
         res.locals.csrfToken = generateToken(req, res);
     }
     next();

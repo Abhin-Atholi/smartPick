@@ -23,9 +23,23 @@ export const globalErrorHandler = (err, req, res, next) => {
     const isAjax = req.xhr || req.headers.accept?.includes('application/json') || req.path.startsWith('/api');
 
     if (isAjax) {
+        if (err.code === "EBADCSRFTOKEN") {
+            return res.status(403).json({
+                success: false,
+                message: "Your session expired. Please refresh and try again."
+            });
+        }
         return res.status(err.statusCode || err.status || 500).json({
             success: false,
             message: err.message || "Internal Server Error"
+        });
+    }
+
+    // 4. Handle CSRF Token Errors for standard requests
+    if (err.code === "EBADCSRFTOKEN") {
+        return res.status(403).render("error", {
+            title: "Security Error",
+            message: "Your session expired. Please refresh and try again."
         });
     }
 
