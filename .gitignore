@@ -1,4 +1,5 @@
 .env
+*.pem
 node_modules/
 public/uploads/
 public/images/
