@@ -40,7 +40,7 @@
         <!-- Date search -->
         <div class="min-w-[160px]">
           <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Order Date</label>
-          <input type="date" name="date" value="<%= sDate %>"
+          <input type="date" name="date" value="<%= sDate %>" max="<%= new Date().toISOString().split('T')[0] %>"
             class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition bg-gray-50 focus:bg-white">
         </div>
 

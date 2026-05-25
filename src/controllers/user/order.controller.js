@@ -177,7 +177,14 @@ export const getOrders = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const filter = req.query.status || 'All';
     const limit = 5;
-    const search = { q: req.query.q || '', date: req.query.date || '' };
+    let qDate = req.query.date || '';
+    if (qDate) {
+        const parsedDate = new Date(qDate);
+        if (!isNaN(parsedDate) && parsedDate > new Date()) {
+            qDate = ''; // Ignore future dates
+        }
+    }
+    const search = { q: req.query.q || '', date: qDate };
 
     const orderData = await orderService.getOrders(userId, page, limit, filter, search);
 

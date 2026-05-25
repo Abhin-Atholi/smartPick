@@ -111,12 +111,12 @@
     </div>
     <div class="min-w-[140px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">From Date</label>
-      <input type="date" name="dateFrom" value="<%= sd %>"
+      <input type="date" name="dateFrom" value="<%= sd %>" max="<%= new Date().toISOString().split('T')[0] %>"
         class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 focus:bg-white transition">
     </div>
     <div class="min-w-[140px]">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">To Date</label>
-      <input type="date" name="dateTo" value="<%= ed %>"
+      <input type="date" name="dateTo" value="<%= ed %>" max="<%= new Date().toISOString().split('T')[0] %>"
         class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 focus:bg-white transition">
     </div>
     <div class="min-w-[160px]">

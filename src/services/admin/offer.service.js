@@ -97,6 +97,15 @@ export const createOffer = async (data) => {
         throw new Error('Start date must be before the expiry date.');
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate && new Date(startDate) < today) {
+        throw new Error('Start date cannot be in the past.');
+    }
+    if (expiryDate && new Date(expiryDate) < today) {
+        throw new Error('Expiry date cannot be in the past.');
+    }
+
     // Business rule: verify target entity exists and is not deleted/inactive
     if (offerType === 'product') {
         const product = await Product.findById(applicableTo).lean();
@@ -170,6 +179,15 @@ export const updateOffer = async (id, data) => {
     // Business rule: startDate must precede expiryDate
     if (startDate && new Date(startDate) >= new Date(expiryDate)) {
         throw new Error('Start date must be before the expiry date.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate && new Date(startDate) < today) {
+        throw new Error('Start date cannot be in the past.');
+    }
+    if (expiryDate && new Date(expiryDate) < today) {
+        throw new Error('Expiry date cannot be in the past.');
     }
 
     // Business rule: verify target entity exists

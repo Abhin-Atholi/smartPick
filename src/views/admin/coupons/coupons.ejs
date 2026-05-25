@@ -287,13 +287,13 @@
                 <!-- Start Date -->
                 <div>
                     <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Start Date <span class="text-red-500">*</span></label>
-                    <input type="date" id="startDate" name="startDate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
+                    <input type="date" id="startDate" name="startDate" min="<%= new Date().toISOString().split('T')[0] %>" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
                     <p id="startDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
                 </div>
                 <!-- Expiry Date -->
                 <div>
                     <label class="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Expiry Date <span class="text-red-500">*</span></label>
-                    <input type="date" id="expiryDate" name="expiryDate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
+                    <input type="date" id="expiryDate" name="expiryDate" min="<%= new Date().toISOString().split('T')[0] %>" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all cursor-pointer">
                     <p id="expiryDateError" class="error-msg text-[10px] text-red-500 font-bold mt-1 hidden"></p>
                 </div>
             </div>

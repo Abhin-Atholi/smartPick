@@ -96,14 +96,14 @@
                         <!-- Date From -->
                         <div>
                             <input type="date" name="dateFrom" id="txDateFrom"
-                                value="<%= filters && filters.dateFrom ? filters.dateFrom : '' %>"
+                                value="<%= filters && filters.dateFrom ? filters.dateFrom : '' %>" max="<%= new Date().toISOString().split('T')[0] %>"
                                 class="w-full px-3 py-2.5 text-base sm:text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 cursor-pointer">
                         </div>
 
                         <!-- Date To -->
                         <div class="flex gap-2">
                             <input type="date" name="dateTo" id="txDateTo"
-                                value="<%= filters && filters.dateTo ? filters.dateTo : '' %>"
+                                value="<%= filters && filters.dateTo ? filters.dateTo : '' %>" max="<%= new Date().toISOString().split('T')[0] %>"
                                 class="flex-1 px-3 py-2.5 text-base sm:text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all text-gray-600 cursor-pointer">
                             <button type="submit"
                                 class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-base sm:text-xs font-black rounded-xl transition-all active:scale-95 flex items-center gap-1.5 whitespace-nowrap shadow-sm">
@@ -291,6 +291,56 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="/js/payment/paymentUIManager.js"></script>
 <script>
+    // ── Transaction Filter Date Range Constraints ──────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        const fromInput = document.getElementById('txDateFrom');
+        const toInput = document.getElementById('txDateTo');
+        const form = document.getElementById('txFilterForm');
+        const today = new Date().toISOString().split('T')[0];
+
+        function updateConstraints() {
+            if (fromInput.value) {
+                toInput.min = fromInput.value;
+            } else {
+                toInput.removeAttribute('min');
+            }
+            if (toInput.value) {
+                fromInput.max = toInput.value;
+            } else {
+                fromInput.max = today;
+            }
+        }
+
+        updateConstraints();
+
+        fromInput.addEventListener('change', updateConstraints);
+        toInput.addEventListener('change', updateConstraints);
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dateFromVal = fromInput.value;
+                const dateToVal = toInput.value;
+
+                if (dateFromVal && dateToVal && new Date(dateFromVal) > new Date(dateToVal)) {
+                    e.preventDefault();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Invalid Date Range',
+                            text: 'The "To Date" must be greater than or equal to the "From Date".',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    } else {
+                        alert('The "To Date" must be greater than or equal to the "From Date".');
+                    }
+                }
+            });
+        }
+    });
+
     // ── Modal Controls ────────────────────────────────────────────────────────
     function openAddMoneyModal() {
         document.getElementById('topupAmount').value = '';

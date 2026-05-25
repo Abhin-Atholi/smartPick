@@ -15,12 +15,33 @@ export const getWalletPage = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
 
+    let dFrom = req.query.dateFrom || '';
+    let dTo = req.query.dateTo || '';
+    const now = new Date();
+
+    if (dFrom) {
+        const pdFrom = new Date(dFrom);
+        if (!isNaN(pdFrom) && pdFrom > now) dFrom = '';
+    }
+    if (dTo) {
+        const pdTo = new Date(dTo);
+        if (!isNaN(pdTo) && pdTo > now) dTo = '';
+    }
+    if (dFrom && dTo) {
+        const pdFrom = new Date(dFrom);
+        const pdTo = new Date(dTo);
+        if (!isNaN(pdFrom) && !isNaN(pdTo) && pdFrom > pdTo) {
+            dFrom = '';
+            dTo = '';
+        }
+    }
+
     // Extract filter params from query string
     const filters = {
         search:   (req.query.search   || '').trim(),
         type:     req.query.type     || '',
-        dateFrom: req.query.dateFrom || '',
-        dateTo:   req.query.dateTo   || ''
+        dateFrom: dFrom,
+        dateTo:   dTo
     };
 
     const data = await walletService.getTransactionHistory(userId, page, limit, filters);

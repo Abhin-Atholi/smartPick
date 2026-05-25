@@ -84,6 +84,15 @@ export const addCoupon = async (data) => {
         throw new Error('Start date must be before the expiry date.');
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate && new Date(startDate) < today) {
+        throw new Error('Start date cannot be in the past.');
+    }
+    if (expiryDate && new Date(expiryDate) < today) {
+        throw new Error('Expiry date cannot be in the past.');
+    }
+
     const newCoupon = new Coupon({
         code: trimmedCode,
         description,
@@ -120,6 +129,15 @@ export const editCoupon = async (id, data) => {
     // Business rule: startDate must precede expiryDate
     if (startDate && new Date(startDate) >= new Date(expiryDate)) {
         throw new Error('Start date must be before the expiry date.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate && new Date(startDate) < today) {
+        throw new Error('Start date cannot be in the past.');
+    }
+    if (expiryDate && new Date(expiryDate) < today) {
+        throw new Error('Expiry date cannot be in the past.');
     }
 
     // Business rule: usageLimit cannot drop below current used count

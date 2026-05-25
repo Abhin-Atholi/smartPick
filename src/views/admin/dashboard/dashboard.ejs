@@ -25,9 +25,9 @@
       <option value="Custom">Custom Range</option>
     </select>
     <div id="customDateContainer" class="hidden flex-col sm:flex-row items-center gap-2">
-      <input type="date" id="customFrom" class="bg-white border border-gray-200 text-slate-700 text-sm rounded-xl px-3 py-2 font-bold shadow-sm">
+      <input type="date" id="customFrom" max="<%= new Date().toISOString().split('T')[0] %>" class="bg-white border border-gray-200 text-slate-700 text-sm rounded-xl px-3 py-2 font-bold shadow-sm">
       <span class="text-gray-400 font-bold text-sm">to</span>
-      <input type="date" id="customTo" class="bg-white border border-gray-200 text-slate-700 text-sm rounded-xl px-3 py-2 font-bold shadow-sm">
+      <input type="date" id="customTo" max="<%= new Date().toISOString().split('T')[0] %>" class="bg-white border border-gray-200 text-slate-700 text-sm rounded-xl px-3 py-2 font-bold shadow-sm">
       <button onclick="fetchDashboardData()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-indigo-700 transition">Apply</button>
     </div>
   </div>

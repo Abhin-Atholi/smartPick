@@ -20,7 +20,18 @@ export const renderDashboard = async (req, res) => {
 // API Endpoint to fetch dashboard data dynamically based on filters
 export const getDashboardData = async (req, res) => {
     try {
-        const { filter, customFrom, customTo } = req.query;
+        let { filter, customFrom, customTo } = req.query;
+        
+        const now = new Date();
+        if (customFrom) {
+            const pFrom = new Date(customFrom);
+            if (!isNaN(pFrom) && pFrom > now) customFrom = now.toISOString().split('T')[0];
+        }
+        if (customTo) {
+            const pTo = new Date(customTo);
+            if (!isNaN(pTo) && pTo > now) customTo = now.toISOString().split('T')[0];
+        }
+
         const data = await dashboardService.getDashboardData(filter || 'Monthly', customFrom, customTo);
         res.json({ success: true, data });
     } catch (error) {

@@ -4,7 +4,18 @@ import { generateInvoice } from '../../utils/invoiceGenerator.js';
 import { formatAdminOrderForDisplay } from '../../services/common/adminOrderPresentation.service.js';
 
 export const getOrders = asyncHandler(async (req, res) => {
-    const { page = 1, search = '', status = 'All', dateFrom = '', dateTo = '', sort = 'newest' } = req.query;
+    let { page = 1, search = '', status = 'All', dateFrom = '', dateTo = '', sort = 'newest' } = req.query;
+
+    const now = new Date();
+    if (dateFrom) {
+        const pFrom = new Date(dateFrom);
+        if (!isNaN(pFrom) && pFrom > now) dateFrom = now.toISOString().split('T')[0];
+    }
+    if (dateTo) {
+        const pTo = new Date(dateTo);
+        if (!isNaN(pTo) && pTo > now) dateTo = now.toISOString().split('T')[0];
+    }
+
     const data = await orderService.getAllOrders({ page: parseInt(page), limit: 10, search, status, dateFrom, dateTo, sort });
     const formattedOrders = data.orders.map(order => formatAdminOrderForDisplay(order));
     
