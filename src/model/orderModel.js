@@ -136,6 +136,13 @@ const orderSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
+// Auto-update COD payment status to Paid when Delivered
+orderSchema.pre('save', async function () {
+    if (this.orderStatus === 'Delivered' && this.paymentMethod === 'COD' && this.paymentStatus === 'Pending') {
+        this.paymentStatus = 'Paid';
+    }
+});
+
 // ── Phase 8: Production Indexes ─────────────────────────────────────────────
 // User order history (most common query)
 orderSchema.index({ user: 1, createdAt: -1 });
