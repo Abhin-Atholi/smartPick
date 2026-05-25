@@ -275,11 +275,23 @@
                         const colorOpt = item.product?.colorOptions?.find(c => normalize(c.name) === normalize(item.color));
                         const iUrl = colorOpt?.images?.[0] || item.product?.defaultImage || '/images/placeholder.jpg';
                       %>
-                      <div class="w-14 h-16 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
-                        <img src="<%= iUrl %>" class="w-full h-full object-cover">
-                      </div>
+                      <% if (item.product?._id) { %>
+                        <a href="/products/details/<%= item.product._id %>" class="w-14 h-16 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0 block hover:opacity-90 transition-opacity">
+                          <img src="<%= iUrl %>" class="w-full h-full object-cover">
+                        </a>
+                      <% } else { %>
+                        <div class="w-14 h-16 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
+                          <img src="<%= iUrl %>" class="w-full h-full object-cover">
+                        </div>
+                      <% } %>
                       <div class="flex-grow min-w-0">
-                        <p class="text-sm font-black text-gray-900 truncate"><%= item.product?.name || 'Unavailable' %></p>
+                        <% if (item.product?._id) { %>
+                          <a href="/products/details/<%= item.product._id %>" class="hover:text-indigo-600 transition-colors block">
+                            <p class="text-sm font-black text-gray-900 truncate"><%= item.product?.name || 'Unavailable' %></p>
+                          </a>
+                        <% } else { %>
+                          <p class="text-sm font-black text-gray-900 truncate"><%= item.product?.name || 'Unavailable' %></p>
+                        <% } %>
                         <p class="text-xs text-gray-400 mt-0.5">Qty: <%= item.quantity %> &bull; Size: <%= item.size %> &bull; Color: <%= item.color %></p>
                         <div class="flex items-center gap-2 mt-1">
                           <p class="text-sm font-black text-indigo-600">₹<%= (isNaN(item.price) ? (item.totalPrice / item.quantity) || 0 : item.price).toLocaleString() %></p>

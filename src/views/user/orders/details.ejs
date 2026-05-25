@@ -87,13 +87,25 @@
                 <!-- Left/Center: Image + Info -->
                 <div class="flex gap-4 flex-grow min-w-0">
                   <!-- Product Image -->
-                  <div class="w-20 h-24 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0">
-                    <img src="<%= item.image %>" class="w-full h-full object-cover">
-                  </div>
+                  <% if (item.productId) { %>
+                    <a href="/products/details/<%= item.productId %>" class="w-20 h-24 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0 block hover:opacity-90 transition-opacity">
+                      <img src="<%= item.image %>" class="w-full h-full object-cover">
+                    </a>
+                  <% } else { %>
+                    <div class="w-20 h-24 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0">
+                      <img src="<%= item.image %>" class="w-full h-full object-cover">
+                    </div>
+                  <% } %>
 
                   <!-- Product Info -->
                   <div class="flex-grow min-w-0">
-                    <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.productName %></p>
+                    <% if (item.productId) { %>
+                      <a href="/products/details/<%= item.productId %>" class="hover:text-indigo-600 transition-colors block">
+                        <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.productName %></p>
+                      </a>
+                    <% } else { %>
+                      <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.productName %></p>
+                    <% } %>
                     <% if (item.categoryName) { %>
                       <p class="text-xs text-gray-400 mb-2"><%= item.categoryName %></p>
                     <% } %>

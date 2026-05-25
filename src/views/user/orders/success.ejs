@@ -116,15 +116,33 @@
                 <% const product = item.product; %>
                 <% const img = (product && product.colorOptions && product.colorOptions.length > 0 && product.colorOptions[0].images && product.colorOptions[0].images.length > 0) ? product.colorOptions[0].images[0] : null; %>
                 <div class="flex items-center gap-3">
-                    <% if (img) { %>
-                    <img src="<%= img %>" alt="<%= product?.name || 'Product' %>" class="item-thumb w-12 h-12 rounded-xl object-cover bg-gray-100 flex-shrink-0">
+                    <% if (product?._id) { %>
+                      <a href="/products/details/<%= product._id %>" class="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 block hover:opacity-90 transition-opacity">
+                        <% if (img) { %>
+                          <img src="<%= img %>" alt="<%= product?.name || 'Product' %>" class="item-thumb w-full h-full object-cover">
+                        <% } else { %>
+                          <div class="w-full h-full flex items-center justify-center">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-300"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="m9 9 6 6m0-6-6 6"></path></svg>
+                          </div>
+                        <% } %>
+                      </a>
                     <% } else { %>
-                    <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-300"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="m9 9 6 6m0-6-6 6"></path></svg>
-                    </div>
+                      <% if (img) { %>
+                        <img src="<%= img %>" alt="<%= product?.name || 'Product' %>" class="item-thumb w-12 h-12 rounded-xl object-cover bg-gray-100 flex-shrink-0">
+                      <% } else { %>
+                        <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-300"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="m9 9 6 6m0-6-6 6"></path></svg>
+                        </div>
+                      <% } %>
                     <% } %>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-gray-900 truncate"><%= product?.name || 'Product' %></p>
+                        <% if (product?._id) { %>
+                          <a href="/products/details/<%= product._id %>" class="hover:text-indigo-600 transition-colors block">
+                            <p class="text-sm font-bold text-gray-900 truncate"><%= product?.name || 'Product' %></p>
+                          </a>
+                        <% } else { %>
+                          <p class="text-sm font-bold text-gray-900 truncate"><%= product?.name || 'Product' %></p>
+                        <% } %>
                         <p class="text-xs text-gray-400 font-semibold mt-0.5"><%= item.color %> · <%= item.size %> · Qty <%= item.quantity %></p>
                     </div>
                     <p class="text-sm font-black text-gray-800 flex-shrink-0">₹<%= item.totalPrice.toLocaleString('en-IN') %></p>
