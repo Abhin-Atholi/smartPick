@@ -52,9 +52,9 @@
                         <h2 class="text-sm font-black text-gray-900 uppercase tracking-wide">Share Your Link</h2>
                     </div>
                     <%
-                        const protocol = typeof req !== 'undefined' && req.protocol ? req.protocol : 'http';
-                        const host = typeof req !== 'undefined' && req.get ? req.get('host') : 'localhost:3000';
-                        const referralLink = `${protocol}://${host}/register?ref=${user.referralCode}`;
+                        const refProtocol = locals.protocol || 'http';
+                        const refHost = locals.host || 'localhost:3000';
+                        const referralLink = `${refProtocol}://${refHost}/register?ref=${user.referralCode}`;
                     %>
                     <div class="flex flex-col sm:flex-row items-stretch border border-gray-200 rounded-xl overflow-hidden bg-gray-50 mt-1">
                         <div class="flex-1 min-w-0 font-mono text-xs text-gray-600 px-4 py-3 sm:py-4 select-all break-all sm:truncate text-center sm:text-left flex items-center justify-center sm:justify-start">

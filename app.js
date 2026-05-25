@@ -110,6 +110,8 @@ app.use(passport.session()); // Essential for Google OAuth persistence
 app.use((req, res, next) => {
     res.locals.title = "SmartPick";
     res.locals.currentPath = req.originalUrl; // full URL incl. query string — used for active-state navbar/drawer
+    res.locals.host = req.get("host");
+    res.locals.protocol = req.protocol;
     next();
 });
 
