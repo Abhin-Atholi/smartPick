@@ -1,5 +1,6 @@
 .env
 *.pem
+smartpick-key.txt
 node_modules/
 public/uploads/
 public/images/
