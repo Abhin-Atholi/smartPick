@@ -58,21 +58,15 @@
             <h3 class="font-bold text-slate-800 truncate"><%= banner.title %></h3>
             <p class="text-xs text-gray-400 mt-1 mb-4">Added: <%= new Date(banner.createdAt).toLocaleDateString() %></p>
             
-            <div class="mt-auto flex gap-2">
-              <% if (!banner.isActive) { %>
-                <button onclick="activateBanner('<%= banner._id %>')" class="flex-1 bg-indigo-50 text-indigo-600 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
-                  Activate
-                </button>
-              <% } else { %>
-                <button disabled class="flex-1 bg-gray-100 text-gray-400 py-2 rounded-xl text-xs font-bold cursor-not-allowed">
-                  Currently Active
-                </button>
-              <% } %>
-              
-              <button onclick="deleteBanner('<%= banner._id %>')" class="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            <div class="mt-auto flex items-center justify-end gap-2">
+              <button onclick="activateBanner('<%= banner._id %>')" class="p-2 rounded-xl transition <%= banner.isActive ? 'bg-green-50 text-green-600 cursor-not-allowed' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' %>" title="<%= banner.isActive ? 'Currently Active' : 'Activate' %>" <%= banner.isActive ? 'disabled' : '' %>>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
+              </button>
+              
+              <button onclick="deleteBanner('<%= banner._id %>')" class="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition" title="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
               </button>
             </div>
           </div>
@@ -87,13 +81,13 @@
 <!-- Upload Modal -->
 <div id="uploadBannerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
   <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeUploadModal()"></div>
-  <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-    <div class="flex justify-between items-center mb-6">
+  <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90dvh] flex flex-col">
+    <div class="flex justify-between items-center mb-6 shrink-0">
       <h3 class="font-black text-lg text-slate-800">Upload Banner</h3>
       <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 transition">✕</button>
     </div>
     
-    <form id="uploadBannerForm" onsubmit="handleBannerUpload(event)">
+    <form id="uploadBannerForm" onsubmit="handleBannerUpload(event)" class="overflow-y-auto pr-1">
       <div class="mb-4">
         <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Banner Title</label>
         <input type="text" id="bannerTitle" name="title" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" placeholder="e.g. Summer Sale 2026" required>

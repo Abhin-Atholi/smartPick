@@ -21,19 +21,19 @@
 <!-- Generic Cropper Modal -->
 <div id="genericCropperModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="_cancelGenericCrop()"></div>
-    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90dvh] flex flex-col">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
             <h3 class="font-black text-slate-800">Crop Image</h3>
             <button onclick="_cancelGenericCrop()" class="text-gray-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50">✕</button>
         </div>
-        <div id="genericCropperContainer" class="p-4 bg-gray-900 flex items-center justify-center shadow-inner">
+        <div id="genericCropperContainer" class="p-4 bg-gray-900 flex items-center justify-center shadow-inner overflow-hidden flex-1 relative min-h-0">
             <img id="genericCropperImage" src="" style="max-height:100%;max-width:100%;">
         </div>
-        <div class="px-6 py-4 flex justify-between items-center border-t border-gray-100">
-            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Drag & Scroll to reposition</span>
-            <div class="flex gap-3">
-                <button onclick="_cancelGenericCrop()" class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition shadow-sm border border-transparent">Cancel</button>
-                <button onclick="_confirmGenericCrop()" class="px-6 py-2.5 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">✓ Apply Crop</button>
+        <div class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center border-t border-gray-100 shrink-0 gap-4">
+            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:inline">Drag & Scroll to reposition</span>
+            <div class="flex gap-3 w-full sm:w-auto justify-end">
+                <button onclick="_cancelGenericCrop()" class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition shadow-sm border border-transparent flex-1 sm:flex-none">Cancel</button>
+                <button onclick="_confirmGenericCrop()" class="px-6 py-2.5 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex-1 sm:flex-none">✓ Apply Crop</button>
             </div>
         </div>
     </div>

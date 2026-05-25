@@ -393,12 +393,12 @@
 
 <!-- Action Modal (Cancel / Return) -->
 <div id="actionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90dvh]">
+    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
       <h3 id="actionModalTitle" class="text-lg font-black text-gray-900">Action</h3>
       <button onclick="closeActionModal()" class="text-gray-400 hover:text-black transition text-xl leading-none">✕</button>
     </div>
-    <form id="actionForm" class="p-6 space-y-4">
+    <form id="actionForm" class="p-6 space-y-4 overflow-y-auto">
       <input type="hidden" id="actionType">
       <input type="hidden" id="actionOrderId">
       <input type="hidden" id="actionItemId">
@@ -428,12 +428,12 @@
 
 <!-- Review Modal -->
 <div id="reviewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90dvh]">
+    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
       <h3 id="reviewModalTitle" class="text-lg font-black text-gray-900">Write Review</h3>
       <button onclick="closeReviewModal()" class="text-gray-400 hover:text-black transition text-xl leading-none">✕</button>
     </div>
-    <form id="reviewForm" class="p-6 space-y-5">
+    <form id="reviewForm" class="p-6 space-y-5 overflow-y-auto">
       <input type="hidden" id="reviewProductId">
       <input type="hidden" id="reviewId">
 

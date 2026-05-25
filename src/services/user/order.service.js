@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import AppError from '../../utils/AppError.js';
 import Order from '../../model/orderModel.js';
 import Cart from '../../model/cartModel.js';
 import Product from '../../model/productModel.js';
@@ -276,7 +277,7 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
 
             if (updateResult.modifiedCount === 0) {
                 // Because we are in a transaction, throwing this error will roll back everything!
-                throw new Error(`Race condition caught: Insufficient stock remaining for one or more items.`);
+                throw new AppError(`Race condition caught: Insufficient stock remaining for one or more items.`);
             }
         }
 

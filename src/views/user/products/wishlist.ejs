@@ -466,8 +466,8 @@
     text.textContent = 'Adding...';
 
     try {
-      const res  = await fetch('/cart/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ productId: _modal.productId, quantity: 1, variantId: variant._id }) });
-      const data = await res.json();
+      const res  = await axios.post('/cart/add', { productId: _modal.productId, quantity: 1, variantId: variant._id });
+      const data = res.data;
 
       if (data.success) {
         // Success state
@@ -491,11 +491,9 @@
         }
 
         // Call database delete
-        fetch('/wishlist/remove', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId })
-        }).then(r => r.json()).then(wData => {
+        axios.delete('/wishlist/remove', {
+          data: { productId }
+        }).then(r => r.data).then(wData => {
           if (wData.success) {
             if (typeof updateWishlistBadge === 'function') {
               updateWishlistBadge('removed');
@@ -541,8 +539,8 @@
     const item = document.getElementById(`item-${productId}`);
     if (item) { item.style.opacity = '0.5'; item.style.transform = 'scale(0.95)'; }
     try {
-      const res  = await fetch('/wishlist/remove', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ productId }) });
-      const data = await res.json();
+      const res  = await axios.delete('/wishlist/remove', { data: { productId } });
+      const data = res.data;
       if (data.success) {
         item && item.remove();
         if (typeof updateWishlistBadge === 'function') updateWishlistBadge('removed');

@@ -1,6 +1,6 @@
 <% 
-  const activeClass = "bg-indigo-50 text-indigo-600 font-black shadow-sm";
-  const inactiveClass = "text-gray-500 font-bold hover:text-indigo-600 hover:bg-gray-50 transition group";
+  const activeClass = "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-black shadow-lg shadow-indigo-200/50 scale-[1.02] translate-x-1";
+  const inactiveClass = "text-slate-500 font-bold hover:text-indigo-600 hover:bg-indigo-50/50 hover:translate-x-1 transition-all duration-300 group";
   const currentTitle = typeof title !== 'undefined' ? title : '';
   const currentPath = typeof activePath !== 'undefined' ? activePath : '';
 
@@ -12,95 +12,97 @@
   };
 %>
 
-  <aside class="w-72 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 overflow-hidden">
+  <aside class="w-72 bg-white/90 backdrop-blur-xl border-r border-gray-100 flex flex-col h-[100dvh] sticky top-0 overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-50">
 
-    <div class="p-6 flex-1 flex flex-col">
-      <div class="flex items-center gap-3 mb-8">
-        <div class="w-9 h-9 bg-indigo-600 rounded-xl grid place-items-center shadow-lg shadow-indigo-100">
-          <span class="text-white text-lg">🛍️</span>
+    <div class="p-6 flex-1 flex flex-col overflow-y-auto no-scrollbar">
+      <div class="flex items-center gap-4 mb-10 shrink-0 px-2">
+        <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl grid place-items-center shadow-lg shadow-indigo-200 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+          <span class="text-white text-xl">🛍️</span>
         </div>
-        <h2 class="text-lg font-black tracking-tight text-slate-800 italic leading-none">SmartPick</h2>
+        <div>
+          <h2 class="text-xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-indigo-900 leading-none">SmartPick</h2>
+          <p class="text-[9px] font-black uppercase tracking-widest text-indigo-400 mt-1">Admin Portal</p>
+        </div>
       </div>
 
-      <nav class="flex-1 space-y-5">
+      <nav class="flex-1 space-y-8 px-2">
         <div>
-          <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2">Overview</p>
-          <a href="/admin/dashboard"
-            class="flex items-center gap-3 py-2 px-3 rounded-xl <%= isLinkActive('/admin/dashboard', 'Dashboard') ? activeClass : inactiveClass %>">
-            <span class="text-base">📊</span> <span class="text-sm">Dashboard</span>
-          </a>
-          <a href="/admin/sales-reports"
-            class="flex items-center gap-3 py-2 px-3 rounded-xl <%= isLinkActive('/admin/sales-reports', 'Sales Reports') ? activeClass : inactiveClass %>">
-            <span class="text-base">📈</span> <span class="text-sm">Sales Reports</span>
-          </a>
-        </div>
-
-        <div>
-          <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2">Management</p>
-          <div class="space-y-0.5">
-
-            <a href="/admin/category"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/category', 'Categories') ? activeClass : inactiveClass %>">
-              <span class="text-base">📁</span> <span class="text-sm">Categories</span>
+          <p class="text-[10px] font-black text-gray-400/80 uppercase tracking-widest mb-3 ml-2 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-100"></span> Overview
+          </p>
+          <div class="space-y-1">
+            <a href="/admin/dashboard"
+              class="flex items-center gap-3 py-2.5 px-4 rounded-2xl <%= isLinkActive('/admin/dashboard', 'Dashboard') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/dashboard', 'Dashboard') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">📊</span> 
+              <span class="text-sm">Dashboard</span>
             </a>
-            <a href="/admin/subcategory"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/subcategory', 'Subcategories') ? activeClass : inactiveClass %>">
-              <span class="text-base">📑</span> <span class="text-sm">Subcategories</span>
-            </a>
-            <a href="/admin/products"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/products', 'Products') ? activeClass : inactiveClass %>">
-              <span class="text-base">📦</span> <span class="text-sm">Products</span>
-            </a>
-            <a href="/admin/customers"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/customers', 'Customer') ? activeClass : inactiveClass %>">
-              <span class="text-base">👤</span> <span class="text-sm">Customers</span>
-            </a>
-            <a href="/admin/orders"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/orders', 'Orders') ? activeClass : inactiveClass %>">
-              <span class="text-base">📜</span> <span class="text-sm">Orders</span>
-            </a>
-            <a href="/admin/offers"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/offers', 'Offers') ? activeClass : inactiveClass %>">
-              <span class="text-base">🏷️</span> <span class="text-sm">Offers</span>
-            </a>
-            <a href="/admin/coupons"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/coupons', 'Coupons') ? activeClass : inactiveClass %>">
-              <span class="text-base">🎟️</span> <span class="text-sm">Coupons</span>
-            </a>
-            <a href="/admin/banners"
-              class="flex items-center gap-3 py-1.5 px-3 rounded-xl <%= isLinkActive('/admin/banners', 'Banners') ? activeClass : inactiveClass %>">
-              <span class="text-base">🖼️</span> <span class="text-sm">Banners</span>
+            <a href="/admin/sales-reports"
+              class="flex items-center gap-3 py-2.5 px-4 rounded-2xl <%= isLinkActive('/admin/sales-reports', 'Sales Reports') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/sales-reports', 'Sales Reports') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">📈</span> 
+              <span class="text-sm">Sales Reports</span>
             </a>
           </div>
         </div>
 
-
-      </nav>
-    </div>
-
-    <div class="p-6 pt-2 border-t border-gray-50 bg-gray-50/30">
-      <div class="flex items-center gap-3 mb-4">
-        <div
-          class="relative w-10 h-10 rounded-xl bg-indigo-50 overflow-hidden border border-indigo-100 shadow-sm flex-shrink-0">
-          <img
-            src="<%= (typeof admin !== 'undefined' && admin && admin.profileImage) ? admin.profileImage : 'https://ui-avatars.com/api/?name=' + (typeof admin !== 'undefined' && admin ? encodeURIComponent(admin.fullName) : 'Admin') + '&background=6366f1&color=fff' %>"
-            alt="Admin" class="w-full h-full object-cover" referrerpolicy="no-referrer"
-            onerror="this.src='https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff'">
-
-          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
-        </div>
-
-        <div class="overflow-hidden">
-          <p class="text-xs font-black text-slate-800 truncate">
-            <%= typeof admin !=='undefined' && admin ? admin.fullName : 'Admin User' %>
+        <div>
+          <p class="text-[10px] font-black text-gray-400/80 uppercase tracking-widest mb-3 ml-2 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-violet-100"></span> Management
           </p>
-          <p class="text-[9px] text-gray-400 truncate font-bold uppercase tracking-tighter">Super Admin</p>
+          <div class="space-y-1">
+            <a href="/admin/category"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/category', 'Categories') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/category', 'Categories') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">📁</span> 
+              <span class="text-sm">Categories</span>
+            </a>
+            <a href="/admin/subcategory"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/subcategory', 'Subcategories') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/subcategory', 'Subcategories') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">📑</span> 
+              <span class="text-sm">Subcategories</span>
+            </a>
+            <a href="/admin/products"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/products', 'Products') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/products', 'Products') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">📦</span> 
+              <span class="text-sm">Products</span>
+            </a>
+            <a href="/admin/customers"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/customers', 'Customer') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/customers', 'Customer') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">👤</span> 
+              <span class="text-sm">Customers</span>
+            </a>
+            <a href="/admin/orders"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/orders', 'Orders') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/orders', 'Orders') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">📜</span> 
+              <span class="text-sm">Orders</span>
+            </a>
+            <a href="/admin/offers"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/offers', 'Offers') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/offers', 'Offers') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">🏷️</span> 
+              <span class="text-sm">Offers</span>
+            </a>
+            <a href="/admin/coupons"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/coupons', 'Coupons') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/coupons', 'Coupons') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">🎟️</span> 
+              <span class="text-sm">Coupons</span>
+            </a>
+            <a href="/admin/banners"
+              class="flex items-center gap-3 py-2 px-4 rounded-2xl <%= isLinkActive('/admin/banners', 'Banners') ? activeClass : inactiveClass %>">
+              <span class="text-lg <%= isLinkActive('/admin/banners', 'Banners') ? '' : 'grayscale group-hover:grayscale-0 transition-all' %>">🖼️</span> 
+              <span class="text-sm">Banners</span>
+            </a>
+          </div>
         </div>
-      </div>
-
-      <a href="/admin/logout" onclick="confirmLogout(event, this.href)"
-        class="flex items-center justify-center gap-2 w-full py-2 bg-white border border-red-100 rounded-xl text-red-500 font-black text-[10px] hover:bg-red-600 hover:text-white transition shadow-sm">
-        <span>🚪</span> LOGOUT
-      </a>
+      </nav>
+      <div class="pb-12"></div>
     </div>
   </aside>
+
+  <style>
+    /* Hide scrollbar for sidebar */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+  </style>

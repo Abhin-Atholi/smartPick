@@ -1,6 +1,7 @@
 import ProductReview from "../../model/reviewModel.js";
 import Product from "../../model/productModel.js";
 import Order from "../../model/orderModel.js";
+import AppError from "../../utils/AppError.js";
 
 export const calculateReviewStats = async (productId) => {
     const stats = await ProductReview.aggregate([
@@ -83,7 +84,7 @@ export const canReviewProduct = async (userId, productId) => {
 export const addReview = async (userId, productId, rating, reviewText) => {
     const eligibility = await canReviewProduct(userId, productId);
     if (!eligibility.eligible) {
-        throw new Error(eligibility.message);
+        throw new AppError(eligibility.message);
     }
 
     const User = (await import("../../model/userModel.js")).default;
@@ -108,7 +109,7 @@ export const addReview = async (userId, productId, rating, reviewText) => {
 export const updateReview = async (userId, reviewId, rating, reviewText) => {
     const review = await ProductReview.findOne({ _id: reviewId, userId });
     if (!review) {
-        throw new Error("Review not found or unauthorized");
+        throw new AppError("Review not found or unauthorized");
     }
 
     review.rating = Number(rating);
@@ -124,7 +125,7 @@ export const updateReview = async (userId, reviewId, rating, reviewText) => {
 export const deleteReview = async (userId, reviewId) => {
     const review = await ProductReview.findOneAndDelete({ _id: reviewId, userId });
     if (!review) {
-        throw new Error("Review not found or unauthorized");
+        throw new AppError("Review not found or unauthorized");
     }
 
     await calculateReviewStats(review.productId);

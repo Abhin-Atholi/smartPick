@@ -1,4 +1,5 @@
 import Coupon from '../../model/couponModel.js';
+import AppError from '../../utils/AppError.js';
 
 // ── Shared helper ─────────────────────────────────────────────────────────────
 /**
@@ -72,25 +73,25 @@ export const addCoupon = async (data) => {
 
     // Business rule: duplicate code (case-insensitive)
     const existing = await Coupon.findOne({ code: trimmedCode, isDeleted: false });
-    if (existing) throw new Error('A coupon with this code already exists.');
+    if (existing) throw new AppError('A coupon with this code already exists.');
 
     // Business rule: flat discount must not equal/exceed minimum purchase
     if (discountType === 'flat' && discountValue >= minimumAmount) {
-        throw new Error('Minimum purchase amount must be greater than the flat discount value.');
+        throw new AppError('Minimum purchase amount must be greater than the flat discount value.');
     }
 
     // Business rule: startDate must precede expiryDate
     if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new Error('Start date must be before the expiry date.');
+        throw new AppError('Start date must be before the expiry date.');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (startDate && new Date(startDate) < today) {
-        throw new Error('Start date cannot be in the past.');
+        throw new AppError('Start date cannot be in the past.');
     }
     if (expiryDate && new Date(expiryDate) < today) {
-        throw new Error('Expiry date cannot be in the past.');
+        throw new AppError('Expiry date cannot be in the past.');
     }
 
     const newCoupon = new Coupon({
@@ -119,39 +120,43 @@ export const editCoupon = async (id, data) => {
     } = data;
 
     const coupon = await Coupon.findById(id);
-    if (!coupon || coupon.isDeleted) throw new Error('Coupon not found.');
+    if (!coupon || coupon.isDeleted) throw new AppError('Coupon not found.');
+
+    if (new Date(coupon.expiryDate) <= new Date()) {
+        throw new AppError('Cannot update an expired coupon.');
+    }
 
     // Business rule: flat discount must not equal/exceed minimum purchase
     if (discountType === 'flat' && discountValue >= minimumAmount) {
-        throw new Error('Minimum purchase amount must be greater than the flat discount value.');
+        throw new AppError('Minimum purchase amount must be greater than the flat discount value.');
     }
 
     // Business rule: startDate must precede expiryDate
     if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new Error('Start date must be before the expiry date.');
+        throw new AppError('Start date must be before the expiry date.');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (startDate && new Date(startDate) < today) {
-        throw new Error('Start date cannot be in the past.');
+        throw new AppError('Start date cannot be in the past.');
     }
     if (expiryDate && new Date(expiryDate) < today) {
-        throw new Error('Expiry date cannot be in the past.');
+        throw new AppError('Expiry date cannot be in the past.');
     }
 
     // Business rule: usageLimit cannot drop below current used count
     if (usageLimit < coupon.usedCount) {
-        throw new Error(`Usage limit cannot be less than the current used count (${coupon.usedCount}).`);
+        throw new AppError(`Usage limit cannot be less than the current used count (${coupon.usedCount}).`);
     }
 
     // Security lock: if coupon has been used, code and discount type/value are immutable
     if (coupon.usedCount > 0) {
         if (code && code.trim().toUpperCase() !== coupon.code) {
-            throw new Error('Cannot change the code of a coupon that has already been used.');
+            throw new AppError('Cannot change the code of a coupon that has already been used.');
         }
         if (discountType !== coupon.discountType || discountValue !== coupon.discountValue) {
-            throw new Error('Cannot change the discount type or value of an actively used coupon.');
+            throw new AppError('Cannot change the discount type or value of an actively used coupon.');
         }
     } else {
         // Only attempt code change if provided and different
@@ -159,7 +164,7 @@ export const editCoupon = async (id, data) => {
             const trimmedCode = code.trim().toUpperCase();
             if (trimmedCode !== coupon.code) {
                 const dup = await Coupon.findOne({ code: trimmedCode, _id: { $ne: id }, isDeleted: false });
-                if (dup) throw new Error('A coupon with this code already exists.');
+                if (dup) throw new AppError('A coupon with this code already exists.');
                 coupon.code = trimmedCode;
             }
         }
@@ -182,7 +187,7 @@ export const editCoupon = async (id, data) => {
 // ── toggleCoupon ──────────────────────────────────────────────────────────────
 export const toggleCoupon = async (id) => {
     const coupon = await Coupon.findById(id);
-    if (!coupon || coupon.isDeleted) throw new Error('Coupon not found.');
+    if (!coupon || coupon.isDeleted) throw new AppError('Coupon not found.');
     coupon.isActive = !coupon.isActive;
     await coupon.save();
     return coupon;
@@ -191,7 +196,7 @@ export const toggleCoupon = async (id) => {
 // ── deleteCoupon ──────────────────────────────────────────────────────────────
 export const deleteCoupon = async (id) => {
     const coupon = await Coupon.findById(id);
-    if (!coupon || coupon.isDeleted) throw new Error('Coupon not found.');
+    if (!coupon || coupon.isDeleted) throw new AppError('Coupon not found.');
     coupon.isDeleted = true;
     coupon.isActive = false;
     await coupon.save();

@@ -1,21 +1,22 @@
 import User from "../../model/userModel.js";
 import bcrypt from "bcrypt";
+import AppError from "../../utils/AppError.js";
 
 export const authenticateAdmin = async (email, password) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     
 
     if (!user || user.role !== "admin") {
-        throw new Error("Invalid admin credentials.");
+        throw new AppError("Invalid admin credentials.");
     }
     // Inside your authenticateAdmin function
 if (user.role !== 'admin') {
-    throw new Error("Access denied. Not an admin account.");
+    throw new AppError("Access denied. Not an admin account.");
 }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-        throw new Error("Invalid admin credentials.");
+        throw new AppError("Invalid admin credentials.");
     }
 
     return user;
@@ -49,8 +50,8 @@ export const getCustomers = async (search, status, page, limit) => {
 
 export const toggleCustomerStatus = async (id) => {
     const user = await User.findById(id);
-    if (!user) throw new Error("Customer not found.");
-    if (user.role === 'admin') throw new Error("Permission denied.");
+    if (!user) throw new AppError("Customer not found.");
+    if (user.role === 'admin') throw new AppError("Permission denied.");
 
     user.status = user.status === "active" ? "blocked" : "active";
     await user.save();

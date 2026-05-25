@@ -1,6 +1,7 @@
 import * as authService from "../../services/user/auth.service.js";
 import * as otpService from "../../services/common/otp.service.js";
 import passport from "passport";
+import AppError from "../../utils/AppError.js";
 
 
 export const loadLogin = (req, res) => res.render("user/auth/login", { title: "Login", msg: req.query.msg || null, email: req.query.email || "" });
@@ -148,7 +149,7 @@ export const loadVerify = async (req, res) => {
 export const verifyOtp = async (req, res, next) => {
   try {
     const { email, otp, purpose } = req.body;
-    if (!email || !otp) throw new Error("Email and OTP are required");
+    if (!email || !otp) throw new AppError("Email and OTP are required");
 
     const result = await otpService.verifyUniversalOtp(email, otp, purpose);
     

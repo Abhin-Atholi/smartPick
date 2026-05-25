@@ -91,12 +91,18 @@
                             </span>
                         </td>
 
-                        <td class="px-8 py-5 text-right">
-                            <button onclick="toggleStatus('<%= customer._id %>')"
-                                class="px-5 py-2 rounded-xl font-black text-[10px] tracking-widest transition-all shadow-sm uppercase
-                                <%= customer.status === 'active' ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-100' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-100' %>">
-                                <%= customer.status==='active' ? 'Block' : 'Unblock' %>
-                            </button>
+                        <td class="px-8 py-5">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="toggleStatus('<%= customer._id %>')"
+                                    class="p-2 rounded-xl transition <%= customer.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100' %>"
+                                    title="<%= customer.status==='active' ? 'Block' : 'Unblock' %>">
+                                    <% if(customer.status === 'active') { %>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                    <% } else { %>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    <% } %>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     <% }) %>
@@ -171,11 +177,8 @@
 
         if (proceed) {
             try {
-                const response = await fetch(`/admin/customers/toggle/${userId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const result = await response.json();
+                const response = await axios.post(`/admin/customers/toggle/${userId}`);
+                const result = response.data;
 
                 if (result.success) {
                     Swal.fire({
@@ -186,9 +189,12 @@
                         showConfirmButton: false,
                         borderRadius: '1.25rem'
                     }).then(() => window.location.reload());
+                } else {
+                    throw new Error(result.message || 'Update failed on server');
                 }
             } catch (error) {
-                Swal.fire('Error!', 'Update failed.', 'error');
+                console.error("Toggle Status Error:", error);
+                Swal.fire('Error!', error.message || 'Update failed.', 'error');
             }
         }
     }

@@ -1,4 +1,5 @@
 import Offer from '../../model/offerModel.js';
+import AppError from '../../utils/AppError.js';
 import Product from '../../model/productModel.js';
 import Category from '../../model/categoryModel.js';
 import { PRICING_RULES } from '../../config/pricingRules.js';
@@ -94,27 +95,27 @@ export const createOffer = async (data) => {
 
     // Business rule: startDate must precede expiryDate
     if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new Error('Start date must be before the expiry date.');
+        throw new AppError('Start date must be before the expiry date.');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (startDate && new Date(startDate) < today) {
-        throw new Error('Start date cannot be in the past.');
+        throw new AppError('Start date cannot be in the past.');
     }
     if (expiryDate && new Date(expiryDate) < today) {
-        throw new Error('Expiry date cannot be in the past.');
+        throw new AppError('Expiry date cannot be in the past.');
     }
 
     // Business rule: verify target entity exists and is not deleted/inactive
     if (offerType === 'product') {
         const product = await Product.findById(applicableTo).lean();
-        if (!product || product.isDeleted) throw new Error('The selected product does not exist or has been deleted.');
-        if (!product.isActive) throw new Error('Cannot create an offer for an inactive product.');
+        if (!product || product.isDeleted) throw new AppError('The selected product does not exist or has been deleted.');
+        if (!product.isActive) throw new AppError('Cannot create an offer for an inactive product.');
     } else {
         const category = await Category.findById(applicableTo).lean();
-        if (!category) throw new Error('The selected category does not exist.');
-        if (!category.isActive) throw new Error('Cannot create an offer for an inactive category.');
+        if (!category) throw new AppError('The selected category does not exist.');
+        if (!category.isActive) throw new AppError('Cannot create an offer for an inactive category.');
     }
 
     // Business rule: mathematical safety check
@@ -139,14 +140,14 @@ export const createOffer = async (data) => {
             }
         }
         if (p.price - discount < PRICING_RULES.MINIMUM_ITEM_PRICE) {
-            throw new Error(`Mathematical Safety: This offer would cause product "${p.name}" (₹${p.price}) to drop below the minimum allowed price of ₹${PRICING_RULES.MINIMUM_ITEM_PRICE}.`);
+            throw new AppError(`Mathematical Safety: This offer would cause product "${p.name}" (₹${p.price}) to drop below the minimum allowed price of ₹${PRICING_RULES.MINIMUM_ITEM_PRICE}.`);
         }
     }
 
     // Business rule: detect date-range overlap with existing active offer on same target
     const overlapping = await detectOverlap(offerType, applicableTo, startDate, expiryDate);
     if (overlapping) {
-        throw new Error(
+        throw new AppError(
             `An active offer "${overlapping.name}" already covers this ${offerType} in the selected date range. ` +
             `Multiple offers are allowed but only the highest discount will apply.`
         );
@@ -172,31 +173,35 @@ export const createOffer = async (data) => {
 // ── updateOffer ───────────────────────────────────────────────────────────────
 export const updateOffer = async (id, data) => {
     const offer = await Offer.findById(id);
-    if (!offer || offer.isDeleted) throw new Error('Offer not found.');
+    if (!offer || offer.isDeleted) throw new AppError('Offer not found.');
+
+    if (new Date(offer.expiryDate) <= new Date()) {
+        throw new AppError('Cannot update an expired offer.');
+    }
 
     const { name, description, offerType, discountType, discountValue, applicableTo, startDate, expiryDate, isActive } = data;
 
     // Business rule: startDate must precede expiryDate
     if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new Error('Start date must be before the expiry date.');
+        throw new AppError('Start date must be before the expiry date.');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (startDate && new Date(startDate) < today) {
-        throw new Error('Start date cannot be in the past.');
+        throw new AppError('Start date cannot be in the past.');
     }
     if (expiryDate && new Date(expiryDate) < today) {
-        throw new Error('Expiry date cannot be in the past.');
+        throw new AppError('Expiry date cannot be in the past.');
     }
 
     // Business rule: verify target entity exists
     if (offerType === 'product') {
         const product = await Product.findById(applicableTo).lean();
-        if (!product || product.isDeleted) throw new Error('The selected product does not exist or has been deleted.');
+        if (!product || product.isDeleted) throw new AppError('The selected product does not exist or has been deleted.');
     } else {
         const category = await Category.findById(applicableTo).lean();
-        if (!category) throw new Error('The selected category does not exist.');
+        if (!category) throw new AppError('The selected category does not exist.');
     }
 
     // Business rule: mathematical safety check
@@ -221,14 +226,14 @@ export const updateOffer = async (id, data) => {
             }
         }
         if (p.price - discount < PRICING_RULES.MINIMUM_ITEM_PRICE) {
-            throw new Error(`Mathematical Safety: This offer would cause product "${p.name}" (₹${p.price}) to drop below the minimum allowed price of ₹${PRICING_RULES.MINIMUM_ITEM_PRICE}.`);
+            throw new AppError(`Mathematical Safety: This offer would cause product "${p.name}" (₹${p.price}) to drop below the minimum allowed price of ₹${PRICING_RULES.MINIMUM_ITEM_PRICE}.`);
         }
     }
 
     // Business rule: overlap detection (excluding current offer)
     const overlapping = await detectOverlap(offerType, applicableTo, startDate, expiryDate, id);
     if (overlapping) {
-        throw new Error(
+        throw new AppError(
             `An active offer "${overlapping.name}" already covers this ${offerType} in the selected date range.`
         );
     }
@@ -251,7 +256,7 @@ export const updateOffer = async (id, data) => {
 // ── toggleOffer ───────────────────────────────────────────────────────────────
 export const toggleOffer = async (id) => {
     const offer = await Offer.findById(id);
-    if (!offer || offer.isDeleted) throw new Error('Offer not found.');
+    if (!offer || offer.isDeleted) throw new AppError('Offer not found.');
     offer.isActive = !offer.isActive;
     await offer.save();
     return offer;
@@ -260,7 +265,7 @@ export const toggleOffer = async (id) => {
 // ── deleteOffer ───────────────────────────────────────────────────────────────
 export const deleteOffer = async (id) => {
     const offer = await Offer.findById(id);
-    if (!offer || offer.isDeleted) throw new Error('Offer not found.');
+    if (!offer || offer.isDeleted) throw new AppError('Offer not found.');
     offer.isDeleted = true;
     offer.isActive = false;
     await offer.save();
