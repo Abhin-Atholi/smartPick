@@ -174,11 +174,20 @@ export const getReturnRequests = async ({ page = 1, limit = 10, status = 'Return
     ];
 
     // Filter by item status
-    if (status && status !== 'All') {
+    if (status === 'Return Rejected') {
+        pipeline.push({ $match: { 'items.returnRejected': true } });
+    } else if (status && status !== 'All') {
         pipeline.push({ $match: { 'items.itemStatus': status } });
     } else {
-        // Default to showing only return-related statuses
-        pipeline.push({ $match: { 'items.itemStatus': { $in: ['Return Requested', 'Returned', 'Return Rejected'] } } });
+        // Default to showing all return-related statuses
+        pipeline.push({
+            $match: {
+                $or: [
+                    { 'items.itemStatus': { $in: ['Return Requested', 'Returned'] } },
+                    { 'items.returnRejected': true }
+                ]
+            }
+        });
     }
 
     if (search && search.trim()) {

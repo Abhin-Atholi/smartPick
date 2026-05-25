@@ -191,8 +191,8 @@ export const formatAdminReturnItemForDisplay = (row) => {
             profileImage: row.userObj?.profileImage || null
         },
         
-        status: item.itemStatus,
-        badge: getItemStatusBadge(item.itemStatus),
+        status: item.returnRejected ? 'Return Rejected' : item.itemStatus,
+        badge: getItemStatusBadge(item.returnRejected ? 'Return Rejected' : item.itemStatus),
         
         returnReason: item.returnReason || item.cancellationReason || 'No reason provided',
         returnInspection: item.returnInspection || null,

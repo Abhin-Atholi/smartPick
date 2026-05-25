@@ -353,7 +353,7 @@ export const getOrders = async (userId, page = 1, limit = 5, filter = 'All', sea
             .limit(limit),
         Order.countDocuments(query),
         Order.aggregate([
-            { $match: { user: new mongoose.Types.ObjectId(userId) } },
+            { $match: { user: new mongoose.Types.ObjectId(userId), orderStatus: { $ne: 'Expired' } } },
             { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
         ])
     ]);
