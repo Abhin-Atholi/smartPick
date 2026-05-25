@@ -28,7 +28,13 @@ export const getAllOrders = async ({
     const skip = (page - 1) * limit;
     const query = {};
 
-    if (status && status !== 'All') query.orderStatus = status;
+    if (status === 'Failed/Expired') {
+        query.orderStatus = { $in: ['Payment Pending', 'Payment Failed', 'Expired'] };
+    } else if (status === 'All') {
+        query.orderStatus = { $nin: ['Payment Pending', 'Payment Failed', 'Expired'] };
+    } else if (status) {
+        query.orderStatus = status;
+    }
 
     if (dateFrom || dateTo) {
         query.createdAt = {};
@@ -98,12 +104,17 @@ export const getAllOrders = async ({
     const statsObj = {
         Processing: 0, Shipped: 0, 'Out for Delivery': 0, 
         Cancelled: 0, Returned: 0,
-        Delivered: 0, totalAll: 0
+        Delivered: 0, totalAll: 0, failedExpiredCount: 0
     };
     
     statusCountsAgg.forEach(s => {
         if (s._id in statsObj) statsObj[s._id] = s.count;
-        statsObj.totalAll += s.count;
+        
+        if (['Payment Pending', 'Payment Failed', 'Expired'].includes(s._id)) {
+            statsObj.failedExpiredCount += s.count;
+        } else {
+            statsObj.totalAll += s.count;
+        }
     });
 
     return {
@@ -119,7 +130,8 @@ export const getAllOrders = async ({
             returnRequestCount: returnRequestCount,
             returnedCount: statsObj.Returned,
             deliveredProductsCount,
-            cancelledReturnedCount
+            cancelledReturnedCount,
+            failedExpiredCount: statsObj.failedExpiredCount
         }
     };
 };

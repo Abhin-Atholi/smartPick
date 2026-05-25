@@ -160,20 +160,7 @@ const deriveOrderStatus = (order) => {
     // "Active" = not fully resolved
     const activeItems = items.filter(i => !['Cancelled', 'Returned'].includes(i.itemStatus));
 
-    // ── 3. PARTIALLY CANCELLED (some cancelled, rest still live) ─────────────
-    // Only set if NO return activity — cancellations take lower display priority
-    if (hasCancelled && !hasReturned && activeItems.length > 0) {
-        order.orderStatus = 'Partially Cancelled';
-        return;
-    }
-
-    // ── 4. PARTIALLY RETURNED (some returned/requested, rest still live) ──────
-    if (hasReturned && activeItems.length > 0) {
-        order.orderStatus = 'Partially Returned';
-        return;
-    }
-
-    // ── 5. ALL ACTIVE ITEMS ARE DELIVERED ─────────────────────────────────────
+    // ── 3. ALL ACTIVE ITEMS ARE DELIVERED ─────────────────────────────────────
     if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Delivered')) {
         order.orderStatus = 'Delivered';
         if (order.paymentMethod === 'COD' && order.paymentStatus === 'Pending') {
@@ -182,9 +169,22 @@ const deriveOrderStatus = (order) => {
         return;
     }
 
-    // ── 6. ALL ACTIVE ITEMS ARE PENDING RETURN ────────────────────────────────
+    // ── 4. ALL ACTIVE ITEMS ARE PENDING RETURN ────────────────────────────────
     if (activeItems.length > 0 && activeItems.every(i => i.itemStatus === 'Return Requested')) {
         order.orderStatus = 'Return Requested';
+        return;
+    }
+
+    // ── 5. PARTIALLY CANCELLED (some cancelled, rest still live) ─────────────
+    // Only set if NO return activity — cancellations take lower display priority
+    if (hasCancelled && !hasReturned && activeItems.length > 0) {
+        order.orderStatus = 'Partially Cancelled';
+        return;
+    }
+
+    // ── 6. PARTIALLY RETURNED (some returned/requested, rest still live) ──────
+    if (hasReturned && activeItems.length > 0) {
+        order.orderStatus = 'Partially Returned';
         return;
     }
 

@@ -155,7 +155,7 @@ export const formatAdminOrderForDisplay = (order) => {
         user: order.user,
         
         isDelivered: order.orderStatus === 'Delivered',
-        canUpdateStatus: !['Delivered', 'Return Requested', 'Returned', 'Cancelled', 'Partially Returned'].includes(order.orderStatus),
+        canUpdateStatus: !['Delivered', 'Return Requested', 'Returned', 'Cancelled', 'Partially Returned', 'Payment Pending', 'Payment Failed', 'Expired'].includes(order.orderStatus),
         
         items: formattedItems,
         summary,

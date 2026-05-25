@@ -5,7 +5,7 @@
   const sd = f.dateFrom || '';
   const ed = f.dateTo   || '';
   const so = f.sort     || 'newest';
-  const allStatuses = ['All','Processing','Shipped','Out for Delivery','Delivered','Cancelled','Return Requested','Returned'];
+  const allStatuses = ['All','Processing','Shipped','Out for Delivery','Delivered','Cancelled','Return Requested','Returned', 'Failed/Expired'];
 %>
 
 <!-- Breadcrumb -->
@@ -176,7 +176,7 @@
           </td></tr>
         <% } else { %>
           <% formattedOrders.forEach(order => { %>
-          <tr class="hover:bg-gray-50/60 transition-colors">
+          <tr class="hover:bg-gray-50/60 transition-colors <%= ['Payment Pending', 'Payment Failed', 'Expired'].includes(order.status) ? 'opacity-50 grayscale-[50%] bg-gray-50/50' : '' %>">
             <td class="px-6 py-4"><span class="text-sm font-black text-slate-800"><%= order.orderId %></span></td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
