@@ -2,6 +2,22 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
 
+<style>
+    /* Prevent the cropping container from collapsing on mobile screens */
+    .cropper-container {
+        max-width: 100% !important;
+        min-height: 250px !important;
+    }
+    #genericCropperContainer {
+        height: 360px !important;
+    }
+    @media (max-width: 640px) {
+        #genericCropperContainer {
+            height: 260px !important;
+        }
+    }
+</style>
+
 <!-- Generic Cropper Modal -->
 <div id="genericCropperModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="_cancelGenericCrop()"></div>
@@ -10,7 +26,7 @@
             <h3 class="font-black text-slate-800">Crop Image</h3>
             <button onclick="_cancelGenericCrop()" class="text-gray-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50">✕</button>
         </div>
-        <div class="p-4 bg-gray-900 flex items-center justify-center shadow-inner" style="height:360px">
+        <div id="genericCropperContainer" class="p-4 bg-gray-900 flex items-center justify-center shadow-inner">
             <img id="genericCropperImage" src="" style="max-height:100%;max-width:100%;">
         </div>
         <div class="px-6 py-4 flex justify-between items-center border-t border-gray-100">
@@ -44,16 +60,19 @@
             document.body.classList.add('overflow-hidden');
             
             img.onload = () => {
-                if (globalCropperInstance) { globalCropperInstance.destroy(); }
-                globalCropperInstance = new Cropper(img, { 
-                    ...options, 
-                    viewMode: 1, 
-                    autoCropArea: 0.9,
-                    movable: true, 
-                    zoomable: true, 
-                    rotatable: false, 
-                    scalable: false
-                });
+                setTimeout(() => {
+                    if (globalCropperInstance) { globalCropperInstance.destroy(); }
+                    globalCropperInstance = new Cropper(img, { 
+                        ...options, 
+                        viewMode: 1, 
+                        autoCropArea: 0.9,
+                        movable: true, 
+                        zoomable: true, 
+                        rotatable: false, 
+                        scalable: false,
+                        responsive: true
+                    });
+                }, 50);
             };
         });
     }
