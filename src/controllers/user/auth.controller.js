@@ -103,7 +103,7 @@ export const backupAdminSession = (req, res, next) => {
 
 export const googleAuthAuthenticate = passport.authenticate("google", { failureRedirect: "/login", keepSessionInfo: true });
 
-export const googleAuthCallback = (req, res) => {
+export const googleAuthCallback = (req, res, next) => {
   if (req.sessionBackup?.adminId && req.sessionBackup?.admin) {
     req.session.adminId = req.sessionBackup.adminId;
     req.session.admin = req.sessionBackup.admin;
@@ -112,7 +112,10 @@ export const googleAuthCallback = (req, res) => {
   req.session.userId = req.user._id;
   req.session.user = req.user;
 
-  res.redirect("/home");
+  req.session.save((err) => {
+    if (err) return next(err);
+    res.redirect("/home");
+  });
 };
 
 /** * VERIFICATION & OTP 
