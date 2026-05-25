@@ -70,6 +70,7 @@ const {
 
 // 🚨 SESSION MUST BE BEFORE PASSPORT & ROUTES
 app.use(session({
+    name: "smartpick.sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
