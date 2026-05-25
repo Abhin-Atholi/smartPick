@@ -7,7 +7,8 @@
     Delivered:          [],
     'Return Requested': [],
     Returned:           [],
-    Cancelled:          []
+    Cancelled:          [],
+    'Partially Cancelled': ['Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']
   };
   const allowedNext = TRANSITIONS[order.orderStatus] || [];
   const isDelivered = order.orderStatus === 'Delivered';

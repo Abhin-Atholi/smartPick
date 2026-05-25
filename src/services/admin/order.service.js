@@ -50,7 +50,7 @@ export const getAllOrders = async ({
     }
 
     const sortMap = {
-        newest: { createdAt: -1 }, oldest: { createdAt: 1 },
+        newest: { updatedAt: -1 }, oldest: { updatedAt: 1 },
         amount_desc: { totalAmount: -1 }, amount_asc: { totalAmount: 1 }
     };
 
@@ -58,7 +58,7 @@ export const getAllOrders = async ({
         Order.find(query)
             .populate('user', 'fullName email profileImage')
             .populate('items.product', 'name')
-            .sort(sortMap[sort] || { createdAt: -1 })
+            .sort(sortMap[sort] || { updatedAt: -1 })
             .skip(skip).limit(limit).lean(),
         Order.countDocuments(query)
     ]);

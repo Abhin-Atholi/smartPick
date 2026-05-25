@@ -9,17 +9,18 @@ import AppError from '../../utils/AppError.js';
 const log = createLogger('orderLifecycleService');
 
 const STATE_TRANSITIONS = {
-    'Processing':       ['Shipped', 'Cancelled'],
-    'Shipped':          ['Out for Delivery', 'Cancelled'],
+    'Processing': ['Shipped', 'Cancelled'],
+    'Shipped': ['Out for Delivery', 'Cancelled'],
     'Out for Delivery': ['Delivered', 'Cancelled'],
-    'Delivered':        ['Return Requested'],
+    'Delivered': ['Return Requested'],
     'Return Requested': ['Returned', 'Return Rejected'],
-    'Return Rejected':  [],
-    'Returned':         [],
-    'Cancelled':        [],
-    'Payment Pending':  ['Processing', 'Payment Failed', 'Expired'],
-    'Payment Failed':   ['Processing', 'Expired'],
-    'Expired':          []
+    'Return Rejected': [],
+    'Returned': [],
+    'Cancelled': [],
+    'Partially Cancelled': ['Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'],
+    'Payment Pending': ['Processing', 'Payment Failed', 'Expired'],
+    'Payment Failed': ['Processing', 'Expired'],
+    'Expired': []
 };
 
 const isValidTransition = (currentStatus, newStatus) => {
@@ -45,14 +46,14 @@ const auditLog = (order, action, actorId, actorModel, fromStatus, toStatus, reas
     // Only push a valid actorId (ObjectId) or null — never a raw string
     const safeActor = actorId && typeof actorId === 'object' ? actorId : null;
     order.lifecycleHistory.push({
-        actor:      safeActor,
+        actor: safeActor,
         actorModel: actorModel || 'System',
         action,
         fromStatus,
         toStatus,
         reason,
         metadata,
-        createdAt:  new Date()
+        createdAt: new Date()
     });
 };
 
@@ -86,18 +87,18 @@ const orchestrateRefund = async (order, itemsToRefundIds, refundType, reason, se
     if (itemsToRefund.length === 0) return 0;
 
     const isPrepaid = ['Razorpay', 'Wallet'].includes(order.paymentMethod);
-    const hasPaid   = order.paymentStatus === 'Paid';
+    const hasPaid = order.paymentStatus === 'Paid';
 
     if (!isPrepaid || !hasPaid) {
         itemsToRefund.forEach(item => {
-            item.refundProcessed   = true;
+            item.refundProcessed = true;
             item.refundProcessedAt = new Date();
         });
         return 0;
     }
 
     const refundResult = refundService.calculateRefund({ order, itemsToRefund: itemsToRefundIds, refundType });
-    const totalRefund  = refundResult.breakdown.totalRefund;
+    const totalRefund = refundResult.breakdown.totalRefund;
 
     if (totalRefund > 0) {
         log.financial('REFUND_CREDIT', totalRefund, order.user, order._id);
@@ -110,8 +111,8 @@ const orchestrateRefund = async (order, itemsToRefundIds, refundType, reason, se
             session
         );
         itemsToRefund.forEach(item => {
-            item.refundProcessed      = true;
-            item.refundProcessedAt    = new Date();
+            item.refundProcessed = true;
+            item.refundProcessedAt = new Date();
             if (txn) item.refundTransactionId = txn._id;
         });
         return totalRefund;
@@ -155,9 +156,9 @@ const deriveOrderStatus = (order) => {
 
     // Classify items into groups
     const hasCancelled = items.some(i => i.itemStatus === 'Cancelled');
-    const hasReturned  = items.some(i => ['Returned', 'Return Requested'].includes(i.itemStatus));
+    const hasReturned = items.some(i => ['Returned', 'Return Requested'].includes(i.itemStatus));
     // "Active" = not fully resolved
-    const activeItems  = items.filter(i => !['Cancelled', 'Returned'].includes(i.itemStatus));
+    const activeItems = items.filter(i => !['Cancelled', 'Returned'].includes(i.itemStatus));
 
     // ── 3. PARTIALLY CANCELLED (some cancelled, rest still live) ─────────────
     // Only set if NO return activity — cancellations take lower display priority
@@ -203,7 +204,7 @@ const deriveOrderStatus = (order) => {
  * @param {mongoose.ClientSession|null} session
  */
 export const cancelOrder = async (order, actorId, role, reason, session = null) => {
-    if (!['Processing', 'Payment Pending', 'Payment Failed'].includes(order.orderStatus)) {
+    if (!['Processing', 'Payment Pending', 'Payment Failed', 'Partially Cancelled'].includes(order.orderStatus)) {
         throw new AppError(`Cannot cancel order in ${order.orderStatus} status`, 400);
     }
 
@@ -221,12 +222,12 @@ export const cancelOrder = async (order, actorId, role, reason, session = null) 
         const prevItemStatus = item.itemStatus;
         await restoreStock(item, session);
         auditLog(order, 'ITEM_CANCELLED', actorId, actorModel, prevItemStatus, 'Cancelled', reason);
-        item.itemStatus   = 'Cancelled';
+        item.itemStatus = 'Cancelled';
         item.cancelReason = reason;
     }
 
-    const prevStatus   = order.orderStatus;
-    order.orderStatus  = 'Cancelled';
+    const prevStatus = order.orderStatus;
+    order.orderStatus = 'Cancelled';
     order.cancelReason = reason;
     if (refundAmount > 0 || order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
 
@@ -254,7 +255,7 @@ export const cancelOrderItem = async (order, itemId, actorId, role, reason, sess
 
     const prevStatus = item.itemStatus;
     await restoreStock(item, session);
-    item.itemStatus   = 'Cancelled';
+    item.itemStatus = 'Cancelled';
     item.cancelReason = reason;
     auditLog(order, 'ITEM_CANCELLED', actorId, actorModel, prevStatus, 'Cancelled', reason, { itemId });
 
@@ -273,8 +274,8 @@ export const requestItemReturn = async (order, itemId, userId, reason, session =
     if (item.itemStatus !== 'Delivered') throw new AppError('Only delivered items can be returned', 400);
     if (item.returnRejected) throw new AppError('Return previously rejected. Cannot request again.', 400);
 
-    const prevStatus  = item.itemStatus;
-    item.itemStatus   = 'Return Requested';
+    const prevStatus = item.itemStatus;
+    item.itemStatus = 'Return Requested';
     item.returnReason = reason;
     auditLog(order, 'USER_REQUESTED_RETURN', userId, 'User', prevStatus, 'Return Requested', reason);
 
@@ -315,7 +316,7 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
 
         if (restockable && !item.inventoryReconciled) {
             await restoreStock(item, session);
-            item.inventoryReconciled   = true;
+            item.inventoryReconciled = true;
             item.inventoryReconciledAt = new Date();
             auditLog(order, 'INVENTORY_RESTORED', adminId, 'Admin', prevStatus, 'Returned',
                 'Stock restored upon return approval', { restockable });
@@ -341,7 +342,7 @@ export const handleReturnDecision = async (order, itemId, adminId, decisionPaylo
         decision === 'approve' ? 'RETURN_APPROVED' : 'RETURN_REJECTED',
         order._id, prevStatus, item.itemStatus, { restockable, notes }
     );
-    
+
     updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true, decision };
@@ -377,9 +378,11 @@ export const updateOrderStatus = async (order, adminId, newStatus, session = nul
         order.paymentStatus = 'Paid';
     }
 
-    auditLog(order, 'ADMIN_UPDATED_STATUS', adminId, 'Admin', prevStatus, newStatus,
+    deriveOrderStatus(order);
+
+    auditLog(order, 'ADMIN_UPDATED_STATUS', adminId, 'Admin', prevStatus, order.orderStatus,
         'Bulk status update via admin panel');
-    
+
     updateLedger(order);
     await order.save(sessionOpts(session));
     return { success: true };
