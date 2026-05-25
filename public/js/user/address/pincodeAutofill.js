@@ -43,29 +43,64 @@ const PincodeAutofill = {
         });
     },
 
+    _toTitleCase(str) {
+        if (!str) return '';
+        return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    },
+
     async _fetch(pin, stateEl, cityEl, isManualState, isManualCity, pincodeEl) {
         this._showStatus(pincodeEl, 'loading', 'Fetching location details…');
-        try {
-            const res  = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-            const data = await res.json();
-            const po   = data?.[0]?.PostOffice?.[0];
+        
+        let state = '';
+        let city = '';
+        let success = false;
 
-            if (data?.[0]?.Status === 'Success' && po) {
-                if (!isManualState()) {
-                    stateEl.value = po.State || '';
-                    stateEl.dispatchEvent(new Event('input'));
-                    this._flash(stateEl);
+        // 1. Try static API (GitHub Pages CDN) - fast and high uptime
+        try {
+            const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/pincodes/${pin}.json`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.state && data.district) {
+                    state = this._toTitleCase(data.state);
+                    city = this._toTitleCase(data.district);
+                    success = true;
                 }
-                if (!isManualCity()) {
-                    cityEl.value = po.District || '';
-                    cityEl.dispatchEvent(new Event('input'));
-                    this._flash(cityEl);
-                }
-                this._clearStatus(pincodeEl);
-            } else {
-                this._showStatus(pincodeEl, 'warn', 'Invalid pincode — please fill manually.');
             }
-        } catch {
+        } catch (e) {
+            console.warn('Primary Pincode API failed, trying fallback...', e);
+        }
+
+        // 2. Try postalpincode.in API (Fallback)
+        if (!success) {
+            try {
+                const res  = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const po   = data?.[0]?.PostOffice?.[0];
+                    if (data?.[0]?.Status === 'Success' && po) {
+                        state = po.State || '';
+                        city = po.District || '';
+                        success = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Fallback Pincode API also failed', e);
+            }
+        }
+
+        if (success) {
+            if (!isManualState()) {
+                stateEl.value = state;
+                stateEl.dispatchEvent(new Event('input'));
+                this._flash(stateEl);
+            }
+            if (!isManualCity()) {
+                cityEl.value = city;
+                cityEl.dispatchEvent(new Event('input'));
+                this._flash(cityEl);
+            }
+            this._clearStatus(pincodeEl);
+        } else {
             this._showStatus(pincodeEl, 'warn', 'Service unavailable — please fill manually.');
         }
     },
