@@ -83,93 +83,96 @@
           </div>
           <div class="divide-y divide-gray-100">
             <% formattedOrder.items.forEach(item => { %>
-              <div id="item-row-<%= item._id %>" class="flex gap-4 px-6 py-5 transition-colors <%= ['Cancelled', 'Returned', 'Return Rejected'].includes(item.status) ? 'bg-gray-50/80 opacity-75 grayscale-[30%]' : 'hover:bg-gray-50/50' %>">
-                <!-- Product Image -->
-                <div class="w-20 h-24 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0">
-                  <img src="<%= item.image %>" class="w-full h-full object-cover">
-                </div>
+              <div id="item-row-<%= item._id %>" class="flex flex-col sm:flex-row gap-4 px-6 py-5 transition-colors <%= ['Cancelled', 'Returned', 'Return Rejected'].includes(item.status) ? 'bg-gray-50/80 opacity-75 grayscale-[30%]' : 'hover:bg-gray-50/50' %>">
+                <!-- Left/Center: Image + Info -->
+                <div class="flex gap-4 flex-grow min-w-0">
+                  <!-- Product Image -->
+                  <div class="w-20 h-24 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0">
+                    <img src="<%= item.image %>" class="w-full h-full object-cover">
+                  </div>
 
                   <!-- Product Info -->
-                <div class="flex-grow min-w-0">
-                  <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.productName %></p>
-                  <% if (item.categoryName) { %>
-                    <p class="text-xs text-gray-400 mb-2"><%= item.categoryName %></p>
-                  <% } %>
-                  <div class="flex flex-wrap gap-3 text-xs text-gray-500">
-                    <span>Size: <span class="font-bold text-gray-700"><%= item.size %></span></span>
-                    <span>Color: <span class="font-bold text-gray-700"><%= item.color %></span></span>
-                  </div>
-                  <!-- Item Status Badge & Action -->
-                  <div class="mt-3 flex flex-wrap items-center gap-3">
-                    <span class="text-xs font-bold px-2 py-1 rounded-full <%= item.badge.classes %>">
-                      <%= item.badge.text %>
-                    </span>
-                    <% if (item.returnRejected && item.returnInspection) { %>
-                      <div class="bg-red-50 border border-red-100 rounded-lg p-2 max-w-sm">
-                        <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-0.5">Return Rejected</p>
-                        <p class="text-xs text-red-800"><span class="font-bold">Reason:</span> <%= item.returnInspection.notes || 'No reason provided' %></p>
-                      </div>
+                  <div class="flex-grow min-w-0">
+                    <p class="text-sm font-black text-gray-900 mb-0.5"><%= item.productName %></p>
+                    <% if (item.categoryName) { %>
+                      <p class="text-xs text-gray-400 mb-2"><%= item.categoryName %></p>
                     <% } %>
-                    <% if (item.refundProcessed) { %>
-                      <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 flex items-center gap-1" title="Amount refunded securely to your SmartPick Wallet">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-                        Refunded to Wallet
+                    <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+                      <span>Size: <span class="font-bold text-gray-700"><%= item.size %></span></span>
+                      <span>Color: <span class="font-bold text-gray-700"><%= item.color %></span></span>
+                    </div>
+                    <!-- Item Status Badge & Action -->
+                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                      <span class="text-xs font-bold px-2 py-1 rounded-full <%= item.badge.classes %>">
+                        <%= item.badge.text %>
                       </span>
-                    <% } %>
-                    <% if (item.canCancel) { %>
-                      <button onclick="openActionModal('cancel', '<%= formattedOrder._id %>', '<%= item._id %>', 'Cancel Item')" 
-                              class="text-xs font-bold text-red-600 hover:text-red-700 transition">
-                        Cancel Item
-                      </button>
-                    <% } %>
-                    <% if (item.canReturn) { %>
-                      <button onclick="openActionModal('return', '<%= formattedOrder._id %>', '<%= item._id %>', 'Return Item')" 
-                              class="text-xs font-bold text-orange-500 hover:text-orange-600 transition">
-                        Return Item
-                      </button>
-                      <% const existingReview = typeof userReviews !== 'undefined' ? userReviews[item.productId.toString()] : null; %>
-                      <% if (!existingReview) { %>
-                        <button onclick='openReviewModal("<%= item.productId %>", null)' 
-                                class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition">
-                          Write Review
+                      <% if (item.returnRejected && item.returnInspection) { %>
+                        <div class="bg-red-50 border border-red-100 rounded-lg p-2 max-w-sm">
+                          <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-0.5">Return Rejected</p>
+                          <p class="text-xs text-red-800"><span class="font-bold">Reason:</span> <%= item.returnInspection.notes || 'No reason provided' %></p>
+                        </div>
+                      <% } %>
+                      <% if (item.refundProcessed) { %>
+                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 flex items-center gap-1" title="Amount refunded securely to your SmartPick Wallet">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                          Refunded to Wallet
+                        </span>
+                      <% } %>
+                      <% if (item.canCancel) { %>
+                        <button onclick="openActionModal('cancel', '<%= formattedOrder._id %>', '<%= item._id %>', 'Cancel Item')" 
+                                class="text-xs font-bold text-red-600 hover:text-red-700 transition">
+                          Cancel Item
                         </button>
                       <% } %>
-                    <% } %>
-                  </div>
-                  
-                  <% const existingReviewForCard = typeof userReviews !== 'undefined' ? userReviews[item.productId.toString()] : null; %>
-                  <% if (existingReviewForCard) { %>
-                    <div class="mt-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                      <div class="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 class="text-sm font-black text-slate-900"><%= (existingReviewForCard.userNameSnapshot && existingReviewForCard.userNameSnapshot !== "undefined undefined") ? existingReviewForCard.userNameSnapshot : 'Verified Customer' %></h4>
-                          <p class="text-[10px] font-bold text-gray-400 mt-0.5">
-                            Reviewed on <%= new Date(existingReviewForCard.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
-                            <% if (existingReviewForCard.isEdited) { %> (Edited) <% } %>
-                          </p>
-                        </div>
-                        <div class="flex flex-col items-end gap-2">
-                          <div class="flex text-amber-400 gap-0.5">
-                            <% for (let i = 1; i <= 5; i++) { %>
-                              <svg class="w-3.5 h-3.5 <%= existingReviewForCard.rating >= i ? 'fill-current' : 'text-gray-200 fill-current' %>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                            <% } %>
-                          </div>
-                          <button onclick='openReviewModal("<%= item.productId %>", <%= JSON.stringify({id: existingReviewForCard._id, rating: existingReviewForCard.rating, text: existingReviewForCard.reviewText}) %>)' 
-                                  class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            Edit Review
+                      <% if (item.canReturn) { %>
+                        <button onclick="openActionModal('return', '<%= formattedOrder._id %>', '<%= item._id %>', 'Return Item')" 
+                                class="text-xs font-bold text-orange-500 hover:text-orange-600 transition">
+                          Return Item
+                        </button>
+                        <% const existingReview = typeof userReviews !== 'undefined' ? userReviews[item.productId.toString()] : null; %>
+                        <% if (!existingReview) { %>
+                          <button onclick='openReviewModal("<%= item.productId %>", null)' 
+                                  class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition">
+                            Write Review
                           </button>
-                        </div>
-                      </div>
-                      <% if (existingReviewForCard.reviewText) { %>
-                        <p class="text-xs text-gray-600 leading-relaxed"><%= existingReviewForCard.reviewText %></p>
+                        <% } %>
                       <% } %>
                     </div>
-                  <% } %>
+                    
+                    <% const existingReviewForCard = typeof userReviews !== 'undefined' ? userReviews[item.productId.toString()] : null; %>
+                    <% if (existingReviewForCard) { %>
+                      <div class="mt-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
+                          <div>
+                            <h4 class="text-sm font-black text-slate-900"><%= (existingReviewForCard.userNameSnapshot && existingReviewForCard.userNameSnapshot !== "undefined undefined") ? existingReviewForCard.userNameSnapshot : 'Verified Customer' %></h4>
+                            <p class="text-[10px] font-bold text-gray-400 mt-0.5">
+                              Reviewed on <%= new Date(existingReviewForCard.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                              <% if (existingReviewForCard.isEdited) { %> (Edited) <% } %>
+                            </p>
+                          </div>
+                          <div class="flex flex-row sm:flex-col items-center sm:items-end gap-2 justify-between w-full sm:w-auto">
+                            <div class="flex text-amber-400 gap-0.5">
+                              <% for (let i = 1; i <= 5; i++) { %>
+                                <svg class="w-3.5 h-3.5 <%= existingReviewForCard.rating >= i ? 'fill-current' : 'text-gray-200 fill-current' %>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                              <% } %>
+                            </div>
+                            <button onclick='openReviewModal("<%= item.productId %>", <%= JSON.stringify({id: existingReviewForCard._id, rating: existingReviewForCard.rating, text: existingReviewForCard.reviewText}) %>)' 
+                                    class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                              Edit Review
+                            </button>
+                          </div>
+                        </div>
+                        <% if (existingReviewForCard.reviewText) { %>
+                          <p class="text-xs text-gray-600 leading-relaxed"><%= existingReviewForCard.reviewText %></p>
+                        <% } %>
+                      </div>
+                    <% } %>
+                  </div>
                 </div>
 
                 <!-- Price & Qty (Phase 2 Immutable Snapshots + Phase 4 Formatter) -->
-                <div class="text-right flex-shrink-0">
+                <div class="text-left sm:text-right flex-shrink-0 w-full sm:w-auto border-t sm:border-t-0 border-gray-100 pt-3 sm:pt-0 flex flex-col sm:items-end justify-between">
                   <% if (item.hasDiscount) { %>
                     <p class="text-[11px] text-gray-400 line-through"><%= item.formatted.totalOriginalAmount %></p>
                   <% } %>
@@ -451,17 +454,19 @@
           class="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-gray-50 focus:bg-white transition resize-none text-sm"></textarea>
       </div>
 
-      <div class="flex gap-3 pt-2 border-t border-gray-100">
-        <button type="button" id="deleteReviewBtn" onclick="deleteReview()"
-          class="hidden py-3 px-4 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition">
-          Delete
-        </button>
-        <button type="button" onclick="closeReviewModal()"
-          class="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition">
-          Cancel
-        </button>
+      <div class="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100">
+        <div class="flex gap-3 flex-1">
+          <button type="button" id="deleteReviewBtn" onclick="deleteReview()"
+            class="hidden py-3 px-4 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition flex-shrink-0">
+            Delete
+          </button>
+          <button type="button" onclick="closeReviewModal()"
+            class="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition">
+            Cancel
+          </button>
+        </div>
         <button type="submit" id="reviewSubmitBtn"
-          class="flex-1 py-3 rounded-xl font-bold text-sm text-white transition shadow-lg bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100">
+          class="w-full sm:flex-1 py-3 rounded-xl font-bold text-sm text-white transition shadow-lg bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100">
           Submit
         </button>
       </div>
