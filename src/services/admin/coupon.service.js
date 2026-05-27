@@ -80,9 +80,9 @@ export const addCoupon = async (data) => {
         throw new AppError('Minimum purchase amount must be greater than the flat discount value.');
     }
 
-    // Business rule: startDate must precede expiryDate
-    if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new AppError('Start date must be before the expiry date.');
+    // Business rule: startDate must precede or equal expiryDate
+    if (startDate && new Date(startDate) > new Date(expiryDate)) {
+        throw new AppError('Start date must be on or before the expiry date.');
     }
 
     const today = new Date();
@@ -131,9 +131,9 @@ export const editCoupon = async (id, data) => {
         throw new AppError('Minimum purchase amount must be greater than the flat discount value.');
     }
 
-    // Business rule: startDate must precede expiryDate
-    if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new AppError('Start date must be before the expiry date.');
+    // Business rule: startDate must precede or equal expiryDate
+    if (startDate && new Date(startDate) > new Date(expiryDate)) {
+        throw new AppError('Start date must be on or before the expiry date.');
     }
 
     const today = new Date();

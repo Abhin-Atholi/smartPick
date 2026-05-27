@@ -111,7 +111,7 @@ export const buildInvoiceData = (order) => {
         const inspection         = item.returnInspection || null;
 
         return {
-            productName:     item.product?.name || item.productName || 'Product Unavailable',
+            productName:     item.productName || item.product?.name || 'Product Unavailable',
             size:            item.size || '—',
             color:           item.color || '—',
             quantity:        qty,

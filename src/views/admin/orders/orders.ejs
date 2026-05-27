@@ -250,3 +250,20 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dateFrom = document.querySelector('input[name="dateFrom"]');
+    const dateTo = document.querySelector('input[name="dateTo"]');
+    if (dateFrom && dateTo) {
+      dateFrom.addEventListener('change', (e) => {
+        dateTo.min = e.target.value;
+        if (dateTo.value && dateTo.value < e.target.value) {
+          dateTo.value = '';
+        }
+      });
+      if (dateFrom.value) {
+        dateTo.min = dateFrom.value;
+      }
+    }
+  });
+</script>

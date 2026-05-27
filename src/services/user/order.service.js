@@ -131,8 +131,15 @@ export const placeOrder = async (userId, addressId, paymentMethod, couponData = 
 
             const itemTotal = pricing.finalPrice * item.quantity;
 
+            // Snapshot the image securely
+            const normalize = str => String(str || '').trim().toLowerCase();
+            const colorOpt = product.colorOptions?.find(c => normalize(c.name) === normalize(variant.color));
+            const image = colorOpt?.images?.[0] || product.defaultImage || '/images/placeholder.jpg';
+
             orderItems.push({
                 product: product._id,
+                productName: product.name,
+                image: image,
                 quantity: item.quantity,
                 variantId: item.variantId,
                 size: variant.size,

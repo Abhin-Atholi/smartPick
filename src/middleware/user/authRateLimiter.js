@@ -58,6 +58,13 @@ export const loginLimiter = rateLimit({
     message: "Too many login attempts from this IP, please try again after 15 minutes"
   },
   skipSuccessfulRequests: true, // Do not count successful logins towards the limit
+  requestWasSuccessful: (req, res) => {
+    const location = res.getHeader("Location");
+    if (res.statusCode === 302 && location) {
+      return location.includes("/home");
+    }
+    return res.statusCode < 400;
+  },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   handler: rateLimitHandler
@@ -72,6 +79,13 @@ export const registerLimiter = rateLimit({
     message: "Too many accounts created from this IP, please try again after an hour"
   },
   skipSuccessfulRequests: true, // Do not count successful registrations towards the limit
+  requestWasSuccessful: (req, res) => {
+    const location = res.getHeader("Location");
+    if (res.statusCode === 302 && location) {
+      return !location.includes("/register");
+    }
+    return res.statusCode < 400;
+  },
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler

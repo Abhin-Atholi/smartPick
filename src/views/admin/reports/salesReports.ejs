@@ -188,6 +188,18 @@
         const dateTo = document.getElementById('dateTo');
         if (dateFrom) dateFrom.max = todayStr;
         if (dateTo) dateTo.max = todayStr;
+        
+        if (dateFrom && dateTo) {
+            dateFrom.addEventListener('change', (e) => {
+                dateTo.min = e.target.value;
+                if (dateTo.value && dateTo.value < e.target.value) {
+                    dateTo.value = '';
+                }
+            });
+            if (dateFrom.value) {
+                dateTo.min = dateFrom.value;
+            }
+        }
 
         // Search input logic with debounce
         const searchInput = document.getElementById('ledgerSearch');

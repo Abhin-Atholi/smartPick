@@ -484,7 +484,14 @@
     maxDiscountEl.addEventListener('input', () => CouponV.maximumDiscount());
     document.getElementById('usageLimit').addEventListener('input', () => CouponV.usageLimit());
     document.getElementById('expiryDate').addEventListener('change', () => CouponV.expiryDate());
-    document.getElementById('startDate').addEventListener('change',  () => CouponV.expiryDate());
+    document.getElementById('startDate').addEventListener('change',  (e) => { 
+        const expiry = document.getElementById('expiryDate');
+        expiry.min = e.target.value;
+        if (expiry.value && expiry.value < e.target.value) {
+            expiry.value = '';
+        }
+        CouponV.expiryDate(); 
+    });
 
     // ── Modal helpers ─────────────────────────────────────────────────────────
     function _openModal() {
@@ -512,6 +519,7 @@
         document.getElementById('couponId').value = '';
         document.getElementById('modalTitle').textContent = 'Add New Coupon';
         document.getElementById('startDate').value = toDateStr(new Date());
+        document.getElementById('expiryDate').min = document.getElementById('startDate').value;
         isActiveEl.checked = true;
         codeEl.readOnly = false;
         codeEl.classList.remove('bg-gray-200','text-gray-500','border-transparent');
@@ -535,7 +543,10 @@
         document.getElementById('usageLimit').value = coupon.usageLimit;
         if (coupon.maximumDiscount) maxDiscountEl.value = coupon.maximumDiscount;
         document.getElementById('expiryDate').value = toDateStr(coupon.expiryDate);
-        if (coupon.startDate) document.getElementById('startDate').value = toDateStr(coupon.startDate);
+        if (coupon.startDate) {
+            document.getElementById('startDate').value = toDateStr(coupon.startDate);
+            document.getElementById('expiryDate').min = document.getElementById('startDate').value;
+        }
         // ── Toggle: always set explicitly from data, never from FormData ──────
         isActiveEl.checked = coupon.isActive !== false;
 

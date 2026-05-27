@@ -93,9 +93,9 @@ export const getOffers = async ({ search, offerType, status, page, limit }) => {
 export const createOffer = async (data) => {
     const { name, description, offerType, discountType, discountValue, applicableTo, startDate, expiryDate, isActive } = data;
 
-    // Business rule: startDate must precede expiryDate
-    if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new AppError('Start date must be before the expiry date.');
+    // Business rule: startDate must precede or equal expiryDate
+    if (startDate && new Date(startDate) > new Date(expiryDate)) {
+        throw new AppError('Start date must be on or before the expiry date.');
     }
 
     const today = new Date();
@@ -181,9 +181,9 @@ export const updateOffer = async (id, data) => {
 
     const { name, description, offerType, discountType, discountValue, applicableTo, startDate, expiryDate, isActive } = data;
 
-    // Business rule: startDate must precede expiryDate
-    if (startDate && new Date(startDate) >= new Date(expiryDate)) {
-        throw new AppError('Start date must be before the expiry date.');
+    // Business rule: startDate must precede or equal expiryDate
+    if (startDate && new Date(startDate) > new Date(expiryDate)) {
+        throw new AppError('Start date must be on or before the expiry date.');
     }
 
     const today = new Date();

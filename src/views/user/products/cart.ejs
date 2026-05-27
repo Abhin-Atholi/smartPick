@@ -359,7 +359,7 @@
             }
 
             // Button-level lock — prevents rapid double-tap (no full overlay for minor cart actions)
-            const unlock = (btn && window.Loader) ? window.Loader.withButton(btn, '') : null;
+            const unlock = (btn && window.Loader) ? window.Loader.withButton(btn, '', true) : null;
 
             try {
                 const response = await axios.patch('/cart/update', {

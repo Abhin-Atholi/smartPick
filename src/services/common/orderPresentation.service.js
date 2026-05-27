@@ -108,7 +108,7 @@ export const formatOrderForDisplay = (order) => {
         return {
             _id: item._id,
             productId: item.product?._id || item.product,
-            productName: item.product?.name || 'Product Unavailable',
+            productName: item.productName || item.product?.name || 'Product Unavailable',
             categoryName: item.product?.category?.name || '',
             size: item.size,
             color: item.color,

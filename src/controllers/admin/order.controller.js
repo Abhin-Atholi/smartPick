@@ -15,6 +15,14 @@ export const getOrders = asyncHandler(async (req, res) => {
         const pTo = new Date(dateTo);
         if (!isNaN(pTo) && pTo > now) dateTo = now.toISOString().split('T')[0];
     }
+    if (dateFrom && dateTo) {
+        const pFrom = new Date(dateFrom);
+        const pTo = new Date(dateTo);
+        if (!isNaN(pFrom) && !isNaN(pTo) && pFrom > pTo) {
+            dateFrom = '';
+            dateTo = '';
+        }
+    }
 
     const data = await orderService.getAllOrders({ page: parseInt(page), limit: 10, search, status, dateFrom, dateTo, sort });
     const formattedOrders = data.orders.map(order => formatAdminOrderForDisplay(order));

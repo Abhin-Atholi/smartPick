@@ -298,9 +298,14 @@
       : 'sp-btn-spinner';
 
     button.disabled = true;
-    button.innerHTML =
-      '<span class="' + spinnerClass + '"></span>' +
-      '<span>' + (loadingText || 'Processing...') + '</span>';
+
+    if (loadingText === '') {
+      button.innerHTML = '<span class="' + spinnerClass + '" style="margin-right: 0;"></span>';
+    } else {
+      button.innerHTML =
+        '<span class="' + spinnerClass + '"></span>' +
+        '<span>' + (loadingText || 'Processing...') + '</span>';
+    }
 
     return function unlock() {
       button.disabled = button.dataset.spOriginalDisabled === 'true';

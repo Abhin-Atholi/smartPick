@@ -168,7 +168,22 @@
 <script>
   let trendChartInstance = null;
 
-  document.addEventListener('DOMContentLoaded', fetchDashboardData);
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchDashboardData();
+    const customFrom = document.getElementById('customFrom');
+    const customTo = document.getElementById('customTo');
+    if (customFrom && customTo) {
+      customFrom.addEventListener('change', (e) => {
+        customTo.min = e.target.value;
+        if (customTo.value && customTo.value < e.target.value) {
+          customTo.value = '';
+        }
+      });
+      if (customFrom.value) {
+        customTo.min = customFrom.value;
+      }
+    }
+  });
 
   function handleFilterChange() {
     const filter = document.getElementById('timeFilter').value;

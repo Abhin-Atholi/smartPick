@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    productName: { type: String }, // Snapshot for historical immutability
+    image: { type: String },       // Snapshot for historical immutability
     quantity: { type: Number, required: true },
     variantId: { type: mongoose.Schema.Types.ObjectId, required: false },
     size: { type: String, required: true },

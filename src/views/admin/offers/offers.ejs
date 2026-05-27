@@ -427,7 +427,14 @@
     document.getElementById('offerName').addEventListener('input',    () => OfferV.name());
     document.getElementById('discountValue').addEventListener('input', () => OfferV.discountValue());
     document.getElementById('expiryDate').addEventListener('change',  () => OfferV.dates());
-    document.getElementById('startDate').addEventListener('change',   () => OfferV.dates());
+    document.getElementById('startDate').addEventListener('change',   (e) => { 
+        const expiry = document.getElementById('expiryDate');
+        expiry.min = e.target.value;
+        if (expiry.value && expiry.value < e.target.value) {
+            expiry.value = '';
+        }
+        OfferV.dates(); 
+    });
     document.getElementById('discountType').addEventListener('change', function() {
         const dType = this.value;
         const maxWrap = document.getElementById('maxDiscountWrap');
@@ -462,6 +469,7 @@
         document.getElementById('categorySelector').value = '';
         document.getElementById('offerIsActive').checked = true;
         document.getElementById('startDate').value = toDateStr(new Date());
+        document.getElementById('expiryDate').min = document.getElementById('startDate').value;
         document.getElementById('productSelectorWrap').classList.remove('hidden');
         document.getElementById('categorySelectorWrap').classList.add('hidden');
         OfferV.clearAll();
@@ -479,7 +487,10 @@
         document.getElementById('maximumDiscountAmount').value = offer.maximumDiscountAmount || '';
         document.getElementById('offerIsActive').checked = offer.isActive !== false;
         document.getElementById('expiryDate').value = toDateStr(offer.expiryDate);
-        if (offer.startDate) document.getElementById('startDate').value = toDateStr(offer.startDate);
+        if (offer.startDate) {
+            document.getElementById('startDate').value = toDateStr(offer.startDate);
+            document.getElementById('expiryDate').min = document.getElementById('startDate').value;
+        }
         handleTypeChange();
         document.getElementById('discountType').dispatchEvent(new Event('change'));
         if (offer.offerType === 'product') {

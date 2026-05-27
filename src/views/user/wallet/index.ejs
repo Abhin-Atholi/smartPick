@@ -493,6 +493,23 @@
             setTimeout(() => { btn.textContent = orig; btn.classList.remove('bg-green-600'); }, 2000);
         } catch (e) { /* fallback */ }
     }
+    // ── Date Range Validation ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const dateFrom = document.getElementById('txDateFrom');
+        const dateTo = document.getElementById('txDateTo');
+        if (dateFrom && dateTo) {
+            dateFrom.addEventListener('change', (e) => {
+                dateTo.min = e.target.value;
+                if (dateTo.value && dateTo.value < e.target.value) {
+                    dateTo.value = '';
+                }
+            });
+            // trigger on load in case from date is already set
+            if(dateFrom.value) {
+                dateTo.min = dateFrom.value;
+            }
+        }
+    });
 </script>
 
 
