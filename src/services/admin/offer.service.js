@@ -257,6 +257,9 @@ export const updateOffer = async (id, data) => {
 export const toggleOffer = async (id) => {
     const offer = await Offer.findById(id);
     if (!offer || offer.isDeleted) throw new AppError('Offer not found.');
+    if (new Date(offer.expiryDate) <= new Date()) {
+        throw new AppError('Cannot toggle status of an expired offer.');
+    }
     offer.isActive = !offer.isActive;
     await offer.save();
     return offer;

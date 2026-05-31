@@ -188,6 +188,9 @@ export const editCoupon = async (id, data) => {
 export const toggleCoupon = async (id) => {
     const coupon = await Coupon.findById(id);
     if (!coupon || coupon.isDeleted) throw new AppError('Coupon not found.');
+    if (new Date(coupon.expiryDate) <= new Date()) {
+        throw new AppError('Cannot toggle status of an expired coupon.');
+    }
     coupon.isActive = !coupon.isActive;
     await coupon.save();
     return coupon;
