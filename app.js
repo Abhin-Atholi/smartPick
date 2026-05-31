@@ -98,7 +98,8 @@ app.use((req, res, next) => {
     // Only generate CSRF tokens for GET requests to prevent cookie overwrites
     // from background/partial requests.
     res.locals.csrfToken = null;
-    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/auth/check-email')) {
+    const acceptsHtml = req.headers.accept && req.headers.accept.includes("text/html");
+    if (req.method === 'GET' && acceptsHtml && !req.path.startsWith('/auth/check-email')) {
         res.locals.csrfToken = generateToken(req, res);
     }
     next();
